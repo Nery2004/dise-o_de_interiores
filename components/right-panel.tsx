@@ -4,8 +4,8 @@ import { ColorPalette } from "@/components/color-palette";
 import { useEditor } from "@/components/editor-context";
 import { MaskControls } from "@/components/mask-controls";
 import { MaskList } from "@/components/mask-list";
-import { MockWallDetectionButton } from "@/components/mock-wall-detection-button";
 import { SavedPalettesPanel } from "@/components/saved-palettes-panel";
+import { WallDetectionPanel } from "@/components/wall-detection-panel";
 import { formatFileSize } from "@/lib/utils";
 
 function EmptyValue() {
@@ -76,7 +76,7 @@ export function RightPanel() {
           </button>
         </div>
         <div className="mt-4">
-          <MockWallDetectionButton />
+          <WallDetectionPanel />
         </div>
         <div className="mt-4">
           <MaskList />

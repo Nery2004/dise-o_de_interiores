@@ -12,6 +12,10 @@ function statusLabel(status: string) {
     return "Listo";
   }
 
+  if (status === "detecting") {
+    return "Detectando paredes...";
+  }
+
   if (status === "exporting") {
     return "Exportando...";
   }

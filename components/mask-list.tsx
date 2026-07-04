@@ -38,6 +38,9 @@ export function MaskList() {
                 </p>
                 <p className="mt-1 text-xs uppercase tracking-[0.14em] text-[#7a8290]">
                   {mask.type}
+                  {typeof mask.confidence === "number"
+                    ? ` · ${Math.round(mask.confidence * 100)}%`
+                    : ""}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-1">

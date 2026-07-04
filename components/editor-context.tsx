@@ -30,6 +30,7 @@ type EditorContextValue = EditorState & {
   updateMask: (id: string, data: Partial<WallMask>) => void;
   deleteMask: (id: string) => void;
   selectMask: (id: string | null) => void;
+  replaceMasks: (masks: WallMask[]) => void;
   toggleMaskVisibility: (id: string) => void;
   clearMasks: () => void;
   setActiveColor: (color: string | null) => void;
@@ -228,6 +229,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
             ...mask,
             selected: mask.id === id,
           })),
+        })),
+      replaceMasks: (masks) =>
+        setState((current) => ({
+          ...current,
+          masks,
+          selectedMaskId: null,
         })),
       toggleMaskVisibility: (id) =>
         setState((current) => ({

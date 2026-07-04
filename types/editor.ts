@@ -29,6 +29,7 @@ export type EditorStatus =
   | "idle"
   | "loading"
   | "ready"
+  | "detecting"
   | "exporting"
   | "error";
 
@@ -57,6 +58,7 @@ export type WallMask = {
   id: string;
   name: string;
   type: "auto" | "manual";
+  confidence?: number;
   visible: boolean;
   selected: boolean;
   color?: string;
