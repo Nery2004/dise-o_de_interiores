@@ -40,6 +40,19 @@ export type LoadedImage = {
   dimensions: ImageDimensions;
 };
 
+export type WallMask = {
+  id: string;
+  name: string;
+  type: "auto" | "manual";
+  visible: boolean;
+  selected: boolean;
+  color?: string;
+  opacity: number;
+  path?: string;
+  points?: Array<{ x: number; y: number }>;
+  createdAt: string;
+};
+
 export type EditorState = {
   image: LoadedImage | null;
   zoom: number;
@@ -48,4 +61,9 @@ export type EditorState = {
   temporaryUrl: string | null;
   dimensions: ImageDimensions | null;
   status: EditorStatus;
+  masks: WallMask[];
+  selectedMaskId: string | null;
+  activeColor: string | null;
+  maskPreviewEnabled: boolean;
+  beforeAfterEnabled: boolean;
 };

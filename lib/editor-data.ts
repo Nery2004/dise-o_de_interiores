@@ -65,3 +65,12 @@ export const editorTools: Array<{
   { id: "pan", label: "Mano", shortcut: "H" },
   { id: "compare", label: "Comparar Antes / Despues", shortcut: "C" },
 ];
+
+export const maskColorSwatches = [
+  "#b98773",
+  "#9ba98f",
+  "#d8cbb8",
+  "#aab9bd",
+  "#c9a39a",
+  "#343b36",
+] as const;

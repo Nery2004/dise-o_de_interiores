@@ -9,6 +9,7 @@ import {
 } from "react-zoom-pan-pinch";
 import { useEditor } from "@/components/editor-context";
 import { ImageUploader } from "@/components/image-uploader";
+import { MaskOverlay } from "@/components/mask-overlay";
 
 export function CanvasViewer() {
   const { image, setZoom } = useEditor();
@@ -67,16 +68,25 @@ export function CanvasViewer() {
               contentClass="!h-full !w-full"
             >
               <div className="flex h-full min-h-[480px] w-full items-center justify-center p-8">
-                <Image
-                  src={image.url}
-                  alt={image.name}
-                  width={image.dimensions.width}
-                  height={image.dimensions.height}
-                  unoptimized
-                  className="h-auto max-h-none w-auto max-w-none select-none shadow-2xl"
-                  draggable={false}
-                  priority
-                />
+                <div
+                  className="relative shrink-0 shadow-2xl"
+                  style={{
+                    width: image.dimensions.width,
+                    height: image.dimensions.height,
+                  }}
+                >
+                  <Image
+                    src={image.url}
+                    alt={image.name}
+                    width={image.dimensions.width}
+                    height={image.dimensions.height}
+                    unoptimized
+                    className="block h-full w-full select-none"
+                    draggable={false}
+                    priority
+                  />
+                  <MaskOverlay dimensions={image.dimensions} />
+                </div>
               </div>
             </TransformComponent>
           </>

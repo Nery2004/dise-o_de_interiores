@@ -1,6 +1,9 @@
 "use client";
 
 import { useEditor } from "@/components/editor-context";
+import { MaskControls } from "@/components/mask-controls";
+import { MaskList } from "@/components/mask-list";
+import { MockWallDetectionButton } from "@/components/mock-wall-detection-button";
 import { formatFileSize } from "@/lib/utils";
 
 function EmptyValue() {
@@ -8,7 +11,14 @@ function EmptyValue() {
 }
 
 export function RightPanel() {
-  const { dimensions, image, originalFile } = useEditor();
+  const {
+    activeColor,
+    dimensions,
+    image,
+    maskPreviewEnabled,
+    originalFile,
+    toggleMaskPreview,
+  } = useEditor();
 
   const details = [
     { label: "Ancho", value: dimensions?.width ? `${dimensions.width}px` : null },
@@ -21,7 +31,7 @@ export function RightPanel() {
   ];
 
   return (
-    <aside className="rounded-lg border border-[#dde1e7] bg-white p-4 shadow-sm">
+    <aside className="max-h-[calc(100vh-8.5rem)] overflow-auto rounded-lg border border-[#dde1e7] bg-white p-4 shadow-sm">
       <section>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8290]">
           Propiedades
@@ -46,10 +56,52 @@ export function RightPanel() {
       </section>
 
       <section className="mt-5 rounded-md border border-[#edf0f3] bg-[#fafbfc] p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8290]">
+              Mascaras
+            </p>
+            <h2 className="mt-2 text-base font-semibold text-[#202124]">
+              Paredes detectadas
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={toggleMaskPreview}
+            className="rounded-md border border-[#dfe3e8] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#4b5563] transition hover:bg-[#f8fafc]"
+          >
+            {maskPreviewEnabled ? "Ocultar" : "Mostrar"}
+          </button>
+        </div>
+        <div className="mt-4">
+          <MockWallDetectionButton />
+        </div>
+        <div className="mt-4">
+          <MaskList />
+        </div>
+      </section>
+
+      <section className="mt-5 rounded-md border border-[#edf0f3] bg-[#fafbfc] p-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8290]">
+          Mascara seleccionada
+        </p>
+        <div className="mt-4">
+          <MaskControls />
+        </div>
+      </section>
+
+      <section className="mt-5 rounded-md border border-[#edf0f3] bg-[#fafbfc] p-4">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8290]">
           Color seleccionado
         </p>
-        <div className="mt-4 h-24 rounded-md border border-dashed border-[#d5dbe3] bg-white" />
+        <div className="mt-4 flex h-24 items-center justify-center rounded-md border border-dashed border-[#d5dbe3] bg-white">
+          {activeColor ? (
+            <span
+              className="h-12 w-12 rounded-md border border-black/10 shadow-sm"
+              style={{ backgroundColor: activeColor }}
+            />
+          ) : null}
+        </div>
       </section>
     </aside>
   );

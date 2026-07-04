@@ -23,7 +23,14 @@ const toolIcons: Record<EditorTool, React.ComponentType<{ size?: number }>> = {
 };
 
 export function LeftToolbar() {
-  const { activeTool, setActiveTool } = useEditor();
+  const {
+    activeTool,
+    beforeAfterEnabled,
+    selectedMaskId,
+    setActiveTool,
+    toggleBeforeAfter,
+  } = useEditor();
+  const needsSelectedMask = activeTool === "paint-wall" && !selectedMaskId;
 
   return (
     <aside className="rounded-lg border border-[#dde1e7] bg-white p-3 shadow-sm">
@@ -42,7 +49,13 @@ export function LeftToolbar() {
             <button
               key={tool.id}
               type="button"
-              onClick={() => setActiveTool(tool.id)}
+              onClick={() => {
+                setActiveTool(tool.id);
+
+                if (tool.id === "compare") {
+                  toggleBeforeAfter();
+                }
+              }}
               className={cn(
                 "flex h-12 items-center justify-between rounded-md border px-3 text-left text-sm font-medium transition",
                 isActive
@@ -68,6 +81,18 @@ export function LeftToolbar() {
           );
         })}
       </div>
+
+      {needsSelectedMask ? (
+        <div className="mt-3 rounded-md border border-[#f1d2a8] bg-[#fff7ed] px-3 py-2 text-xs leading-5 text-[#8a5a1f]">
+          Selecciona una pared para preparar la aplicacion de color.
+        </div>
+      ) : null}
+
+      {beforeAfterEnabled ? (
+        <div className="mt-3 rounded-md border border-[#cdd9ff] bg-[#eef3ff] px-3 py-2 text-xs leading-5 text-[#3f568c]">
+          Antes / Despues activo: los colores aplicados estan ocultos.
+        </div>
+      ) : null}
     </aside>
   );
 }

@@ -17,12 +17,22 @@ import type {
   EditorTool,
   ImageDimensions,
   LoadedImage,
+  WallMask,
 } from "@/types/editor";
 
 type EditorContextValue = EditorState & {
   setActiveTool: (tool: EditorTool) => void;
   setZoom: (zoom: number) => void;
   setStatus: (status: EditorStatus) => void;
+  addMask: (mask: WallMask) => void;
+  updateMask: (id: string, data: Partial<WallMask>) => void;
+  deleteMask: (id: string) => void;
+  selectMask: (id: string | null) => void;
+  toggleMaskVisibility: (id: string) => void;
+  clearMasks: () => void;
+  setActiveColor: (color: string | null) => void;
+  toggleBeforeAfter: () => void;
+  toggleMaskPreview: () => void;
   uploadImage: (file: File) => Promise<void>;
   openImageDialog: () => void;
   resetImage: () => void;
@@ -36,6 +46,11 @@ const initialState: EditorState = {
   temporaryUrl: null,
   dimensions: null,
   status: "idle",
+  masks: [],
+  selectedMaskId: null,
+  activeColor: null,
+  maskPreviewEnabled: true,
+  beforeAfterEnabled: false,
 };
 
 export const EditorContext = createContext<EditorContextValue | null>(null);
@@ -105,6 +120,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         temporaryUrl: objectUrl,
         dimensions,
         status: "ready",
+        masks: [],
+        selectedMaskId: null,
+        activeColor: null,
+        maskPreviewEnabled: true,
+        beforeAfterEnabled: false,
       });
       toast.success("Imagen cargada.");
     } catch {
@@ -147,6 +167,68 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         setState((current) => ({ ...current, activeTool: tool })),
       setZoom: (zoom) => setState((current) => ({ ...current, zoom })),
       setStatus: (status) => setState((current) => ({ ...current, status })),
+      addMask: (mask) =>
+        setState((current) => ({
+          ...current,
+          masks: [
+            ...current.masks.map((item) => ({ ...item, selected: false })),
+            { ...mask, selected: true },
+          ],
+          selectedMaskId: mask.id,
+        })),
+      updateMask: (id, data) =>
+        setState((current) => ({
+          ...current,
+          masks: current.masks.map((mask) =>
+            mask.id === id ? { ...mask, ...data } : mask,
+          ),
+        })),
+      deleteMask: (id) =>
+        setState((current) => {
+          const masks = current.masks.filter((mask) => mask.id !== id);
+          const selectedMaskId =
+            current.selectedMaskId === id ? null : current.selectedMaskId;
+
+          return {
+            ...current,
+            masks,
+            selectedMaskId,
+          };
+        }),
+      selectMask: (id) =>
+        setState((current) => ({
+          ...current,
+          selectedMaskId: id,
+          masks: current.masks.map((mask) => ({
+            ...mask,
+            selected: mask.id === id,
+          })),
+        })),
+      toggleMaskVisibility: (id) =>
+        setState((current) => ({
+          ...current,
+          masks: current.masks.map((mask) =>
+            mask.id === id ? { ...mask, visible: !mask.visible } : mask,
+          ),
+        })),
+      clearMasks: () =>
+        setState((current) => ({
+          ...current,
+          masks: [],
+          selectedMaskId: null,
+        })),
+      setActiveColor: (color) =>
+        setState((current) => ({ ...current, activeColor: color })),
+      toggleBeforeAfter: () =>
+        setState((current) => ({
+          ...current,
+          beforeAfterEnabled: !current.beforeAfterEnabled,
+        })),
+      toggleMaskPreview: () =>
+        setState((current) => ({
+          ...current,
+          maskPreviewEnabled: !current.maskPreviewEnabled,
+        })),
       uploadImage,
       openImageDialog,
       resetImage,
