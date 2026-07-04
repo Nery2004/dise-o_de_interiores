@@ -1,4 +1,9 @@
-import type { EditorStage, MoodBoard, WallColorSwatch } from "@/types/editor";
+import type {
+  EditorStage,
+  EditorTool,
+  MoodBoard,
+  WallColorSwatch,
+} from "@/types/editor";
 
 export const wallColorSwatches: WallColorSwatch[] = [
   { name: "Soft Clay", hex: "#b98773" },
@@ -46,4 +51,17 @@ export const moodBoards: MoodBoard[] = [
     description: "Balanced whites, stone grey, ink details, and powder blue.",
     colors: ["#eee9df", "#b8b4aa", "#202621", "#aab9bd"],
   },
+];
+
+export const editorTools: Array<{
+  id: EditorTool;
+  label: string;
+  shortcut: string;
+}> = [
+  { id: "select", label: "Seleccionar", shortcut: "V" },
+  { id: "paint-wall", label: "Pintar pared", shortcut: "B" },
+  { id: "eraser", label: "Borrador", shortcut: "E" },
+  { id: "zoom", label: "Zoom", shortcut: "Z" },
+  { id: "pan", label: "Mano", shortcut: "H" },
+  { id: "compare", label: "Comparar Antes / Despues", shortcut: "C" },
 ];
