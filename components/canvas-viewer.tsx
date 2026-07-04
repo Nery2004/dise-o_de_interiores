@@ -10,6 +10,7 @@ import {
 import { useEditor } from "@/components/editor-context";
 import { ImageUploader } from "@/components/image-uploader";
 import { MaskOverlay } from "@/components/mask-overlay";
+import { DrawingHelpOverlay } from "@/components/drawing-help-overlay";
 
 export function CanvasViewer() {
   const { beforeAfterEnabled, image, setZoom } = useEditor();
@@ -65,6 +66,7 @@ export function CanvasViewer() {
             <div className="absolute left-4 top-4 z-10 rounded-md border border-[#dfe3e8] bg-white/95 px-3 py-2 text-xs font-semibold text-[#3b414a] shadow-sm backdrop-blur">
               {beforeAfterEnabled ? "Vista original" : "Vista editada"}
             </div>
+            <DrawingHelpOverlay />
 
             <TransformComponent
               wrapperClass="!h-full !w-full"

@@ -18,6 +18,7 @@ export type MoodBoard = {
 
 export type EditorTool =
   | "select"
+  | "manual-select"
   | "paint-wall"
   | "eraser"
   | "zoom"
@@ -31,6 +32,11 @@ export type BlendMode = "normal" | "multiply" | "color" | "overlay";
 export type ImageDimensions = {
   width: number;
   height: number;
+};
+
+export type ImagePoint = {
+  x: number;
+  y: number;
 };
 
 export type LoadedImage = {
@@ -52,7 +58,7 @@ export type WallMask = {
   opacity: number;
   blendMode?: BlendMode;
   path?: string;
-  points?: Array<{ x: number; y: number }>;
+  points?: ImagePoint[];
   createdAt: string;
 };
 
@@ -70,4 +76,7 @@ export type EditorState = {
   maskPreviewEnabled: boolean;
   beforeAfterEnabled: boolean;
   globalBlendMode: BlendMode;
+  isDrawingMask: boolean;
+  manualPoints: ImagePoint[];
+  cursorPreviewPoint: ImagePoint | null;
 };

@@ -17,6 +17,7 @@ import type {
   EditorStatus,
   EditorTool,
   ImageDimensions,
+  ImagePoint,
   LoadedImage,
   WallMask,
 } from "@/types/editor";
@@ -35,6 +36,11 @@ type EditorContextValue = EditorState & {
   setGlobalBlendMode: (blendMode: BlendMode) => void;
   applyColorToSelectedMask: (color: string) => void;
   removeColorFromMask: (id: string) => void;
+  startManualMask: () => void;
+  addManualPoint: (point: ImagePoint) => void;
+  setCursorPreviewPoint: (point: ImagePoint | null) => void;
+  finishManualMask: () => void;
+  cancelManualMask: () => void;
   toggleBeforeAfter: () => void;
   toggleMaskPreview: () => void;
   uploadImage: (file: File) => Promise<void>;
@@ -56,6 +62,9 @@ const initialState: EditorState = {
   maskPreviewEnabled: true,
   beforeAfterEnabled: false,
   globalBlendMode: "multiply",
+  isDrawingMask: false,
+  manualPoints: [],
+  cursorPreviewPoint: null,
 };
 
 export const EditorContext = createContext<EditorContextValue | null>(null);
@@ -131,6 +140,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         maskPreviewEnabled: true,
         beforeAfterEnabled: false,
         globalBlendMode: "multiply",
+        isDrawingMask: false,
+        manualPoints: [],
+        cursorPreviewPoint: null,
       });
       toast.success("Imagen cargada.");
     } catch {
@@ -170,7 +182,14 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     () => ({
       ...state,
       setActiveTool: (tool) =>
-        setState((current) => ({ ...current, activeTool: tool })),
+        setState((current) => ({
+          ...current,
+          activeTool: tool,
+          isDrawingMask: tool === "manual-select" && Boolean(current.image),
+          manualPoints: tool === "manual-select" ? current.manualPoints : [],
+          cursorPreviewPoint:
+            tool === "manual-select" ? current.cursorPreviewPoint : null,
+        })),
       setZoom: (zoom) => setState((current) => ({ ...current, zoom })),
       setStatus: (status) => setState((current) => ({ ...current, status })),
       addMask: (mask) =>
@@ -260,6 +279,62 @@ export function EditorProvider({ children }: { children: ReactNode }) {
             delete nextMask.color;
             return nextMask;
           }),
+        })),
+      startManualMask: () =>
+        setState((current) => ({
+          ...current,
+          isDrawingMask: Boolean(current.image),
+          manualPoints: [],
+          cursorPreviewPoint: null,
+        })),
+      addManualPoint: (point) =>
+        setState((current) => ({
+          ...current,
+          isDrawingMask: true,
+          manualPoints: [...current.manualPoints, point],
+        })),
+      setCursorPreviewPoint: (point) =>
+        setState((current) => ({ ...current, cursorPreviewPoint: point })),
+      finishManualMask: () =>
+        setState((current) => {
+          if (current.manualPoints.length < 3) {
+            toast.error("Selecciona al menos 3 puntos para crear una pared.");
+            return current;
+          }
+
+          const manualCount =
+            current.masks.filter((mask) => mask.type === "manual").length + 1;
+          const mask: WallMask = {
+            id:
+              globalThis.crypto?.randomUUID?.() ??
+              `manual-mask-${Date.now()}`,
+            name: `Seleccion manual ${manualCount}`,
+            type: "manual",
+            visible: true,
+            selected: true,
+            opacity: 0.45,
+            points: current.manualPoints,
+            createdAt: new Date().toISOString(),
+          };
+
+          return {
+            ...current,
+            masks: [
+              ...current.masks.map((item) => ({ ...item, selected: false })),
+              mask,
+            ],
+            selectedMaskId: mask.id,
+            isDrawingMask: false,
+            manualPoints: [],
+            cursorPreviewPoint: null,
+          };
+        }),
+      cancelManualMask: () =>
+        setState((current) => ({
+          ...current,
+          isDrawingMask: false,
+          manualPoints: [],
+          cursorPreviewPoint: null,
         })),
       toggleBeforeAfter: () =>
         setState((current) => ({
