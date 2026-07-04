@@ -24,6 +24,7 @@ const toolIcons: Record<EditorTool, React.ComponentType<{ size?: number }>> = {
 
 export function LeftToolbar() {
   const {
+    activeColor,
     activeTool,
     beforeAfterEnabled,
     selectedMaskId,
@@ -31,6 +32,8 @@ export function LeftToolbar() {
     toggleBeforeAfter,
   } = useEditor();
   const needsSelectedMask = activeTool === "paint-wall" && !selectedMaskId;
+  const needsActiveColor =
+    activeTool === "paint-wall" && Boolean(selectedMaskId) && !activeColor;
 
   return (
     <aside className="rounded-lg border border-[#dde1e7] bg-white p-3 shadow-sm">
@@ -85,6 +88,12 @@ export function LeftToolbar() {
       {needsSelectedMask ? (
         <div className="mt-3 rounded-md border border-[#f1d2a8] bg-[#fff7ed] px-3 py-2 text-xs leading-5 text-[#8a5a1f]">
           Selecciona una pared para preparar la aplicacion de color.
+        </div>
+      ) : null}
+
+      {needsActiveColor ? (
+        <div className="mt-3 rounded-md border border-[#f1d2a8] bg-[#fff7ed] px-3 py-2 text-xs leading-5 text-[#8a5a1f]">
+          Elige un color primero.
         </div>
       ) : null}
 

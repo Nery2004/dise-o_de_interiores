@@ -1,4 +1,5 @@
 import type {
+  BlendMode,
   EditorStage,
   EditorTool,
   MoodBoard,
@@ -74,3 +75,21 @@ export const maskColorSwatches = [
   "#c9a39a",
   "#343b36",
 ] as const;
+
+export const interiorColorPalette = [
+  { name: "Blanco calido", hex: "#F5F1E8" },
+  { name: "Beige arena", hex: "#D8C3A5" },
+  { name: "Gris perla", hex: "#D9D9D9" },
+  { name: "Verde salvia", hex: "#A8B5A2" },
+  { name: "Azul niebla", hex: "#A7BED3" },
+  { name: "Terracota suave", hex: "#C98276" },
+  { name: "Oliva claro", hex: "#B7B597" },
+  { name: "Grafito", hex: "#4A4A4A" },
+] as const;
+
+export const blendModeOptions: Array<{ label: string; value: BlendMode }> = [
+  { label: "Normal", value: "normal" },
+  { label: "Multiply", value: "multiply" },
+  { label: "Color", value: "color" },
+  { label: "Overlay", value: "overlay" },
+];

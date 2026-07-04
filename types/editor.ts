@@ -26,6 +26,8 @@ export type EditorTool =
 
 export type EditorStatus = "idle" | "loading" | "ready" | "error";
 
+export type BlendMode = "normal" | "multiply" | "color" | "overlay";
+
 export type ImageDimensions = {
   width: number;
   height: number;
@@ -48,6 +50,7 @@ export type WallMask = {
   selected: boolean;
   color?: string;
   opacity: number;
+  blendMode?: BlendMode;
   path?: string;
   points?: Array<{ x: number; y: number }>;
   createdAt: string;
@@ -66,4 +69,5 @@ export type EditorState = {
   activeColor: string | null;
   maskPreviewEnabled: boolean;
   beforeAfterEnabled: boolean;
+  globalBlendMode: BlendMode;
 };

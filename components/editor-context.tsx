@@ -12,6 +12,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import type {
+  BlendMode,
   EditorState,
   EditorStatus,
   EditorTool,
@@ -31,6 +32,9 @@ type EditorContextValue = EditorState & {
   toggleMaskVisibility: (id: string) => void;
   clearMasks: () => void;
   setActiveColor: (color: string | null) => void;
+  setGlobalBlendMode: (blendMode: BlendMode) => void;
+  applyColorToSelectedMask: (color: string) => void;
+  removeColorFromMask: (id: string) => void;
   toggleBeforeAfter: () => void;
   toggleMaskPreview: () => void;
   uploadImage: (file: File) => Promise<void>;
@@ -51,6 +55,7 @@ const initialState: EditorState = {
   activeColor: null,
   maskPreviewEnabled: true,
   beforeAfterEnabled: false,
+  globalBlendMode: "multiply",
 };
 
 export const EditorContext = createContext<EditorContextValue | null>(null);
@@ -125,6 +130,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         activeColor: null,
         maskPreviewEnabled: true,
         beforeAfterEnabled: false,
+        globalBlendMode: "multiply",
       });
       toast.success("Imagen cargada.");
     } catch {
@@ -219,6 +225,42 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         })),
       setActiveColor: (color) =>
         setState((current) => ({ ...current, activeColor: color })),
+      setGlobalBlendMode: (blendMode) =>
+        setState((current) => ({ ...current, globalBlendMode: blendMode })),
+      applyColorToSelectedMask: (color) =>
+        setState((current) => {
+          if (!current.selectedMaskId) {
+            toast.error("Selecciona una pared antes de aplicar color.");
+            return current;
+          }
+
+          return {
+            ...current,
+            activeColor: color,
+            masks: current.masks.map((mask) =>
+              mask.id === current.selectedMaskId
+                ? {
+                    ...mask,
+                    color,
+                    blendMode: mask.blendMode ?? current.globalBlendMode,
+                  }
+                : mask,
+            ),
+          };
+        }),
+      removeColorFromMask: (id) =>
+        setState((current) => ({
+          ...current,
+          masks: current.masks.map((mask) => {
+            if (mask.id !== id) {
+              return mask;
+            }
+
+            const nextMask = { ...mask };
+            delete nextMask.color;
+            return nextMask;
+          }),
+        })),
       toggleBeforeAfter: () =>
         setState((current) => ({
           ...current,

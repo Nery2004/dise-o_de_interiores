@@ -1,5 +1,6 @@
 "use client";
 
+import { ColorPalette } from "@/components/color-palette";
 import { useEditor } from "@/components/editor-context";
 import { MaskControls } from "@/components/mask-controls";
 import { MaskList } from "@/components/mask-list";
@@ -80,6 +81,8 @@ export function RightPanel() {
           <MaskList />
         </div>
       </section>
+
+      <ColorPalette />
 
       <section className="mt-5 rounded-md border border-[#edf0f3] bg-[#fafbfc] p-4">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8290]">

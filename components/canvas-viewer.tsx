@@ -12,7 +12,7 @@ import { ImageUploader } from "@/components/image-uploader";
 import { MaskOverlay } from "@/components/mask-overlay";
 
 export function CanvasViewer() {
-  const { image, setZoom } = useEditor();
+  const { beforeAfterEnabled, image, setZoom } = useEditor();
 
   if (!image) {
     return (
@@ -61,6 +61,9 @@ export function CanvasViewer() {
               >
                 <Maximize2 size={16} />
               </button>
+            </div>
+            <div className="absolute left-4 top-4 z-10 rounded-md border border-[#dfe3e8] bg-white/95 px-3 py-2 text-xs font-semibold text-[#3b414a] shadow-sm backdrop-blur">
+              {beforeAfterEnabled ? "Vista original" : "Vista editada"}
             </div>
 
             <TransformComponent

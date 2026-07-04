@@ -1,5 +1,7 @@
 "use client";
 
+import type { CSSProperties, MouseEvent } from "react";
+import { toast } from "sonner";
 import { useEditor } from "@/components/editor-context";
 import type { ImageDimensions, WallMask } from "@/types/editor";
 
@@ -13,11 +15,14 @@ function polygonPoints(mask: WallMask) {
 
 export function MaskOverlay({ dimensions }: MaskOverlayProps) {
   const {
+    activeColor,
     activeTool,
     beforeAfterEnabled,
+    globalBlendMode,
     maskPreviewEnabled,
     masks,
     selectMask,
+    updateMask,
   } = useEditor();
 
   return (
@@ -30,26 +35,58 @@ export function MaskOverlay({ dimensions }: MaskOverlayProps) {
         .filter((mask) => mask.visible)
         .map((mask) => {
           const isSelected = mask.selected;
-          const showFill =
-            maskPreviewEnabled && !beforeAfterEnabled && Boolean(mask.color);
+          const hasColor = Boolean(mask.color);
+          const showPaintFill = hasColor && !beforeAfterEnabled;
+          const showPreviewFill =
+            !hasColor && maskPreviewEnabled && !beforeAfterEnabled;
           const showOutline = maskPreviewEnabled;
-          const fillColor = showFill ? mask.color : "transparent";
+          const fillColor = showPaintFill
+            ? mask.color
+            : showPreviewFill
+              ? "#7aa7d9"
+              : "transparent";
           const strokeColor = isSelected ? "#2563eb" : "#f8fafc";
           const strokeWidth = isSelected ? 4 : 2;
+          const fillOpacity = showPaintFill
+            ? mask.opacity
+            : showPreviewFill
+              ? 0.22
+              : 0;
+          const style: CSSProperties = showPaintFill
+            ? {
+                mixBlendMode: mask.blendMode ?? globalBlendMode,
+              }
+            : {};
+          const handleClick = (event: MouseEvent<SVGElement>) => {
+            if (activeTool !== "select" && activeTool !== "paint-wall") {
+              return;
+            }
+
+            event.stopPropagation();
+            selectMask(mask.id);
+
+            if (activeTool === "paint-wall") {
+              if (!activeColor) {
+                toast.error("Elige un color primero.");
+                return;
+              }
+
+              updateMask(mask.id, {
+                color: activeColor,
+                blendMode: mask.blendMode ?? globalBlendMode,
+              });
+            }
+          };
           const commonProps = {
             fill: fillColor,
-            fillOpacity: showFill ? mask.opacity : 0,
+            fillOpacity,
             stroke: showOutline ? strokeColor : "transparent",
-            strokeDasharray: isSelected ? "0" : "10 8",
+            strokeDasharray: hasColor || isSelected ? "0" : "10 8",
             strokeOpacity: showOutline ? 0.95 : 0,
             strokeWidth,
+            style,
             vectorEffect: "non-scaling-stroke" as const,
-            onClick: (event: React.MouseEvent<SVGElement>) => {
-              if (activeTool === "select" || activeTool === "paint-wall") {
-                event.stopPropagation();
-                selectMask(mask.id);
-              }
-            },
+            onClick: handleClick,
             className:
               activeTool === "select" || activeTool === "paint-wall"
                 ? "cursor-pointer transition"

@@ -1,27 +1,29 @@
 "use client";
 
+import { useState } from "react";
 import { useEditor } from "@/components/editor-context";
-import { maskColorSwatches } from "@/lib/editor-data";
-import { cn } from "@/lib/utils";
+import { blendModeOptions } from "@/lib/editor-data";
+import { normalizeHexColor } from "@/lib/utils";
+import type { BlendMode, WallMask } from "@/types/editor";
 
-export function MaskControls() {
-  const {
-    activeColor,
-    activeTool,
-    masks,
-    selectedMaskId,
-    setActiveColor,
-    updateMask,
-  } = useEditor();
-  const selectedMask = masks.find((mask) => mask.id === selectedMaskId);
+type MaskControlFormProps = {
+  globalBlendMode: BlendMode;
+  removeColorFromMask: (id: string) => void;
+  selectedMask: WallMask;
+  setActiveColor: (color: string | null) => void;
+  updateMask: (id: string, data: Partial<WallMask>) => void;
+};
 
-  if (!selectedMask) {
-    return (
-      <div className="rounded-md border border-dashed border-[#d5dbe3] bg-white px-3 py-5 text-center text-sm text-[#7b8490]">
-        Selecciona una pared para editar sus propiedades.
-      </div>
-    );
-  }
+function MaskControlForm({
+  globalBlendMode,
+  removeColorFromMask,
+  selectedMask,
+  setActiveColor,
+  updateMask,
+}: MaskControlFormProps) {
+  const [maskColorInput, setMaskColorInput] = useState(
+    selectedMask.color ?? "",
+  );
 
   return (
     <div className="space-y-4">
@@ -60,37 +62,106 @@ export function MaskControls() {
 
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#7a8290]">
-          Color aplicado
+          Color actual
         </p>
-        <div className="mt-3 grid grid-cols-6 gap-2">
-          {maskColorSwatches.map((color) => {
-            const isActive = activeColor === color || selectedMask.color === color;
+        <div className="mt-3 grid grid-cols-[44px_1fr] gap-2">
+          <input
+            type="color"
+            value={normalizeHexColor(maskColorInput) ?? "#A8B5A2"}
+            onChange={(event) => {
+              const color = normalizeHexColor(event.target.value);
 
-            return (
-              <button
-                key={color}
-                type="button"
-                aria-label={`Aplicar color ${color}`}
-                onClick={() => {
-                  setActiveColor(color);
-                  updateMask(selectedMask.id, { color });
-                }}
-                className={cn(
-                  "h-8 rounded-md border transition",
-                  isActive
-                    ? "border-[#202124] ring-2 ring-[#202124]/10"
-                    : "border-black/10",
-                  activeTool === "paint-wall" && "shadow-sm",
-                )}
-                style={{ backgroundColor: color }}
-              />
-            );
-          })}
+              if (color) {
+                setMaskColorInput(color);
+                setActiveColor(color);
+                updateMask(selectedMask.id, { color });
+              }
+            }}
+            className="h-10 w-11 cursor-pointer rounded-md border border-[#dfe3e8] bg-white p-1"
+          />
+          <input
+            value={maskColorInput}
+            placeholder="#A8B5A2"
+            onChange={(event) => {
+              const color = normalizeHexColor(event.target.value);
+              setMaskColorInput(event.target.value);
+
+              if (color) {
+                setActiveColor(color);
+                updateMask(selectedMask.id, { color });
+              }
+            }}
+            onBlur={(event) => {
+              const color = normalizeHexColor(event.target.value);
+
+              if (!color && event.target.value) {
+                setMaskColorInput(selectedMask.color ?? "");
+              }
+            }}
+            className="h-10 rounded-md border border-[#dfe3e8] bg-white px-3 font-mono text-sm text-[#202124] outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/15"
+          />
         </div>
-        <p className="mt-3 font-mono text-xs text-[#69717d]">
-          {selectedMask.color ?? "Sin color aplicado"}
-        </p>
       </div>
+
+      <label className="block">
+        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[#7a8290]">
+          Modo de mezcla
+        </span>
+        <select
+          value={selectedMask.blendMode ?? globalBlendMode}
+          onChange={(event) =>
+            updateMask(selectedMask.id, {
+              blendMode: event.target.value as BlendMode,
+            })
+          }
+          className="mt-2 h-10 w-full rounded-md border border-[#dfe3e8] bg-white px-3 text-sm text-[#202124] outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/15"
+        >
+          {blendModeOptions.map((mode) => (
+            <option key={mode.value} value={mode.value}>
+              {mode.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <button
+        type="button"
+        onClick={() => removeColorFromMask(selectedMask.id)}
+        className="h-10 w-full rounded-md border border-[#f0c7c2] bg-white text-sm font-semibold text-[#b42318] transition hover:bg-[#fff5f5]"
+      >
+        Quitar color de esta pared
+      </button>
     </div>
+  );
+}
+
+export function MaskControls() {
+  const {
+    globalBlendMode,
+    masks,
+    removeColorFromMask,
+    selectedMaskId,
+    setActiveColor,
+    updateMask,
+  } = useEditor();
+  const selectedMask = masks.find((mask) => mask.id === selectedMaskId);
+
+  if (!selectedMask) {
+    return (
+      <div className="rounded-md border border-dashed border-[#d5dbe3] bg-white px-3 py-5 text-center text-sm text-[#7b8490]">
+        Selecciona una pared para editar sus propiedades.
+      </div>
+    );
+  }
+
+  return (
+    <MaskControlForm
+      key={`${selectedMask.id}-${selectedMask.color ?? "none"}`}
+      globalBlendMode={globalBlendMode}
+      removeColorFromMask={removeColorFromMask}
+      selectedMask={selectedMask}
+      setActiveColor={setActiveColor}
+      updateMask={updateMask}
+    />
   );
 }

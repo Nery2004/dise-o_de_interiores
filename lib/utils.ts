@@ -16,3 +16,14 @@ export function formatFileSize(bytes: number) {
 
   return `${value.toFixed(value >= 10 || exponent === 0 ? 0 : 1)} ${units[exponent]}`;
 }
+
+export function normalizeHexColor(value: string) {
+  const trimmed = value.trim();
+  const withHash = trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
+
+  if (!/^#[0-9a-fA-F]{6}$/.test(withHash)) {
+    return null;
+  }
+
+  return withHash.toUpperCase();
+}
