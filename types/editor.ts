@@ -25,7 +25,12 @@ export type EditorTool =
   | "pan"
   | "compare";
 
-export type EditorStatus = "idle" | "loading" | "ready" | "error";
+export type EditorStatus =
+  | "idle"
+  | "loading"
+  | "ready"
+  | "exporting"
+  | "error";
 
 export type BlendMode = "normal" | "multiply" | "color" | "overlay";
 

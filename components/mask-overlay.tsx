@@ -5,15 +5,12 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { ManualMaskDrawer } from "@/components/manual-mask-drawer";
 import { useEditor } from "@/components/editor-context";
-import type { ImageDimensions, ImagePoint, WallMask } from "@/types/editor";
+import { pointsToSvgString } from "@/lib/mask-geometry";
+import type { ImageDimensions, ImagePoint } from "@/types/editor";
 
 type MaskOverlayProps = {
   dimensions: ImageDimensions;
 };
-
-function polygonPoints(mask: WallMask) {
-  return mask.points?.map((point) => `${point.x},${point.y}`).join(" ") ?? "";
-}
 
 function getSvgPoint(
   event: MouseEvent<SVGSVGElement>,
@@ -197,7 +194,7 @@ export function MaskOverlay({ dimensions }: MaskOverlayProps) {
           return (
             <polygon
               key={mask.id}
-              points={polygonPoints(mask)}
+              points={pointsToSvgString(mask)}
               {...commonProps}
             />
           );

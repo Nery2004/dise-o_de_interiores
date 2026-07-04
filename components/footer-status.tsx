@@ -12,6 +12,10 @@ function statusLabel(status: string) {
     return "Listo";
   }
 
+  if (status === "exporting") {
+    return "Exportando...";
+  }
+
   if (status === "error") {
     return "Error";
   }

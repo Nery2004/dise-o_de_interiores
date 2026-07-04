@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { Download, FolderOpen, Home, ImagePlus, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import { useEditor } from "@/components/editor-context";
+import { downloadBlob, exportEditedImage } from "@/lib/exportImage";
+import { maskHasExportableColor } from "@/lib/mask-geometry";
 import { cn } from "@/lib/utils";
 
 function HeaderButton({
@@ -31,7 +34,44 @@ function HeaderButton({
 }
 
 export function EditorHeader() {
-  const { openImageDialog, resetImage } = useEditor();
+  const {
+    globalBlendMode,
+    image,
+    masks,
+    openImageDialog,
+    resetImage,
+    setStatus,
+    status,
+  } = useEditor();
+  const isExporting = status === "exporting";
+
+  async function handleDownload() {
+    if (!image) {
+      toast.error("Primero sube una imagen.");
+      return;
+    }
+
+    if (!masks.some(maskHasExportableColor)) {
+      toast.error("Aplica un color a una pared antes de descargar.");
+      return;
+    }
+
+    try {
+      setStatus("exporting");
+      const blob = await exportEditedImage({
+        globalBlendMode,
+        image,
+        masks,
+      });
+
+      downloadBlob(blob, "interior-color-studio-export.png");
+      toast.success("Imagen descargada correctamente.");
+    } catch {
+      toast.error("No se pudo exportar la imagen.");
+    } finally {
+      setStatus("ready");
+    }
+  }
 
   return (
     <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-[#dde1e7] bg-white px-4 shadow-sm">
@@ -65,9 +105,9 @@ export function EditorHeader() {
           <ImagePlus size={16} />
           Nueva imagen
         </HeaderButton>
-        <HeaderButton disabled>
+        <HeaderButton disabled={isExporting} onClick={() => void handleDownload()}>
           <Download size={16} />
-          Descargar
+          {isExporting ? "Exportando..." : "Descargar"}
         </HeaderButton>
       </div>
     </header>
