@@ -41,14 +41,14 @@ export function WallDetectionPanel() {
 
     try {
       setStatus("detecting");
-      const results = await detectWalls({
+      const response = await detectWalls({
         imageFile: originalFile,
         imageDimensions: dimensions,
         provider,
       });
 
-      replaceMasks(results.map(detectionResultToMask));
-      toast.success("Paredes detectadas correctamente.");
+      replaceMasks(response.walls.map(detectionResultToMask));
+      toast.success(`Paredes detectadas correctamente. Proveedor: ${response.provider}.`);
     } catch (error) {
       toast.error(
         error instanceof Error

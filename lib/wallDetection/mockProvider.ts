@@ -11,7 +11,7 @@ export const mockWallDetectionProvider: WallDetectionProvider = {
   async detectWalls(_imageFile, imageDimensions) {
     const { height, width } = imageDimensions;
 
-    return [
+    const walls: WallDetectionResult[] = [
       {
         id: createDetectionId("mock-left-wall"),
         name: "Pared izquierda",
@@ -45,6 +45,11 @@ export const mockWallDetectionProvider: WallDetectionProvider = {
           { x: width * 0.68, y: height * 0.72 },
         ],
       },
-    ] satisfies WallDetectionResult[];
+    ];
+
+    return {
+      walls,
+      provider: "mock",
+    };
   },
 };

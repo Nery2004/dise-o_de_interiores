@@ -1,12 +1,22 @@
 import type {
+  WallAIProviderName,
+  WallDetectionApiResponse,
   WallDetectionProvider,
   WallDetectionResult,
 } from "@/lib/wallDetection/types";
 
 type DetectWallsApiResponse = {
   walls?: unknown;
+  provider?: unknown;
   error?: string;
 };
+
+const apiProviderNames = new Set<WallAIProviderName>([
+  "mock",
+  "replicate",
+  "huggingface",
+  "roboflow",
+]);
 
 function isWallDetectionResult(value: unknown): value is WallDetectionResult {
   if (!value || typeof value !== "object") {
@@ -45,7 +55,19 @@ async function parseDetectWallsResponse(response: Response) {
     throw new Error("La respuesta de detección no es válida.");
   }
 
-  return payload.walls;
+  if (
+    typeof payload.provider !== "string" ||
+    !apiProviderNames.has(payload.provider as WallAIProviderName)
+  ) {
+    throw new Error("La respuesta de detección no es válida.");
+  }
+
+  const provider = payload.provider as WallAIProviderName;
+
+  return {
+    walls: payload.walls,
+    provider,
+  } satisfies WallDetectionApiResponse;
 }
 
 export const aiWallDetectionProvider: WallDetectionProvider = {

@@ -14,7 +14,20 @@ export type WallDetectionProvider = {
   detectWalls(
     imageFile: File,
     imageDimensions: { width: number; height: number },
-  ): Promise<WallDetectionResult[]>;
+  ): Promise<WallDetectionResponse>;
 };
 
 export type WallDetectionMode = "mock" | "ai";
+
+export type WallAIProviderName =
+  | "mock"
+  | "replicate"
+  | "huggingface"
+  | "roboflow";
+
+export type WallDetectionApiResponse = {
+  walls: WallDetectionResult[];
+  provider: WallAIProviderName;
+};
+
+export type WallDetectionResponse = WallDetectionApiResponse;

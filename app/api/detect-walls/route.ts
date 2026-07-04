@@ -1,6 +1,10 @@
 import { imageSize } from "image-size";
 import { NextResponse } from "next/server";
-import { detectWallsFromImage } from "@/lib/server/wallDetectionEngine";
+import {
+  getWallAIProvider,
+  WallAIProviderConfigurationError,
+} from "@/lib/server/wall-ai-providers";
+import type { WallDetectionResult } from "@/lib/wallDetection/types";
 
 export const runtime = "nodejs";
 
@@ -13,6 +17,29 @@ const ALLOWED_IMAGE_TYPES = new Set([
 
 function errorResponse(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
+}
+
+function isWallDetectionResult(value: unknown): value is WallDetectionResult {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const wall = value as Partial<WallDetectionResult>;
+
+  return (
+    typeof wall.id === "string" &&
+    typeof wall.name === "string" &&
+    Array.isArray(wall.points) &&
+    wall.points.length >= 3 &&
+    wall.points.every(
+      (point) =>
+        point &&
+        typeof point === "object" &&
+        typeof (point as { x?: unknown }).x === "number" &&
+        typeof (point as { y?: unknown }).y === "number",
+    ) &&
+    (wall.confidence === undefined || typeof wall.confidence === "number")
+  );
 }
 
 export async function POST(request: Request) {
@@ -49,13 +76,26 @@ export async function POST(request: Request) {
       return errorResponse("No se pudieron leer las dimensiones.", 400);
     }
 
-    const walls = await detectWallsFromImage({
-      width: dimensions.width,
-      height: dimensions.height,
+    const provider = getWallAIProvider();
+    const walls = await provider.detectWalls({
+      imageBuffer: buffer,
+      mimeType: image.type,
+      dimensions: {
+        width: dimensions.width,
+        height: dimensions.height,
+      },
     });
 
-    return NextResponse.json({ walls });
-  } catch {
+    if (!Array.isArray(walls) || !walls.every(isWallDetectionResult)) {
+      return errorResponse("El proveedor devolvió una respuesta inválida.", 502);
+    }
+
+    return NextResponse.json({ walls, provider: provider.name });
+  } catch (error) {
+    if (error instanceof WallAIProviderConfigurationError) {
+      return errorResponse(error.message, 503);
+    }
+
     return errorResponse("No se pudo procesar la imagen.", 500);
   }
 }
