@@ -50,15 +50,6 @@ export function WallDetectionPanel() {
       replaceMasks(results.map(detectionResultToMask));
       toast.success("Paredes detectadas correctamente.");
     } catch (error) {
-      if (
-        provider === "ai" &&
-        error instanceof Error &&
-        error.message === "AI wall detection provider is not configured yet."
-      ) {
-        toast.error("La detección con IA todavía no está configurada.");
-        return;
-      }
-
       toast.error(
         error instanceof Error
           ? error.message
