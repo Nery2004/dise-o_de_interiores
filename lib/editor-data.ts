@@ -61,6 +61,7 @@ export const editorTools: Array<{
 }> = [
   { id: "select", label: "Seleccionar", shortcut: "V" },
   { id: "manual-select", label: "Seleccion manual", shortcut: "P" },
+  { id: "edit-mask", label: "Editar mascara", shortcut: "M" },
   { id: "paint-wall", label: "Pintar pared", shortcut: "B" },
   { id: "eraser", label: "Borrador", shortcut: "E" },
   { id: "zoom", label: "Zoom", shortcut: "Z" },

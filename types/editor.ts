@@ -19,6 +19,7 @@ export type MoodBoard = {
 export type EditorTool =
   | "select"
   | "manual-select"
+  | "edit-mask"
   | "paint-wall"
   | "eraser"
   | "zoom"
@@ -66,7 +67,9 @@ export type WallMask = {
   blendMode?: BlendMode;
   path?: string;
   points?: ImagePoint[];
+  originalPoints?: ImagePoint[];
   createdAt: string;
+  updatedAt?: string;
 };
 
 export type EditorState = {
@@ -86,4 +89,11 @@ export type EditorState = {
   isDrawingMask: boolean;
   manualPoints: ImagePoint[];
   cursorPreviewPoint: ImagePoint | null;
+  selectedPointIndexes: number[];
+  editingMaskId: string | null;
+  editingStartPoints: ImagePoint[] | null;
+  editingHistoryStart: number;
+  moveWholeMask: boolean;
+  undoStack: WallMask[][];
+  redoStack: WallMask[][];
 };

@@ -4,6 +4,7 @@ import type { CSSProperties, MouseEvent } from "react";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { ManualMaskDrawer } from "@/components/manual-mask-drawer";
+import { EditableMaskOverlay } from "@/components/editable-mask-overlay";
 import { useEditor } from "@/components/editor-context";
 import { pointsToSvgString } from "@/lib/mask-geometry";
 import type { ImageDimensions, ImagePoint } from "@/types/editor";
@@ -53,9 +54,11 @@ export function MaskOverlay({ dimensions }: MaskOverlayProps) {
     manualPoints,
     masks,
     selectMask,
+    selectedMaskId,
     setCursorPreviewPoint,
     updateMask,
     zoom,
+    clearSelectedPoints,
   } = useEditor();
   const isManualSelection = activeTool === "manual-select";
   const closeThreshold = Math.max(8, 16 / zoom);
@@ -91,6 +94,10 @@ export function MaskOverlay({ dimensions }: MaskOverlayProps) {
       viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
       aria-hidden="true"
       onClick={(event) => {
+        if (activeTool === "edit-mask") {
+          clearSelectedPoints();
+          return;
+        }
         if (!isManualSelection) {
           return;
         }
@@ -152,7 +159,7 @@ export function MaskOverlay({ dimensions }: MaskOverlayProps) {
               }
             : {};
           const handleClick = (event: MouseEvent<SVGElement>) => {
-            if (activeTool !== "select" && activeTool !== "paint-wall") {
+            if (activeTool !== "select" && activeTool !== "paint-wall" && activeTool !== "edit-mask") {
               return;
             }
 
@@ -182,7 +189,7 @@ export function MaskOverlay({ dimensions }: MaskOverlayProps) {
             vectorEffect: "non-scaling-stroke" as const,
             onClick: handleClick,
             className:
-              activeTool === "select" || activeTool === "paint-wall"
+              activeTool === "select" || activeTool === "paint-wall" || activeTool === "edit-mask"
                 ? "cursor-pointer transition"
                 : "pointer-events-none",
           };
@@ -207,6 +214,12 @@ export function MaskOverlay({ dimensions }: MaskOverlayProps) {
           points={manualPoints}
         />
       ) : null}
+      {activeTool === "edit-mask" ? (() => {
+        const selectedMask = masks.find((mask) => mask.id === selectedMaskId);
+        return selectedMask?.points ? (
+          <EditableMaskOverlay dimensions={dimensions} mask={selectedMask} />
+        ) : null;
+      })() : null}
     </svg>
   );
 }

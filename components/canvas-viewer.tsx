@@ -13,7 +13,7 @@ import { MaskOverlay } from "@/components/mask-overlay";
 import { DrawingHelpOverlay } from "@/components/drawing-help-overlay";
 
 export function CanvasViewer() {
-  const { beforeAfterEnabled, image, setZoom } = useEditor();
+  const { activeTool, beforeAfterEnabled, image, setZoom } = useEditor();
 
   if (!image) {
     return (
@@ -33,6 +33,7 @@ export function CanvasViewer() {
         maxScale={8}
         wheel={{ step: 0.08 }}
         doubleClick={{ disabled: true }}
+        panning={{ disabled: activeTool === "edit-mask" || activeTool === "manual-select" }}
         onTransform={(_, state) => setZoom(state.scale)}
       >
         {(controls: ReactZoomPanPinchRef) => (

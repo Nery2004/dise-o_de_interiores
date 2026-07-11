@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Download, FolderOpen, Home, ImagePlus, Sparkles } from "lucide-react";
+import { Download, FolderOpen, Home, ImagePlus, Redo2, Sparkles, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useEditor } from "@/components/editor-context";
 import { downloadBlob, exportEditedImage } from "@/lib/exportImage";
@@ -36,12 +36,16 @@ function HeaderButton({
 export function EditorHeader() {
   const {
     globalBlendMode,
+    canRedo,
+    canUndo,
     image,
     masks,
     openImageDialog,
     resetImage,
     setStatus,
     status,
+    redo,
+    undo,
   } = useEditor();
   const isExporting = status === "exporting";
 
@@ -104,6 +108,14 @@ export function EditorHeader() {
         <HeaderButton onClick={resetImage}>
           <ImagePlus size={16} />
           Nueva imagen
+        </HeaderButton>
+        <HeaderButton disabled={!canUndo} onClick={undo}>
+          <Undo2 size={16} />
+          Deshacer
+        </HeaderButton>
+        <HeaderButton disabled={!canRedo} onClick={redo}>
+          <Redo2 size={16} />
+          Rehacer
         </HeaderButton>
         <HeaderButton disabled={isExporting} onClick={() => void handleDownload()}>
           <Download size={16} />

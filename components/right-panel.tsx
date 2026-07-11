@@ -3,6 +3,7 @@
 import { ColorPalette } from "@/components/color-palette";
 import { useEditor } from "@/components/editor-context";
 import { MaskControls } from "@/components/mask-controls";
+import { MaskEditingPanel } from "@/components/mask-editing-panel";
 import { MaskList } from "@/components/mask-list";
 import { SavedPalettesPanel } from "@/components/saved-palettes-panel";
 import { WallDetectionPanel } from "@/components/wall-detection-panel";
@@ -15,6 +16,7 @@ function EmptyValue() {
 export function RightPanel() {
   const {
     activeColor,
+    activeTool,
     dimensions,
     image,
     maskPreviewEnabled,
@@ -92,7 +94,7 @@ export function RightPanel() {
           Mascara seleccionada
         </p>
         <div className="mt-4">
-          <MaskControls />
+          {activeTool === "edit-mask" ? <MaskEditingPanel /> : <MaskControls />}
         </div>
       </section>
 
