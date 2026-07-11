@@ -3,19 +3,49 @@
 :root {
   --background: #fbfaf7;
   --foreground: #1f2421;
+  --surface: #ffffff;
+  --surface-soft: #f3f0e8;
+  --line: #ded8cc;
+  --muted: #657067;
+  --sage: #8fa087;
+  --sage-dark: #50634f;
+  --terracotta: #b9745d;
+  --cream: #fbf8f1;
+  --graphite: #202621;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-manrope);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-manrope), Arial, Helvetica, sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+:focus-visible { outline: 2px solid var(--sage-dark); outline-offset: 3px; }
+
+@keyframes landing-reveal {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.landing-reveal {
+  animation: landing-reveal 0.7s ease-out both;
+  animation-timeline: view();
+  animation-range: entry 5% cover 28%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  .landing-reveal { animation: none; }
 }
 
 ::selection {
