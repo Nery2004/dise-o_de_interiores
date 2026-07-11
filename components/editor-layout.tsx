@@ -9,8 +9,12 @@ import { RightPanel } from "@/components/right-panel";
 import { SaveProjectDialog } from "@/components/save-project-dialog";
 import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 import { PendingEditorColor } from "@/components/pending-editor-color";
+import { useComparison } from "@/components/comparison-context";
+import { PresentationMode } from "@/components/presentation-mode";
 
 export function EditorLayout({ loadPendingColor = false }: { loadPendingColor?: boolean }) {
+  const comparison = useComparison();
+  if (comparison.presentationMode) return <><PresentationMode /><Toaster richColors position="top-right" /></>;
   return (
     <main className="flex min-h-screen flex-col bg-[#f3f4f6] text-[#202124]">
       <EditorHeader />

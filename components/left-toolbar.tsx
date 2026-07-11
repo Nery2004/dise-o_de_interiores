@@ -16,6 +16,7 @@ import { useEditor } from "@/components/editor-context";
 import { editorTools } from "@/lib/editor-data";
 import { cn } from "@/lib/utils";
 import type { EditorTool } from "@/types/editor";
+import { useComparison } from "@/components/comparison-context";
 
 const toolIcons: Record<EditorTool, React.ComponentType<{ size?: number }>> = {
   select: MousePointer2,
@@ -31,6 +32,7 @@ const toolIcons: Record<EditorTool, React.ComponentType<{ size?: number }>> = {
 };
 
 export function LeftToolbar() {
+  const comparison = useComparison();
   const {
     activeColor,
     activeTool,
@@ -43,10 +45,10 @@ export function LeftToolbar() {
   const needsSelectedMask = activeTool === "paint-wall" && !selectedMaskId;
   const needsActiveColor =
     activeTool === "paint-wall" && Boolean(selectedMaskId) && !activeColor;
-  const needsImageForManualSelection =
-    activeTool === "manual-select" && !image;
+  const needsImageForManualSelection = activeTool === "manual-select" && !image;
   const needsMaskForEditing = activeTool === "edit-mask" && !selectedMaskId;
-  const isBrushTool = activeTool === "add-to-mask" || activeTool === "remove-from-mask";
+  const isBrushTool =
+    activeTool === "add-to-mask" || activeTool === "remove-from-mask";
   const needsMaskForBrush = isBrushTool && !selectedMaskId;
 
   return (
@@ -70,7 +72,8 @@ export function LeftToolbar() {
                 setActiveTool(tool.id);
 
                 if (tool.id === "compare") {
-                  toggleBeforeAfter();
+                  if (beforeAfterEnabled) toggleBeforeAfter();
+                  comparison.setMode("slider");
                 }
               }}
               className={cn(

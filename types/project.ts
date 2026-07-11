@@ -1,6 +1,7 @@
 import type { BlendMode, WallMask } from "@/types/editor";
+import type { DesignProposal } from "@/types/proposal";
 
-export const CURRENT_PROJECT_VERSION = 1;
+export const CURRENT_PROJECT_VERSION = 2;
 
 export type ProjectImage = {
   name: string;
@@ -33,6 +34,7 @@ export type InteriorProject = {
     brushHardness: number;
     brushOpacity: number;
   };
+  proposals: DesignProposal[];
 };
 
 export type ProjectChanges = Partial<Omit<InteriorProject, "id" | "createdAt">>;

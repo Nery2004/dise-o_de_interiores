@@ -9,6 +9,9 @@ import { createProject, getProjectById, updateProject } from "@/lib/projects/pro
 import { migrateProject } from "@/lib/projects/projectValidation";
 import { CURRENT_PROJECT_VERSION, type InteriorProject } from "@/types/project";
 import { consumePendingEditorColor } from "@/lib/colors/colorPreferences";
+import { createProposalThumbnail } from "@/lib/proposals/createProposalThumbnail";
+import { applyProposalSnapshot, createProposalSnapshot } from "@/lib/proposals/proposalUtils";
+import type { DesignProposal } from "@/types/proposal";
 
 export type ProjectSaveStatus = "unsaved" | "saving" | "saved" | "error";
 
@@ -38,6 +41,17 @@ type ProjectContextValue = {
   saveAndContinue: () => Promise<void>;
   navigateWithGuard: (href: string) => void;
   markDirty: () => void;
+  proposals: DesignProposal[];
+  activeProposalId: string | null;
+  selectedProposalIds: string[];
+  createProposal: (data: { name: string; description?: string; tags?: string[] }) => Promise<boolean>;
+  updateProposal: (id: string, changes: Partial<DesignProposal>) => void;
+  deleteProposal: (id: string) => void;
+  duplicateProposal: (id: string) => void;
+  applyProposal: (id: string) => boolean;
+  toggleProposalSelection: (id: string) => void;
+  compareProposals: () => boolean;
+  clearProposalSelection: () => void;
 };
 
 const ProjectContext = createContext<ProjectContextValue | null>(null);
@@ -62,6 +76,9 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [unsavedDialogOpen, setUnsavedDialogOpen] = useState(false);
   const [revision, setRevision] = useState(0);
+  const [proposals, setProposals] = useState<DesignProposal[]>([]);
+  const [activeProposalId, setActiveProposalId] = useState<string | null>(null);
+  const [selectedProposalIds, setSelectedProposalIds] = useState<string[]>([]);
   const signatureRef = useRef<string | null>(null);
   const skipDirtyRef = useRef(false);
   const pendingActionRef = useRef<(() => void) | null>(null);
@@ -75,7 +92,8 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
     selectedMaskId: editor.selectedMaskId,
     globalBlendMode: editor.globalBlendMode,
     settings: [editor.zoom, editor.beforeAfterEnabled, editor.maskPreviewEnabled, editor.brushSize, editor.brushHardness, editor.brushOpacity],
-  }), [editor.activeColor, editor.beforeAfterEnabled, editor.brushHardness, editor.brushOpacity, editor.brushSize, editor.globalBlendMode, editor.image, editor.maskPreviewEnabled, editor.masks, editor.selectedMaskId, editor.zoom]);
+    proposals,
+  }), [editor.activeColor, editor.beforeAfterEnabled, editor.brushHardness, editor.brushOpacity, editor.brushSize, editor.globalBlendMode, editor.image, editor.maskPreviewEnabled, editor.masks, editor.selectedMaskId, editor.zoom, proposals]);
 
   useEffect(() => {
     if (signatureRef.current === null || skipDirtyRef.current) {
@@ -108,6 +126,9 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
       activeProjectIdRef.current = project.id;
       setActiveProjectName(project.name);
       setActiveProjectDescription(project.description ?? "");
+      setProposals(project.proposals);
+      setActiveProposalId(null);
+      setSelectedProposalIds([]);
       setLastSavedAt(project.updatedAt);
       setIsDirty(false);
       setSaveStatus("saved");
@@ -166,6 +187,7 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
           selectedMaskId: editor.selectedMaskId,
           globalBlendMode: editor.globalBlendMode,
           editorSettings: { zoom: editor.zoom, beforeAfterEnabled: editor.beforeAfterEnabled, maskPreviewEnabled: editor.maskPreviewEnabled, brushSize: editor.brushSize, brushHardness: editor.brushHardness, brushOpacity: editor.brushOpacity },
+          proposals,
         };
         if (existing) await updateProject(id, project); else await createProject(project);
         setActiveProjectId(id);
@@ -188,7 +210,7 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
     })();
     savePromiseRef.current = operation;
     return operation;
-  }, [activeProjectDescription, activeProjectId, activeProjectName, editor]);
+  }, [activeProjectDescription, activeProjectId, activeProjectName, editor, proposals]);
 
   useEffect(() => {
     if (!autosaveEnabled || !activeProjectId || !isDirty || isSaving) return;
@@ -230,6 +252,9 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
     activeProjectIdRef.current = null;
     setActiveProjectName(null);
     setActiveProjectDescription("");
+    setProposals([]);
+    setActiveProposalId(null);
+    setSelectedProposalIds([]);
     setLastSavedAt(null);
     setIsDirty(false);
     setSaveStatus("saved");
@@ -240,6 +265,23 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
     pendingActionRef.current = action;
     setUnsavedDialogOpen(true);
   }, [isDirty]);
+
+  const createProposal = useCallback(async (data: { name: string; description?: string; tags?: string[] }) => {
+    if (!editor.image || !data.name.trim()) return false;
+    try {
+      const now = new Date().toISOString();
+      const snapshot = createProposalSnapshot(editor.masks);
+      const thumbnail = await createProposalThumbnail(editor.image, snapshot, editor.globalBlendMode);
+      const proposal: DesignProposal = { id: crypto.randomUUID(), name: data.name.trim().slice(0, 80), description: data.description?.trim().slice(0, 300) || undefined, tags: data.tags, createdAt: now, updatedAt: now, thumbnail, masksSnapshot: snapshot, activeColor: editor.activeColor };
+      setProposals((current) => [...current, proposal]);
+      setActiveProposalId(proposal.id);
+      toast.success("Propuesta guardada correctamente.");
+      return true;
+    } catch {
+      toast.error("No se pudo generar esta propuesta.");
+      return false;
+    }
+  }, [editor]);
 
   const value = useMemo<ProjectContextValue>(() => ({
     activeProjectId, activeProjectName, activeProjectDescription, isDirty, isSaving, lastSavedAt, autosaveEnabled, saveStatus, saveDialogOpen, unsavedDialogOpen,
@@ -262,7 +304,15 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
       router.push(destination);
     }),
     markDirty: () => { setIsDirty(true); setSaveStatus("unsaved"); setRevision((current) => current + 1); },
-  }), [activeProjectDescription, activeProjectId, activeProjectName, autosaveEnabled, editor.openImageDialog, executePending, guardAction, isDirty, isSaving, lastSavedAt, loadProject, resetProject, router, saveCurrentProject, saveDialogOpen, saveStatus, unsavedDialogOpen]);
+    proposals, activeProposalId, selectedProposalIds, createProposal,
+    updateProposal: (id, changes) => setProposals((current) => current.map((proposal) => proposal.id === id ? { ...proposal, ...changes, id, updatedAt: new Date().toISOString() } : proposal)),
+    deleteProposal: (id) => { setProposals((current) => current.filter((proposal) => proposal.id !== id)); setSelectedProposalIds((current) => current.filter((item) => item !== id)); if (activeProposalId === id) setActiveProposalId(null); },
+    duplicateProposal: (id) => setProposals((current) => { const source = current.find((proposal) => proposal.id === id); if (!source) return current; const now = new Date().toISOString(); return [...current, { ...source, id: crypto.randomUUID(), name: `${source.name} (copia)`, createdAt: now, updatedAt: now, masksSnapshot: createProposalSnapshot(source.masksSnapshot) }]; }),
+    applyProposal: (id) => { const proposal = proposals.find((item) => item.id === id); if (!proposal) { toast.error("No se pudo cargar esta propuesta."); return false; } editor.replaceMasks(applyProposalSnapshot(proposal)); editor.setActiveColor(proposal.activeColor ?? null); setActiveProposalId(id); return true; },
+    toggleProposalSelection: (id) => setSelectedProposalIds((current) => { if (current.includes(id)) return current.filter((item) => item !== id); if (current.length >= 4) { toast.error("Selecciona entre 2 y 4 propuestas."); return current; } return [...current, id]; }),
+    compareProposals: () => { if (selectedProposalIds.length < 2 || selectedProposalIds.length > 4) { toast.error("Selecciona entre 2 y 4 propuestas."); return false; } return true; },
+    clearProposalSelection: () => setSelectedProposalIds([]),
+  }), [activeProjectDescription, activeProjectId, activeProjectName, activeProposalId, autosaveEnabled, createProposal, editor, executePending, guardAction, isDirty, isSaving, lastSavedAt, loadProject, proposals, resetProject, router, saveCurrentProject, saveDialogOpen, saveStatus, selectedProposalIds, unsavedDialogOpen]);
 
   return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>;
 }

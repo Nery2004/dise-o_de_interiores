@@ -5,7 +5,9 @@ const blendModes: BlendMode[] = ["normal", "multiply", "color", "overlay"];
 const hexPattern = /^#[0-9a-f]{6}$/i;
 
 export function migrateProject(project: InteriorProject) {
+  if (project.version === 1) return { ...project, version: 2, proposals: [] } as InteriorProject;
   if (project.version !== CURRENT_PROJECT_VERSION) throw new Error("INCOMPATIBLE_VERSION");
+  if (!Array.isArray(project.proposals) || project.proposals.some((proposal) => !validProposal(proposal, project.originalImage.width, project.originalImage.height))) throw new Error("CORRUPT_PROJECT");
   return project;
 }
 
@@ -24,14 +26,21 @@ function validMask(value: unknown, width: number, height: number): value is Wall
   return true;
 }
 
+function validProposal(value: unknown, width: number, height: number) {
+  if (!value || typeof value !== "object") return false;
+  const proposal = value as InteriorProject["proposals"][number];
+  return typeof proposal.id === "string" && typeof proposal.name === "string" && proposal.name.length > 0 && proposal.name.length <= 80 && (!proposal.thumbnail || /^data:image\/jpeg;base64,/i.test(proposal.thumbnail)) && (!proposal.tags || (Array.isArray(proposal.tags) && proposal.tags.every((tag) => typeof tag === "string"))) && Array.isArray(proposal.masksSnapshot) && proposal.masksSnapshot.length <= 500 && proposal.masksSnapshot.every((mask) => validMask(mask, width, height));
+}
+
 export function validateImportedProject(value: unknown): InteriorProject {
   if (!value || typeof value !== "object") throw new Error("INVALID_PROJECT");
   const project = value as InteriorProject;
-  if (project.version !== CURRENT_PROJECT_VERSION) throw new Error("INCOMPATIBLE_VERSION");
+  if (project.version !== 1 && project.version !== CURRENT_PROJECT_VERSION) throw new Error("INCOMPATIBLE_VERSION");
   if (typeof project.name !== "string" || !project.name.trim() || project.name.length > 80 || (project.description && (typeof project.description !== "string" || project.description.length > 300))) throw new Error("INVALID_PROJECT");
   if (!project.originalImage || typeof project.originalImage !== "object" || typeof project.originalImage.name !== "string" || typeof project.originalImage.type !== "string" || !project.originalImage.type.startsWith("image/") || !Number.isFinite(project.originalImage.width) || !Number.isFinite(project.originalImage.height) || project.originalImage.width <= 0 || project.originalImage.height <= 0 || !project.originalImage.dataUrl?.startsWith("data:image/")) throw new Error("INVALID_PROJECT");
   if (!Array.isArray(project.masks) || project.masks.length > 500 || project.masks.some((mask) => !validMask(mask, project.originalImage.width, project.originalImage.height))) throw new Error("INVALID_PROJECT");
+  if (project.version === 2 && (!Array.isArray(project.proposals) || project.proposals.length > 200 || project.proposals.some((proposal) => !validProposal(proposal, project.originalImage.width, project.originalImage.height)))) throw new Error("INVALID_PROJECT");
   if (!blendModes.includes(project.globalBlendMode) || !project.editorSettings || !Number.isFinite(project.editorSettings.zoom) || !Number.isFinite(project.editorSettings.brushSize) || !Number.isFinite(project.editorSettings.brushHardness) || !Number.isFinite(project.editorSettings.brushOpacity) || project.editorSettings.zoom <= 0 || project.editorSettings.brushSize <= 0 || project.editorSettings.brushHardness < 0 || project.editorSettings.brushHardness > 1 || project.editorSettings.brushOpacity < 0 || project.editorSettings.brushOpacity > 1) throw new Error("INVALID_PROJECT");
   const validId = typeof project.id === "string" && /^[a-z0-9-]{1,128}$/i.test(project.id);
-  return { ...project, id: validId ? project.id : crypto.randomUUID() };
+  return migrateProject({ ...project, id: validId ? project.id : crypto.randomUUID() });
 }

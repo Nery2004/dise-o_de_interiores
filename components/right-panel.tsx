@@ -8,6 +8,7 @@ import { MaskList } from "@/components/mask-list";
 import { WallDetectionPanel } from "@/components/wall-detection-panel";
 import { formatFileSize } from "@/lib/utils";
 import { BrushControls } from "@/components/brush-controls";
+import { ProposalPanel } from "@/components/proposal-panel";
 
 function EmptyValue() {
   return <span className="text-[#a0a7b1]">-</span>;
@@ -87,6 +88,8 @@ export function RightPanel() {
       </section>
 
       <ColorPalette />
+
+      <ProposalPanel />
 
       <section className="mt-5 rounded-md border border-[#edf0f3] bg-[#fafbfc] p-4">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8290]">
