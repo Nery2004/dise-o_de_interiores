@@ -6,9 +6,10 @@ import type {
 } from "@/lib/wallDetection/types";
 
 type DetectWallsApiResponse = {
+  success?: unknown;
   walls?: unknown;
   provider?: unknown;
-  error?: string;
+  error?: { code?: unknown; message?: unknown };
 };
 
 const apiProviderNames = new Set<WallAIProviderName>([
@@ -44,10 +45,10 @@ async function parseDetectWallsResponse(response: Response) {
   const payload = (await response.json().catch(() => ({}))) as DetectWallsApiResponse;
 
   if (!response.ok) {
-    throw new Error(payload.error ?? "No se pudieron detectar paredes.");
+    throw new Error(typeof payload.error?.message === "string" ? payload.error.message : "No se pudieron detectar paredes.");
   }
 
-  if (!Array.isArray(payload.walls)) {
+  if (payload.success !== true || !Array.isArray(payload.walls)) {
     throw new Error("La respuesta de detección no es válida.");
   }
 

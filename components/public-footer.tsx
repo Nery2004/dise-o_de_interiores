@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Paintbrush } from "lucide-react";
 import { footerNavigation } from "@/config/navigation";
+import { APP_VERSION } from "@/config/app";
 
 export function PublicFooter() {
   return (
@@ -34,7 +35,7 @@ export function PublicFooter() {
         </nav>
       </div>
       <div className="border-t border-white/10 px-5 py-5 text-center text-xs text-white/50">
-        © {new Date().getFullYear()} Interior Color Studio
+      © {new Date().getFullYear()} Interior Color Studio · v{APP_VERSION}
       </div>
     </footer>
   );

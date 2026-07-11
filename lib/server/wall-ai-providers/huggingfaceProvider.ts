@@ -2,11 +2,12 @@ import {
   WallAIProviderConfigurationError,
   type ServerWallAIProvider,
 } from "@/lib/server/wall-ai-providers/types";
+import { getServerEnv } from "@/lib/env/serverEnv";
 
 export const huggingFaceServerWallAIProvider: ServerWallAIProvider = {
   name: "huggingface",
   async detectWalls() {
-    if (!process.env.HUGGINGFACE_API_TOKEN) {
+    if (!getServerEnv().huggingFaceApiToken) {
       throw new WallAIProviderConfigurationError(
         "Hugging Face no está configurado.",
       );

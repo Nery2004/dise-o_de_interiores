@@ -2,11 +2,12 @@ import {
   WallAIProviderConfigurationError,
   type ServerWallAIProvider,
 } from "@/lib/server/wall-ai-providers/types";
+import { getServerEnv } from "@/lib/env/serverEnv";
 
 export const roboflowServerWallAIProvider: ServerWallAIProvider = {
   name: "roboflow",
   async detectWalls() {
-    if (!process.env.ROBOFLOW_API_KEY) {
+    if (!getServerEnv().roboflowApiKey) {
       throw new WallAIProviderConfigurationError(
         "Roboflow no está configurado.",
       );

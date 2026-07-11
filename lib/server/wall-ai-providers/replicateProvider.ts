@@ -2,11 +2,12 @@ import {
   WallAIProviderConfigurationError,
   type ServerWallAIProvider,
 } from "@/lib/server/wall-ai-providers/types";
+import { getServerEnv } from "@/lib/env/serverEnv";
 
 export const replicateServerWallAIProvider: ServerWallAIProvider = {
   name: "replicate",
   async detectWalls() {
-    if (!process.env.REPLICATE_API_TOKEN) {
+    if (!getServerEnv().replicateApiToken) {
       throw new WallAIProviderConfigurationError(
         "Replicate no está configurado.",
       );

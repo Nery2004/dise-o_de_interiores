@@ -78,6 +78,12 @@ export function WallDetectionPanel() {
         </select>
       </label>
 
+      {provider === "ai" ? (
+        <p className="rounded-md border border-[#f1d2a8] bg-[#fff7ed] px-3 py-2 text-xs leading-5 text-[#8a5a1f]">
+          Esta imagen será procesada temporalmente por el proveedor configurado.
+        </p>
+      ) : null}
+
       <button
         type="button"
         onClick={() => void handleDetectWalls()}

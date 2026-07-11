@@ -4,21 +4,32 @@ import { ImageUp } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { useEditor } from "@/components/editor-context";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_UPLOAD_BYTES, validateImageUploadMetadata } from "@/lib/images/imageValidation";
 
 export function ImageUploader() {
   const { uploadImage } = useEditor();
   const { getInputProps, getRootProps, isDragActive } = useDropzone({
     accept: {
-      "image/*": [".jpg", ".jpeg", ".png", ".webp"],
+      "image/jpeg": [".jpg", ".jpeg"],
+      "image/png": [".png"],
+      "image/webp": [".webp"],
     },
+    maxSize: MAX_IMAGE_UPLOAD_BYTES,
     maxFiles: 1,
     multiple: false,
     onDrop: (acceptedFiles) => {
       const file = acceptedFiles[0];
 
       if (file) {
+        const validation = validateImageUploadMetadata(file);
+        if (!validation.valid) { toast.error(validation.message); return; }
         void uploadImage(file);
       }
+    },
+    onDropRejected: (rejections) => {
+      const code = rejections[0]?.errors[0]?.code;
+      toast.error(code === "file-too-large" ? "La imagen no debe superar 10 MB." : `Selecciona un archivo ${ALLOWED_IMAGE_TYPES.map((type) => type.split("/")[1].toUpperCase()).join(", ")}.`);
     },
   });
 

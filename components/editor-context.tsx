@@ -25,6 +25,7 @@ import type {
 } from "@/types/editor";
 import type { InteriorProject } from "@/types/project";
 import { addRecentColor } from "@/lib/colors/colorPreferences";
+import { validateImageUploadMetadata } from "@/lib/images/imageValidation";
 
 type EditorContextValue = EditorState & {
   canUndo: boolean;
@@ -179,8 +180,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const temporaryUrlRef = useRef<string | null>(null);
 
   const uploadImage = useCallback(async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      toast.error("Selecciona un archivo de imagen valido.");
+    const validation = validateImageUploadMetadata(file);
+    if (!validation.valid) {
+      toast.error(validation.message);
       return;
     }
 

@@ -1,25 +1,8 @@
+import { getServerEnv } from "@/lib/env/serverEnv";
 import type { WallAIProviderName } from "@/lib/wallDetection/types";
-
-const wallAIProviders = new Set<WallAIProviderName>([
-  "mock",
-  "replicate",
-  "huggingface",
-  "roboflow",
-]);
+import { WallAIProviderConfigurationError } from "@/lib/server/wall-ai-providers/types";
 
 export function getConfiguredWallAIProvider(): WallAIProviderName {
-  const provider = process.env.WALL_AI_PROVIDER;
-
-  if (!provider) {
-    return "mock";
-  }
-
-  if (wallAIProviders.has(provider as WallAIProviderName)) {
-    return provider as WallAIProviderName;
-  }
-
-  console.warn(
-    `Invalid WALL_AI_PROVIDER "${provider}". Falling back to mock provider.`,
-  );
-  return "mock";
+  try { return getServerEnv().wallAIProvider as WallAIProviderName; }
+  catch { throw new WallAIProviderConfigurationError("La configuración del proveedor de IA no es válida."); }
 }

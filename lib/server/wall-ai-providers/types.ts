@@ -7,6 +7,7 @@ export type ServerWallAIProviderInput = {
   imageBuffer: Buffer;
   mimeType: string;
   dimensions: { width: number; height: number };
+  signal: AbortSignal;
 };
 
 export type ServerWallAIProvider = {
