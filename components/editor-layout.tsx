@@ -8,8 +8,9 @@ import { LeftToolbar } from "@/components/left-toolbar";
 import { RightPanel } from "@/components/right-panel";
 import { SaveProjectDialog } from "@/components/save-project-dialog";
 import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
+import { PendingEditorColor } from "@/components/pending-editor-color";
 
-export function EditorLayout() {
+export function EditorLayout({ loadPendingColor = false }: { loadPendingColor?: boolean }) {
   return (
     <main className="flex min-h-screen flex-col bg-[#f3f4f6] text-[#202124]">
       <EditorHeader />
@@ -21,6 +22,7 @@ export function EditorLayout() {
       <FooterStatus />
       <SaveProjectDialog />
       <UnsavedChangesDialog />
+      {loadPendingColor ? <PendingEditorColor /> : null}
       <Toaster richColors position="top-right" />
     </main>
   );

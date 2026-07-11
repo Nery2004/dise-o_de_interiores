@@ -24,6 +24,7 @@ import type {
   BrushStroke,
 } from "@/types/editor";
 import type { InteriorProject } from "@/types/project";
+import { addRecentColor } from "@/lib/colors/colorPreferences";
 
 type EditorContextValue = EditorState & {
   canUndo: boolean;
@@ -488,7 +489,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         selectedPointIndexes: [],
       };
     }),
-    setActiveColor: (activeColor) => setState((current) => ({ ...current, activeColor })),
+    setActiveColor: (activeColor) => {
+      setState((current) => ({ ...current, activeColor }));
+      if (activeColor) void addRecentColor(activeColor);
+    },
     setGlobalBlendMode: (globalBlendMode) => setState((current) => ({ ...current, globalBlendMode })),
     applyColorToSelectedMask: (color) => setState((current) => {
       if (!current.selectedMaskId) {

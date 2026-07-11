@@ -4,6 +4,7 @@ const navItems = [
   { href: "/", label: "Home" },
   { href: "/editor", label: "Editor" },
   { href: "/projects", label: "Mis proyectos" },
+  { href: "/colors", label: "Colores" },
 ];
 
 export function SiteHeader() {

@@ -124,3 +124,13 @@ export async function deleteColorPalette(
     message: "Paleta eliminada.",
   };
 }
+
+export async function updateColorPalette(
+  id: string,
+  colors: string[],
+): Promise<PaletteResponse<ColorPaletteRecord>> {
+  if (!isSupabaseConfigured || !supabase) return unavailableResponse();
+  const { data, error } = await supabase.from("color_palettes").update({ colors }).eq("id", id).select("id,name,colors,created_at").single();
+  if (error) return { data: null, error: error.message, message: "No se pudo actualizar la paleta." };
+  return { data: { id: data.id, name: data.name, colors: isColorArray(data.colors) ? data.colors : [], created_at: data.created_at }, error: null, message: "Paleta actualizada." };
+}

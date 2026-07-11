@@ -8,6 +8,7 @@ import { createProjectThumbnail } from "@/lib/projects/createProjectThumbnail";
 import { createProject, getProjectById, updateProject } from "@/lib/projects/projectStorage";
 import { migrateProject } from "@/lib/projects/projectValidation";
 import { CURRENT_PROJECT_VERSION, type InteriorProject } from "@/types/project";
+import { consumePendingEditorColor } from "@/lib/colors/colorPreferences";
 
 export type ProjectSaveStatus = "unsaved" | "saving" | "saved" | "error";
 
@@ -65,6 +66,7 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
   const skipDirtyRef = useRef(false);
   const pendingActionRef = useRef<(() => void) | null>(null);
   const savePromiseRef = useRef<Promise<boolean> | null>(null);
+  const activeProjectIdRef = useRef<string | null>(null);
 
   const signature = useMemo(() => JSON.stringify({
     image: editor.image ? [editor.image.name, editor.image.size, editor.image.dimensions] : null,
@@ -97,12 +99,23 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
       if (!project.originalImageBlob || !Array.isArray(project.masks) || project.originalImage.width <= 0 || project.originalImage.height <= 0) throw new Error("CORRUPT_PROJECT");
       skipDirtyRef.current = true;
       await editor.restoreProject(project);
+      const pendingColor = await consumePendingEditorColor();
+      if (pendingColor) {
+        editor.setActiveColor(pendingColor.hex);
+        if (pendingColor.applyToSelection) editor.applyColorToSelectedMask(pendingColor.hex);
+      }
       setActiveProjectId(project.id);
+      activeProjectIdRef.current = project.id;
       setActiveProjectName(project.name);
       setActiveProjectDescription(project.description ?? "");
       setLastSavedAt(project.updatedAt);
       setIsDirty(false);
       setSaveStatus("saved");
+      if (pendingColor) {
+        setIsDirty(true);
+        setSaveStatus("unsaved");
+        setRevision((current) => current + 1);
+      }
     } catch (error) {
       toast.error(error instanceof Error && error.message === "INCOMPATIBLE_VERSION" ? "Este proyecto fue creado con una versión incompatible." : "No se pudo cargar la imagen del proyecto.");
     }
@@ -156,6 +169,7 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
         };
         if (existing) await updateProject(id, project); else await createProject(project);
         setActiveProjectId(id);
+        activeProjectIdRef.current = id;
         setActiveProjectName(project.name);
         setActiveProjectDescription(project.description ?? "");
         setLastSavedAt(now);
@@ -213,6 +227,7 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
     skipDirtyRef.current = true;
     editor.resetImage();
     setActiveProjectId(null);
+    activeProjectIdRef.current = null;
     setActiveProjectName(null);
     setActiveProjectDescription("");
     setLastSavedAt(null);
@@ -242,7 +257,10 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
       if (!activeProjectId) { setUnsavedDialogOpen(false); setSaveDialogOpen(true); return; }
       if (await saveCurrentProject()) executePending();
     },
-    navigateWithGuard: (href) => guardAction(() => router.push(href)),
+    navigateWithGuard: (href) => guardAction(() => {
+      const destination = href === "/colors" && activeProjectIdRef.current ? `/colors?project=${encodeURIComponent(activeProjectIdRef.current)}` : href;
+      router.push(destination);
+    }),
     markDirty: () => { setIsDirty(true); setSaveStatus("unsaved"); setRevision((current) => current + 1); },
   }), [activeProjectDescription, activeProjectId, activeProjectName, autosaveEnabled, editor.openImageDialog, executePending, guardAction, isDirty, isSaving, lastSavedAt, loadProject, resetProject, router, saveCurrentProject, saveDialogOpen, saveStatus, unsavedDialogOpen]);
 

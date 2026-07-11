@@ -5,7 +5,6 @@ import { useEditor } from "@/components/editor-context";
 import { MaskControls } from "@/components/mask-controls";
 import { MaskEditingPanel } from "@/components/mask-editing-panel";
 import { MaskList } from "@/components/mask-list";
-import { SavedPalettesPanel } from "@/components/saved-palettes-panel";
 import { WallDetectionPanel } from "@/components/wall-detection-panel";
 import { formatFileSize } from "@/lib/utils";
 import { BrushControls } from "@/components/brush-controls";
@@ -88,8 +87,6 @@ export function RightPanel() {
       </section>
 
       <ColorPalette />
-
-      <SavedPalettesPanel />
 
       <section className="mt-5 rounded-md border border-[#edf0f3] bg-[#fafbfc] p-4">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8290]">

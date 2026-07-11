@@ -7,7 +7,7 @@ export default async function EditorPage({ searchParams }: { searchParams: Promi
   return (
     <EditorProvider>
       <ProjectProvider initialProjectId={project}>
-        <EditorLayout />
+        <EditorLayout loadPendingColor={!project} />
       </ProjectProvider>
     </EditorProvider>
   );
