@@ -2,6 +2,8 @@
 
 import {
   Brush,
+  CircleMinus,
+  CirclePlus,
   Eraser,
   Hand,
   MousePointer2,
@@ -19,6 +21,8 @@ const toolIcons: Record<EditorTool, React.ComponentType<{ size?: number }>> = {
   select: MousePointer2,
   "manual-select": PenTool,
   "edit-mask": Scan,
+  "add-to-mask": CirclePlus,
+  "remove-from-mask": CircleMinus,
   "paint-wall": Brush,
   eraser: Eraser,
   zoom: ScanSearch,
@@ -42,6 +46,8 @@ export function LeftToolbar() {
   const needsImageForManualSelection =
     activeTool === "manual-select" && !image;
   const needsMaskForEditing = activeTool === "edit-mask" && !selectedMaskId;
+  const isBrushTool = activeTool === "add-to-mask" || activeTool === "remove-from-mask";
+  const needsMaskForBrush = isBrushTool && !selectedMaskId;
 
   return (
     <aside className="rounded-lg border border-[#dde1e7] bg-white p-3 shadow-sm">
@@ -114,6 +120,12 @@ export function LeftToolbar() {
       {needsMaskForEditing ? (
         <div className="mt-3 rounded-md border border-[#f1d2a8] bg-[#fff7ed] px-3 py-2 text-xs leading-5 text-[#8a5a1f]">
           Selecciona una mascara para editar sus puntos.
+        </div>
+      ) : null}
+
+      {needsMaskForBrush ? (
+        <div className="mt-3 rounded-md border border-[#f1d2a8] bg-[#fff7ed] px-3 py-2 text-xs leading-5 text-[#8a5a1f]">
+          Selecciona una pared antes de refinarla.
         </div>
       ) : null}
 

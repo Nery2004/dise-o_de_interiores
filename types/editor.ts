@@ -20,6 +20,8 @@ export type EditorTool =
   | "select"
   | "manual-select"
   | "edit-mask"
+  | "add-to-mask"
+  | "remove-from-mask"
   | "paint-wall"
   | "eraser"
   | "zoom"
@@ -46,6 +48,23 @@ export type ImagePoint = {
   y: number;
 };
 
+export type BrushStroke = {
+  id: string;
+  mode: "add" | "remove";
+  size: number;
+  hardness: number;
+  opacity: number;
+  points: ImagePoint[];
+  createdAt: string;
+};
+
+export type MaskRefinement = {
+  width: number;
+  height: number;
+  addStrokes: BrushStroke[];
+  removeStrokes: BrushStroke[];
+};
+
 export type LoadedImage = {
   name: string;
   size: number;
@@ -68,6 +87,7 @@ export type WallMask = {
   path?: string;
   points?: ImagePoint[];
   originalPoints?: ImagePoint[];
+  refinement?: MaskRefinement;
   createdAt: string;
   updatedAt?: string;
 };
@@ -96,4 +116,9 @@ export type EditorState = {
   moveWholeMask: boolean;
   undoStack: WallMask[][];
   redoStack: WallMask[][];
+  brushSize: number;
+  brushHardness: number;
+  brushOpacity: number;
+  maskOnlyPreview: boolean;
+  invertRefinementPreview: boolean;
 };

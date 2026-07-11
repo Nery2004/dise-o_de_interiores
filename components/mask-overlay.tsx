@@ -59,6 +59,7 @@ export function MaskOverlay({ dimensions }: MaskOverlayProps) {
     updateMask,
     zoom,
     clearSelectedPoints,
+    maskOnlyPreview,
   } = useEditor();
   const isManualSelection = activeTool === "manual-select";
   const closeThreshold = Math.max(8, 16 / zoom);
@@ -135,20 +136,24 @@ export function MaskOverlay({ dimensions }: MaskOverlayProps) {
       {masks
         .filter((mask) => mask.visible)
         .map((mask) => {
+          if (maskOnlyPreview) return null;
           const isSelected = mask.selected;
+          const isBrushTool = activeTool === "add-to-mask" || activeTool === "remove-from-mask";
+          const isBrushTarget = isBrushTool && mask.id === selectedMaskId;
+          const hasRefinement = (mask.refinement?.addStrokes.length ?? 0) + (mask.refinement?.removeStrokes.length ?? 0) > 0;
           const hasColor = Boolean(mask.color);
           const showPaintFill = hasColor && !beforeAfterEnabled;
           const showPreviewFill =
             !hasColor && maskPreviewEnabled && !beforeAfterEnabled;
           const showOutline = maskPreviewEnabled;
-          const fillColor = showPaintFill
+          const fillColor = hasRefinement || isBrushTarget ? "transparent" : showPaintFill
             ? mask.color
             : showPreviewFill
               ? "#7aa7d9"
               : "transparent";
           const strokeColor = isSelected ? "#2563eb" : "#f8fafc";
           const strokeWidth = isSelected ? 4 : 2;
-          const fillOpacity = showPaintFill
+          const fillOpacity = hasRefinement || isBrushTarget ? 0 : showPaintFill
             ? mask.opacity
             : showPreviewFill
               ? 0.22

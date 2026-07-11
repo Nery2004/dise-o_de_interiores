@@ -21,6 +21,7 @@ import type {
   ImagePoint,
   LoadedImage,
   WallMask,
+  BrushStroke,
 } from "@/types/editor";
 
 type EditorContextValue = EditorState & {
@@ -37,6 +38,14 @@ type EditorContextValue = EditorState & {
   replaceMasks: (masks: WallMask[]) => void;
   toggleMaskVisibility: (id: string) => void;
   clearMasks: () => void;
+  addBrushStroke: (maskId: string, stroke: BrushStroke) => void;
+  undoLastBrushStroke: (maskId: string) => void;
+  clearMaskRefinements: (maskId: string) => void;
+  setBrushSize: (size: number) => void;
+  setBrushHardness: (hardness: number) => void;
+  setBrushOpacity: (opacity: number) => void;
+  setMaskOnlyPreview: (enabled: boolean) => void;
+  setInvertRefinementPreview: (enabled: boolean) => void;
   setSelectedPointIndexes: (indexes: number[]) => void;
   clearSelectedPoints: () => void;
   deleteSelectedPoints: () => void;
@@ -86,6 +95,11 @@ const initialState: EditorState = {
   moveWholeMask: false,
   undoStack: [],
   redoStack: [],
+  brushSize: 40,
+  brushHardness: 0.7,
+  brushOpacity: 1,
+  maskOnlyPreview: false,
+  invertRefinementPreview: false,
 };
 
 export const EditorContext = createContext<EditorContextValue | null>(null);
@@ -95,6 +109,11 @@ function cloneMasks(masks: WallMask[]) {
     ...mask,
     points: clonePoints(mask.points),
     originalPoints: clonePoints(mask.originalPoints),
+    refinement: mask.refinement ? {
+      ...mask.refinement,
+      addStrokes: mask.refinement.addStrokes.map((stroke) => ({ ...stroke, points: clonePoints(stroke.points) ?? [] })),
+      removeStrokes: mask.refinement.removeStrokes.map((stroke) => ({ ...stroke, points: clonePoints(stroke.points) ?? [] })),
+    } : undefined,
   }));
 }
 
@@ -103,6 +122,11 @@ function prepareMask(mask: WallMask): WallMask {
     ...mask,
     points: clonePoints(mask.points),
     originalPoints: clonePoints(mask.originalPoints ?? mask.points),
+    refinement: mask.refinement ? {
+      ...mask.refinement,
+      addStrokes: mask.refinement.addStrokes.map((stroke) => ({ ...stroke, points: clonePoints(stroke.points) ?? [] })),
+      removeStrokes: mask.refinement.removeStrokes.map((stroke) => ({ ...stroke, points: clonePoints(stroke.points) ?? [] })),
+    } : undefined,
   };
 }
 
@@ -202,7 +226,20 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     canUndo: state.undoStack.length > 0,
     canRedo: state.redoStack.length > 0,
     setActiveTool: (tool) => setState((current) => {
+      const isBrushTool = tool === "add-to-mask" || tool === "remove-from-mask";
+      if (isBrushTool && !current.image) {
+        toast.error("Primero sube una imagen.");
+        return current;
+      }
       const selected = current.masks.find((mask) => mask.id === current.selectedMaskId);
+      if (isBrushTool && !selected) {
+        toast.error("Selecciona una pared antes de refinarla.");
+        return current;
+      }
+      if (isBrushTool && selected && !selected.visible) {
+        toast.error("Muestra la máscara antes de editarla.");
+        return current;
+      }
       const startsEditing = tool === "edit-mask" && selected?.points;
       if (tool === "edit-mask" && selected && !selected.points) {
         toast.error("Esta mascara debe convertirse a puntos antes de editarse.");
@@ -218,6 +255,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         editingStartPoints: startsEditing ? clonePoints(selected.points) ?? null : null,
         editingHistoryStart: startsEditing ? current.undoStack.length : 0,
         moveWholeMask: false,
+        beforeAfterEnabled: isBrushTool ? false : current.beforeAfterEnabled,
+        maskOnlyPreview: isBrushTool ? current.maskOnlyPreview : false,
+        invertRefinementPreview: isBrushTool ? current.invertRefinementPreview : false,
       };
     }),
     setZoom: (zoom) => setState((current) => ({ ...current, zoom })),
@@ -248,6 +288,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         selectedPointIndexes: [],
         editingMaskId: current.editingMaskId === id ? null : current.editingMaskId,
         editingStartPoints: current.editingMaskId === id ? null : current.editingStartPoints,
+        maskOnlyPreview: current.selectedMaskId === id ? false : current.maskOnlyPreview,
+        invertRefinementPreview: current.selectedMaskId === id ? false : current.invertRefinementPreview,
       },
     )),
     selectMask: (id) => setState((current) => {
@@ -272,6 +314,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       selectedPointIndexes: [],
       editingMaskId: null,
       editingStartPoints: null,
+      maskOnlyPreview: false,
+      invertRefinementPreview: false,
     })),
     toggleMaskVisibility: (id) => setState((current) => ({ ...current, masks: current.masks.map((mask) =>
       mask.id === id ? { ...mask, visible: !mask.visible } : mask),
@@ -281,7 +325,56 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       selectedPointIndexes: [],
       editingMaskId: null,
       editingStartPoints: null,
+      maskOnlyPreview: false,
+      invertRefinementPreview: false,
     })),
+    addBrushStroke: (maskId, stroke) => setState((current) => {
+      const mask = current.masks.find((item) => item.id === maskId);
+      if (!mask || !current.dimensions) return current;
+      const refinement = mask.refinement ?? {
+        width: current.dimensions.width,
+        height: current.dimensions.height,
+        addStrokes: [],
+        removeStrokes: [],
+      };
+      const key = stroke.mode === "add" ? "addStrokes" : "removeStrokes";
+      return withMaskHistory(current, current.masks.map((item) => item.id === maskId ? {
+        ...item,
+        refinement: { ...refinement, [key]: [...refinement[key], { ...stroke, points: clonePoints(stroke.points) ?? [] }] },
+        updatedAt: new Date().toISOString(),
+      } : item));
+    }),
+    undoLastBrushStroke: (maskId) => setState((current) => {
+      const mask = current.masks.find((item) => item.id === maskId);
+      if (!mask?.refinement) return current;
+      const strokes = [...mask.refinement.addStrokes, ...mask.refinement.removeStrokes]
+        .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
+      const lastStroke = strokes[0];
+      if (!lastStroke) return current;
+      return withMaskHistory(current, current.masks.map((item) => item.id === maskId ? {
+        ...item,
+        refinement: {
+          ...mask.refinement!,
+          addStrokes: mask.refinement!.addStrokes.filter((stroke) => stroke.id !== lastStroke.id),
+          removeStrokes: mask.refinement!.removeStrokes.filter((stroke) => stroke.id !== lastStroke.id),
+        },
+        updatedAt: new Date().toISOString(),
+      } : item));
+    }),
+    clearMaskRefinements: (maskId) => setState((current) => {
+      const mask = current.masks.find((item) => item.id === maskId);
+      if (!mask?.refinement || (mask.refinement.addStrokes.length === 0 && mask.refinement.removeStrokes.length === 0)) return current;
+      return withMaskHistory(current, current.masks.map((item) => item.id === maskId ? {
+        ...item,
+        refinement: { ...mask.refinement!, addStrokes: [], removeStrokes: [] },
+        updatedAt: new Date().toISOString(),
+      } : item));
+    }),
+    setBrushSize: (brushSize) => setState((current) => ({ ...current, brushSize })),
+    setBrushHardness: (brushHardness) => setState((current) => ({ ...current, brushHardness })),
+    setBrushOpacity: (brushOpacity) => setState((current) => ({ ...current, brushOpacity })),
+    setMaskOnlyPreview: (maskOnlyPreview) => setState((current) => ({ ...current, maskOnlyPreview })),
+    setInvertRefinementPreview: (invertRefinementPreview) => setState((current) => ({ ...current, invertRefinementPreview })),
     setSelectedPointIndexes: (indexes) => setState((current) => ({ ...current, selectedPointIndexes: [...new Set(indexes)] })),
     clearSelectedPoints: () => setState((current) => ({ ...current, selectedPointIndexes: [] })),
     deleteSelectedPoints: () => setState((current) => {

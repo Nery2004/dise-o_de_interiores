@@ -1,4 +1,5 @@
-import { buildCanvasPath, maskHasExportableColor } from "@/lib/mask-geometry";
+import { maskHasExportableColor } from "@/lib/mask-geometry";
+import { createCanvas, createFinalMaskCanvas, paintAlphaCanvas } from "@/lib/masks/maskCompositor";
 import type { BlendMode, LoadedImage, WallMask } from "@/types/editor";
 
 const blendModeMap: Record<BlendMode, GlobalCompositeOperation> = {
@@ -70,11 +71,15 @@ export async function exportEditedImage({
   context.drawImage(sourceImage, 0, 0, canvas.width, canvas.height);
 
   masks.filter(maskHasExportableColor).forEach((mask) => {
-    const path = buildCanvasPath(mask);
-
-    if (!path || !mask.color) {
+    if (!mask.color) {
       return;
     }
+
+    const alphaCanvas = createFinalMaskCanvas(mask, image.dimensions);
+    const colorCanvas = createCanvas(image.dimensions);
+    const colorContext = colorCanvas.getContext("2d");
+    if (!colorContext) return;
+    paintAlphaCanvas(colorContext, alphaCanvas, mask.color);
 
     const operation = blendModeMap[mask.blendMode ?? globalBlendMode];
 
@@ -84,8 +89,7 @@ export async function exportEditedImage({
       context,
       operation,
     );
-    context.fillStyle = mask.color;
-    context.fill(path);
+    context.drawImage(colorCanvas, 0, 0);
     context.restore();
   });
 

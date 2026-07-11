@@ -8,6 +8,7 @@ import { MaskList } from "@/components/mask-list";
 import { SavedPalettesPanel } from "@/components/saved-palettes-panel";
 import { WallDetectionPanel } from "@/components/wall-detection-panel";
 import { formatFileSize } from "@/lib/utils";
+import { BrushControls } from "@/components/brush-controls";
 
 function EmptyValue() {
   return <span className="text-[#a0a7b1]">-</span>;
@@ -33,6 +34,7 @@ export function RightPanel() {
     },
     { label: "Formato", value: image?.format ?? null },
   ];
+  const isBrushTool = activeTool === "add-to-mask" || activeTool === "remove-from-mask";
 
   return (
     <aside className="max-h-[calc(100vh-8.5rem)] overflow-auto rounded-lg border border-[#dde1e7] bg-white p-4 shadow-sm">
@@ -91,10 +93,10 @@ export function RightPanel() {
 
       <section className="mt-5 rounded-md border border-[#edf0f3] bg-[#fafbfc] p-4">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8290]">
-          Mascara seleccionada
+          {isBrushTool ? "Refinar máscara" : "Mascara seleccionada"}
         </p>
         <div className="mt-4">
-          {activeTool === "edit-mask" ? <MaskEditingPanel /> : <MaskControls />}
+          {isBrushTool ? <BrushControls /> : activeTool === "edit-mask" ? <MaskEditingPanel /> : <MaskControls />}
         </div>
       </section>
 

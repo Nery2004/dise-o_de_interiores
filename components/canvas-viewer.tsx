@@ -11,9 +11,12 @@ import { useEditor } from "@/components/editor-context";
 import { ImageUploader } from "@/components/image-uploader";
 import { MaskOverlay } from "@/components/mask-overlay";
 import { DrawingHelpOverlay } from "@/components/drawing-help-overlay";
+import { BrushRefinementOverlay } from "@/components/brush-refinement-overlay";
+import { RefinedMaskLayer } from "@/components/refined-mask-layer";
 
 export function CanvasViewer() {
-  const { activeTool, beforeAfterEnabled, image, setZoom } = useEditor();
+  const { activeTool, beforeAfterEnabled, image, maskOnlyPreview, setZoom } = useEditor();
+  const isBrushTool = activeTool === "add-to-mask" || activeTool === "remove-from-mask";
 
   if (!image) {
     return (
@@ -33,7 +36,7 @@ export function CanvasViewer() {
         maxScale={8}
         wheel={{ step: 0.08 }}
         doubleClick={{ disabled: true }}
-        panning={{ disabled: activeTool === "edit-mask" || activeTool === "manual-select" }}
+        panning={{ disabled: activeTool === "edit-mask" || activeTool === "manual-select" || isBrushTool }}
         onTransform={(_, state) => setZoom(state.scale)}
       >
         {(controls: ReactZoomPanPinchRef) => (
@@ -79,6 +82,10 @@ export function CanvasViewer() {
                   style={{
                     width: image.dimensions.width,
                     height: image.dimensions.height,
+                    backgroundColor: maskOnlyPreview ? "#20242a" : undefined,
+                    backgroundImage: maskOnlyPreview ? "linear-gradient(45deg,#2d333b 25%,transparent 25%),linear-gradient(-45deg,#2d333b 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#2d333b 75%),linear-gradient(-45deg,transparent 75%,#2d333b 75%)" : undefined,
+                    backgroundSize: maskOnlyPreview ? "32px 32px" : undefined,
+                    backgroundPosition: maskOnlyPreview ? "0 0,0 16px,16px -16px,-16px 0" : undefined,
                   }}
                 >
                   <Image
@@ -88,10 +95,13 @@ export function CanvasViewer() {
                     height={image.dimensions.height}
                     unoptimized
                     className="block h-full w-full select-none"
+                    style={{ opacity: maskOnlyPreview ? 0 : 1 }}
                     draggable={false}
                     priority
                   />
+                  <RefinedMaskLayer dimensions={image.dimensions} />
                   <MaskOverlay dimensions={image.dimensions} />
+                  <BrushRefinementOverlay dimensions={image.dimensions} />
                 </div>
               </div>
             </TransformComponent>
