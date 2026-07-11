@@ -15,7 +15,7 @@ import { BrushRefinementOverlay } from "@/components/brush-refinement-overlay";
 import { RefinedMaskLayer } from "@/components/refined-mask-layer";
 
 export function CanvasViewer() {
-  const { activeTool, beforeAfterEnabled, image, maskOnlyPreview, setZoom } = useEditor();
+  const { activeTool, beforeAfterEnabled, image, maskOnlyPreview, setZoom, zoom } = useEditor();
   const isBrushTool = activeTool === "add-to-mask" || activeTool === "remove-from-mask";
 
   if (!image) {
@@ -31,7 +31,7 @@ export function CanvasViewer() {
       <TransformWrapper
         key={image.url}
         centerOnInit
-        initialScale={1}
+        initialScale={zoom}
         minScale={0.1}
         maxScale={8}
         wheel={{ step: 0.08 }}

@@ -6,6 +6,8 @@ import { EditorHeader } from "@/components/editor-header";
 import { FooterStatus } from "@/components/footer-status";
 import { LeftToolbar } from "@/components/left-toolbar";
 import { RightPanel } from "@/components/right-panel";
+import { SaveProjectDialog } from "@/components/save-project-dialog";
+import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 
 export function EditorLayout() {
   return (
@@ -17,6 +19,8 @@ export function EditorLayout() {
         <RightPanel />
       </div>
       <FooterStatus />
+      <SaveProjectDialog />
+      <UnsavedChangesDialog />
       <Toaster richColors position="top-right" />
     </main>
   );

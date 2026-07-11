@@ -23,6 +23,7 @@ import type {
   WallMask,
   BrushStroke,
 } from "@/types/editor";
+import type { InteriorProject } from "@/types/project";
 
 type EditorContextValue = EditorState & {
   canUndo: boolean;
@@ -69,6 +70,7 @@ type EditorContextValue = EditorState & {
   uploadImage: (file: File) => Promise<void>;
   openImageDialog: () => void;
   resetImage: () => void;
+  restoreProject: (project: InteriorProject) => Promise<void>;
 };
 
 const initialState: EditorState = {
@@ -215,6 +217,41 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     if (fileInputRef.current) fileInputRef.current.value = "";
     setState(initialState);
     toast.message("Lienzo listo para una nueva imagen.");
+  }, []);
+
+  const restoreProject = useCallback(async (project: InteriorProject) => {
+    const blob = project.originalImageBlob;
+    if (!blob) throw new Error("No se pudo cargar la imagen del proyecto.");
+    const objectUrl = URL.createObjectURL(blob);
+    let dimensions: ImageDimensions;
+    try {
+      dimensions = await getImageDimensions(objectUrl);
+    } catch {
+      URL.revokeObjectURL(objectUrl);
+      throw new Error("No se pudo cargar la imagen del proyecto.");
+    }
+    if (temporaryUrlRef.current) URL.revokeObjectURL(temporaryUrlRef.current);
+    temporaryUrlRef.current = objectUrl;
+    const file = new File([blob], project.originalImage.name, { type: project.originalImage.type });
+    const selectedMaskId = project.masks.some((mask) => mask.id === project.selectedMaskId) ? project.selectedMaskId : null;
+    setState({
+      ...initialState,
+      image: { name: project.originalImage.name, size: project.originalImage.size, type: project.originalImage.type, format: getImageFormat(file), url: objectUrl, dimensions },
+      originalFile: file,
+      temporaryUrl: objectUrl,
+      dimensions,
+      status: "ready",
+      masks: project.masks.map((mask) => ({ ...prepareMask(mask), selected: mask.id === selectedMaskId })),
+      selectedMaskId,
+      activeColor: project.activeColor,
+      globalBlendMode: project.globalBlendMode,
+      zoom: project.editorSettings.zoom,
+      beforeAfterEnabled: project.editorSettings.beforeAfterEnabled,
+      maskPreviewEnabled: project.editorSettings.maskPreviewEnabled,
+      brushSize: project.editorSettings.brushSize,
+      brushHardness: project.editorSettings.brushHardness,
+      brushOpacity: project.editorSettings.brushOpacity,
+    });
   }, []);
 
   useEffect(() => () => {
@@ -498,7 +535,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     uploadImage,
     openImageDialog,
     resetImage,
-  }), [openImageDialog, resetImage, state, uploadImage]);
+    restoreProject,
+  }), [openImageDialog, resetImage, restoreProject, state, uploadImage]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {

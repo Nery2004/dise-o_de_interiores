@@ -2,6 +2,7 @@
 
 import { useEditor } from "@/components/editor-context";
 import { editorTools } from "@/lib/editor-data";
+import { useProject } from "@/components/project-context";
 
 function statusLabel(status: string) {
   if (status === "loading") {
@@ -28,6 +29,7 @@ function statusLabel(status: string) {
 }
 
 export function FooterStatus() {
+  const project = useProject();
   const {
     activeColor,
     activeTool,
@@ -53,6 +55,8 @@ export function FooterStatus() {
       <span>Herramienta: {toolLabel}</span>
       <span>Pared: {selectedMask}</span>
       <span>Color: {activeColor ?? "-"}</span>
+      <span className="ml-auto">{project.saveStatus === "saving" ? "Guardando..." : project.saveStatus === "unsaved" ? "Cambios sin guardar" : project.saveStatus === "error" ? "Error al guardar" : "Guardado localmente"}</span>
+      <label className="flex items-center gap-1.5"><input type="checkbox" checked={project.autosaveEnabled} onChange={(event) => project.setAutosaveEnabled(event.target.checked)} className="accent-[#1f2421]" />Autoguardado</label>
     </footer>
   );
 }

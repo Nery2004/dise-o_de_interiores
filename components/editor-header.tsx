@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { Download, FolderOpen, Home, ImagePlus, Redo2, Sparkles, Undo2 } from "lucide-react";
+import { Download, FolderOpen, FolderKanban, Home, ImagePlus, Redo2, Save, Sparkles, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useEditor } from "@/components/editor-context";
 import { downloadBlob, exportEditedImage } from "@/lib/exportImage";
 import { maskHasExportableColor } from "@/lib/mask-geometry";
 import { cn } from "@/lib/utils";
+import { useProject } from "@/components/project-context";
 
 function HeaderButton({
   children,
@@ -34,14 +34,13 @@ function HeaderButton({
 }
 
 export function EditorHeader() {
+  const project = useProject();
   const {
     globalBlendMode,
     canRedo,
     canUndo,
     image,
     masks,
-    openImageDialog,
-    resetImage,
     setStatus,
     status,
     redo,
@@ -88,26 +87,32 @@ export function EditorHeader() {
             Interior Color Studio
           </p>
           <p className="truncate text-xs text-[#69717d]">
-            Professional image editor
+            {project.activeProjectName ?? "Proyecto sin guardar"}
           </p>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Link
-          href="/"
+        <button
+          type="button"
+          onClick={() => project.navigateWithGuard("/")}
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[#dfe3e8] bg-white px-3 text-sm font-medium text-[#30343b] shadow-sm transition hover:border-[#c9d1dc] hover:bg-[#f8fafc]"
         >
           <Home size={16} />
           Home
-        </Link>
-        <HeaderButton onClick={openImageDialog}>
+        </button>
+        <button type="button" onClick={() => project.navigateWithGuard("/projects")} className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[#dfe3e8] bg-white px-3 text-sm font-medium text-[#30343b] shadow-sm"><FolderKanban size={16} />Mis proyectos</button>
+        <HeaderButton onClick={project.openImageAsNewProject}>
           <FolderOpen size={16} />
           Abrir imagen
         </HeaderButton>
-        <HeaderButton onClick={resetImage}>
+        <HeaderButton onClick={project.createNewProject}>
           <ImagePlus size={16} />
-          Nueva imagen
+          Nuevo proyecto
+        </HeaderButton>
+        <HeaderButton disabled={!image || project.isSaving} onClick={project.requestSave}>
+          <Save size={16} />
+          {project.isSaving ? "Guardando..." : "Guardar proyecto"}
         </HeaderButton>
         <HeaderButton disabled={!canUndo} onClick={undo}>
           <Undo2 size={16} />
