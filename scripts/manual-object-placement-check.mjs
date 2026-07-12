@@ -51,6 +51,7 @@ await command("Page.enable");
 await command("Page.navigate", { url: "http://localhost:3000/objects" });
 await waitFor(`location.pathname === '/objects'`);
 await waitFor(`document.querySelector('button[aria-label^="Usar Sillón moderno beige"]')`);
+await new Promise((resolve) => setTimeout(resolve, 1500));
 await evaluate(`document.querySelector('button[aria-label^="Usar Sillón moderno beige"]').click()`);
 await waitFor(`location.pathname === '/editor'`);
 await waitFor(`document.querySelector('input[type="file"]')`);
@@ -120,7 +121,8 @@ while (Date.now() - downloadStarted < 20_000) {
 if (!downloads.length) throw new Error("No se generó la exportación PNG.");
 
 const summary = {
-  placedCentered: Math.abs(placedAt.left - 847) < 3 && Math.abs(placedAt.top - 464.5) < 3,
+  initialPlacement: placedAt,
+  placedCentered: Math.abs(placedAt.left - 847) < 3 && Math.abs(placedAt.top + placedAt.height / 2 - 464.5) < 3,
   movedOnlyObject: movedTo.left > placedAt.left && movedTo.top > placedAt.top,
   resizedProportionally: Math.abs(sizeAfter.width - sizeBefore.width) > 1 && Math.abs(sizeAfter.width / sizeAfter.height - sizeBefore.width / sizeBefore.height) < 0.01,
   rotatedAroundCenter: rotation.includes("rotate(") && !rotation.includes("rotate(0deg)"),

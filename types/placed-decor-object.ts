@@ -1,3 +1,11 @@
+import type {
+  ObjectAnchor,
+  PerspectiveMode,
+  PerspectivePoints,
+  PlacementSurfaceType,
+  ZOrderMode,
+} from "@/types/perspective";
+
 export type PlacedDecorObject = {
   id: string;
   decorObjectId: string;
@@ -21,9 +29,27 @@ export type PlacedDecorObject = {
   flipX: boolean;
   flipY: boolean;
   lockAspectRatio: boolean;
+  surfaceType: PlacementSurfaceType;
+  anchor: ObjectAnchor;
+  depth: number;
+  perspectiveMode: PerspectiveMode;
+  perspectivePoints?: PerspectivePoints;
+  surfaceId?: string;
+  autoScaleByDepth: boolean;
+  baseContactOffset: number;
+  zOrderMode: ZOrderMode;
   createdAt: string;
   updatedAt: string;
 };
 
-export type ObjectInteractionMode = "idle" | "placing" | "moving" | "resizing" | "rotating";
-export type ObjectResizeHandle = "north-west" | "north-east" | "south-east" | "south-west";
+export type ObjectInteractionMode =
+  | "idle"
+  | "placing"
+  | "moving"
+  | "resizing"
+  | "rotating"
+  | "perspective"
+  | "surface"
+  | "horizon";
+export type ObjectResizeHandle =
+  "north-west" | "north-east" | "south-east" | "south-west";

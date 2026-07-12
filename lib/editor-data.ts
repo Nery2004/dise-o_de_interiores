@@ -61,6 +61,8 @@ export const editorTools: Array<{
 }> = [
   { id: "select", label: "Seleccionar", shortcut: "V" },
   { id: "objects", label: "Objetos", shortcut: "O" },
+  { id: "define-surface", label: "Definir superficie", shortcut: "U" },
+  { id: "horizon", label: "Guía de perspectiva", shortcut: "G" },
   { id: "manual-select", label: "Seleccion manual", shortcut: "P" },
   { id: "edit-mask", label: "Editar máscara", shortcut: "M" },
   { id: "add-to-mask", label: "Añadir a máscara", shortcut: "+" },

@@ -32,21 +32,35 @@ export function RightPanel() {
   } = useEditor();
 
   const details = [
-    { label: "Ancho", value: dimensions?.width ? `${dimensions.width}px` : null },
-    { label: "Alto", value: dimensions?.height ? `${dimensions.height}px` : null },
+    {
+      label: "Ancho",
+      value: dimensions?.width ? `${dimensions.width}px` : null,
+    },
+    {
+      label: "Alto",
+      value: dimensions?.height ? `${dimensions.height}px` : null,
+    },
     {
       label: "Tamano del archivo",
       value: originalFile ? formatFileSize(originalFile.size) : null,
     },
     { label: "Formato", value: image?.format ?? null },
   ];
-  const isBrushTool = activeTool === "add-to-mask" || activeTool === "remove-from-mask";
+  const isBrushTool =
+    activeTool === "add-to-mask" || activeTool === "remove-from-mask";
 
   return (
     <aside className="max-h-[calc(100vh-8.5rem)] overflow-auto rounded-lg border border-[#dde1e7] bg-white p-4 shadow-sm">
-      {activeTool === "objects" ? <div className="mb-5"><EditorObjectsPanel /></div> : null}
+      {["objects", "define-surface", "horizon"].includes(activeTool) ? (
+        <div className="mb-5">
+          <EditorObjectsPanel />
+        </div>
+      ) : null}
       <PendingDecorObjectNotice />
-      {activeTool !== "objects" && placement.placedObjects.length ? <ObjectInspectorPanel /> : null}
+      {!["objects", "define-surface", "horizon"].includes(activeTool) &&
+      placement.placedObjects.length ? (
+        <ObjectInspectorPanel />
+      ) : null}
       <section>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8290]">
           Propiedades
@@ -107,7 +121,13 @@ export function RightPanel() {
           {isBrushTool ? "Refinar máscara" : "Mascara seleccionada"}
         </p>
         <div className="mt-4">
-          {isBrushTool ? <BrushControls /> : activeTool === "edit-mask" ? <MaskEditingPanel /> : <MaskControls />}
+          {isBrushTool ? (
+            <BrushControls />
+          ) : activeTool === "edit-mask" ? (
+            <MaskEditingPanel />
+          ) : (
+            <MaskControls />
+          )}
         </div>
       </section>
 

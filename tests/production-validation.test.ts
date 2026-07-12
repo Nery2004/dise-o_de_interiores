@@ -1,50 +1,116 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parseProviderTimeout, parseWallAIProvider } from "@/lib/env/envValidation";
-import { validateImageDimensions, validateImageUploadMetadata } from "@/lib/images/imageValidation";
-import { migrateProject, validateImportedProject } from "@/lib/projects/projectValidation";
+import {
+  parseProviderTimeout,
+  parseWallAIProvider,
+} from "@/lib/env/envValidation";
+import {
+  validateImageDimensions,
+  validateImageUploadMetadata,
+} from "@/lib/images/imageValidation";
+import {
+  migrateProject,
+  validateImportedProject,
+} from "@/lib/projects/projectValidation";
 import { normalizeExportFilename } from "@/lib/proposals/proposalUtils";
 import type { InteriorProject } from "@/types/project";
 
 const baseProject = {
-  id: "project-1", name: "Sala", version: 2, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z",
-  originalImage: { name: "sala.png", type: "image/png", width: 100, height: 80, size: 100, dataUrl: "data:image/png;base64,AA==" },
-  masks: [], placedObjects: [], activeColor: null, selectedMaskId: null, globalBlendMode: "multiply",
-  editorSettings: { zoom: 1, beforeAfterEnabled: false, maskPreviewEnabled: true, brushSize: 40, brushHardness: 0.7, brushOpacity: 1 }, proposals: [],
+  id: "project-1",
+  name: "Sala",
+  version: 2,
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+  originalImage: {
+    name: "sala.png",
+    type: "image/png",
+    width: 100,
+    height: 80,
+    size: 100,
+    dataUrl: "data:image/png;base64,AA==",
+  },
+  masks: [],
+  placedObjects: [],
+  placementSurfaces: [],
+  perspectiveGuide: null,
+  activeColor: null,
+  selectedMaskId: null,
+  globalBlendMode: "multiply",
+  editorSettings: {
+    zoom: 1,
+    beforeAfterEnabled: false,
+    maskPreviewEnabled: true,
+    brushSize: 40,
+    brushHardness: 0.7,
+    brushOpacity: 1,
+  },
+  proposals: [],
 } satisfies InteriorProject;
 
 test("valida uploads y límites de dimensiones", () => {
-  assert.deepEqual(validateImageUploadMetadata({ name: "room.jpg", type: "image/jpeg", size: 1024 }), { valid: true });
-  assert.equal(validateImageUploadMetadata({ name: "room.exe", type: "image/jpeg", size: 1024 }).valid, false);
-  assert.equal(validateImageUploadMetadata({ name: "room.png", type: "image/png", size: 11 * 1024 * 1024 }).valid, false);
+  assert.deepEqual(
+    validateImageUploadMetadata({
+      name: "room.jpg",
+      type: "image/jpeg",
+      size: 1024,
+    }),
+    { valid: true },
+  );
+  assert.equal(
+    validateImageUploadMetadata({
+      name: "room.exe",
+      type: "image/jpeg",
+      size: 1024,
+    }).valid,
+    false,
+  );
+  assert.equal(
+    validateImageUploadMetadata({
+      name: "room.png",
+      type: "image/png",
+      size: 11 * 1024 * 1024,
+    }).valid,
+    false,
+  );
   assert.equal(validateImageDimensions(5_000, 5_000), true);
   assert.equal(validateImageDimensions(5_001, 5_000), false);
 });
 
-test("valida importación y migra proyectos anteriores a v4", () => {
-  assert.equal(validateImportedProject(baseProject).version, 4);
+test("valida importación y migra proyectos anteriores a v5", () => {
+  assert.equal(validateImportedProject(baseProject).version, 5);
   const legacy = {
     ...baseProject,
     version: 1,
-    masks: [{
-      id: "legacy-wall",
-      name: "Pared anterior",
-      type: "manual" as const,
-      visible: true,
-      selected: true,
-      opacity: 0.45,
-      points: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 80 }],
-      createdAt: "2026-01-01T00:00:00.000Z",
-    }],
+    masks: [
+      {
+        id: "legacy-wall",
+        name: "Pared anterior",
+        type: "manual" as const,
+        visible: true,
+        selected: true,
+        opacity: 0.45,
+        points: [
+          { x: 0, y: 0 },
+          { x: 100, y: 0 },
+          { x: 100, y: 80 },
+        ],
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+    ],
   } as unknown as InteriorProject;
   const migrated = migrateProject(legacy);
-  assert.equal(migrated.version, 4);
+  assert.equal(migrated.version, 5);
   assert.equal(migrated.masks[0].whiteBaseSettings?.mode, "auto");
   assert.equal(migrated.masks[0].whiteBaseSettings?.shadowPreservation, 90);
   assert.equal(migrated.masks[0].whiteBaseSettings?.texturePreservation, 90);
   assert.deepEqual(migrated.proposals, []);
   assert.deepEqual(migrated.placedObjects, []);
-  assert.throws(() => validateImportedProject({ ...baseProject, originalImage: { ...baseProject.originalImage, width: -1 } }));
+  assert.throws(() =>
+    validateImportedProject({
+      ...baseProject,
+      originalImage: { ...baseProject.originalImage, width: -1 },
+    }),
+  );
 });
 
 test("valida los ajustes de simulación de pintura por máscara", () => {
@@ -62,7 +128,11 @@ test("valida los ajustes de simulación de pintura por máscara", () => {
     paintIntensity: 150,
     edgeFeather: 8,
     renderQuality: "ultra" as const,
-    points: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 80 }],
+    points: [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 100, y: 80 },
+    ],
     createdAt: "2026-01-01T00:00:00.000Z",
   };
   assert.doesNotThrow(() =>
@@ -77,7 +147,10 @@ test("valida los ajustes de simulación de pintura por máscara", () => {
 });
 
 test("normaliza nombres de exportación", () => {
-  assert.equal(normalizeExportFilename("Opción Cálida / Cliente"), "opcion-calida-cliente");
+  assert.equal(
+    normalizeExportFilename("Opción Cálida / Cliente"),
+    "opcion-calida-cliente",
+  );
 });
 
 test("selecciona proveedores válidos y timeouts seguros", () => {

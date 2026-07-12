@@ -19,6 +19,8 @@ export type MoodBoard = {
 export type EditorTool =
   | "select"
   | "objects"
+  | "define-surface"
+  | "horizon"
   | "manual-select"
   | "edit-mask"
   | "add-to-mask"
@@ -30,12 +32,7 @@ export type EditorTool =
   | "compare";
 
 export type EditorStatus =
-  | "idle"
-  | "loading"
-  | "ready"
-  | "detecting"
-  | "exporting"
-  | "error";
+  "idle" | "loading" | "ready" | "detecting" | "exporting" | "error";
 
 export type BlendMode =
   | "paint-simulation"

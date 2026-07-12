@@ -12,6 +12,8 @@ import {
   Scan,
   ScanSearch,
   SplitSquareHorizontal,
+  Grid3X3,
+  Ruler,
 } from "lucide-react";
 import { useEditor } from "@/components/editor-context";
 import { editorTools } from "@/lib/editor-data";
@@ -22,6 +24,8 @@ import { useComparison } from "@/components/comparison-context";
 const toolIcons: Record<EditorTool, React.ComponentType<{ size?: number }>> = {
   select: MousePointer2,
   objects: Armchair,
+  "define-surface": Grid3X3,
+  horizon: Ruler,
   "manual-select": PenTool,
   "edit-mask": Scan,
   "add-to-mask": CirclePlus,
@@ -77,7 +81,12 @@ export function LeftToolbar() {
                   if (beforeAfterEnabled) toggleBeforeAfter();
                   comparison.setMode("slider");
                 }
-                if (tool.id === "objects") comparison.setMode("edited");
+                if (
+                  tool.id === "objects" ||
+                  tool.id === "define-surface" ||
+                  tool.id === "horizon"
+                )
+                  comparison.setMode("edited");
               }}
               className={cn(
                 "flex h-12 items-center justify-between rounded-md border px-3 text-left text-sm font-medium transition",
