@@ -2,7 +2,7 @@ import {
   oklabToRgb,
   rgbToOklab,
   type RgbColor,
-} from "@/lib/paint/colorMath";
+} from "@/lib/colors/colorSpace";
 import type { BlendMode } from "@/types/editor";
 
 function multiply(backdrop: number, source: number) {

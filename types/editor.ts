@@ -49,6 +49,38 @@ export type PaintMode = "direct" | "white-base";
 
 export type RenderQuality = "draft" | "high" | "ultra";
 
+export type WallColorProfile =
+  | "warm-light"
+  | "warm-dark"
+  | "cool-light"
+  | "cool-dark"
+  | "neutral-light"
+  | "neutral-dark"
+  | "saturated"
+  | "unknown";
+
+export type WhiteBaseSettings = {
+  mode: "auto" | "manual";
+  analysisVersion: number;
+  analysisKey?: string;
+  analyzedAt?: string;
+  profile?: WallColorProfile;
+  averageColor?: string;
+  medianColor?: string;
+  averageLuminance?: number;
+  averageSaturation?: number;
+  dominantHue?: number;
+  darkPixelRatio?: number;
+  lightPixelRatio?: number;
+  neutralizationStrength: number;
+  saturationReduction: number;
+  warmthCorrection: number;
+  baseBrightness: number;
+  baseContrast: number;
+  shadowPreservation: number;
+  texturePreservation: number;
+};
+
 export type ImageDimensions = {
   width: number;
   height: number;
@@ -100,6 +132,7 @@ export type WallMask = {
   paintIntensity?: number;
   edgeFeather?: number;
   renderQuality?: RenderQuality;
+  whiteBaseSettings?: WhiteBaseSettings;
   path?: string;
   points?: ImagePoint[];
   originalPoints?: ImagePoint[];
@@ -137,4 +170,5 @@ export type EditorState = {
   brushOpacity: number;
   maskOnlyPreview: boolean;
   invertRefinementPreview: boolean;
+  whiteBasePreviewMaskId: string | null;
 };

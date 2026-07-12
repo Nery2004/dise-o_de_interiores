@@ -29,6 +29,7 @@ export function PaintRenderer() {
         image: editor.image!,
         includeOriginal: false,
         masks: editor.masks,
+        whiteBasePreviewMaskId: editor.whiteBasePreviewMaskId,
       }).then(() => {
         if (cancelled) return;
         canvas.width = rendered.width;
@@ -46,12 +47,20 @@ export function PaintRenderer() {
     editor.image,
     editor.maskOnlyPreview,
     editor.masks,
+    editor.whiteBasePreviewMaskId,
   ]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="pointer-events-none absolute inset-0 block h-full w-full"
-    />
+    <>
+      <canvas
+        ref={canvasRef}
+        className="pointer-events-none absolute inset-0 block h-full w-full"
+      />
+      {editor.whiteBasePreviewMaskId ? (
+        <span className="pointer-events-none absolute bottom-3 left-3 z-20 rounded bg-white/90 px-2 py-1 text-xs font-semibold text-[#303830] shadow-sm">
+          Base neutralizada
+        </span>
+      ) : null}
+    </>
   );
 }

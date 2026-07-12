@@ -2,7 +2,7 @@ import {
   clamp01,
   mixNumber,
   type OklabColor,
-} from "@/lib/paint/colorMath";
+} from "@/lib/colors/colorSpace";
 import { recombineShadowPass } from "@/lib/paint/ShadowPass";
 import { recombineTexturePass } from "@/lib/paint/TexturePass";
 
@@ -16,15 +16,19 @@ export function applyColorPass({
   base,
   illumination,
   intensity,
+  shadowPreservation,
   target,
   texture,
+  texturePreservation,
 }: {
   averageLuminance: number;
   base: OklabColor;
   illumination: number;
   intensity: number;
+  shadowPreservation: number;
   target: OklabColor;
   texture: number;
+  texturePreservation: number;
 }): OklabColor {
   const replacement = paintReplacementStrength(intensity);
   const overdrive = clamp01((intensity - 100) / 100);
@@ -33,8 +37,20 @@ export function applyColorPass({
     target.l,
     0.72 + replacement * 0.2,
   );
-  const litPaint = recombineShadowPass(paintBaseLuminance, illumination);
-  const detailedPaint = recombineTexturePass(litPaint, texture);
+  const preservedIllumination = mixNumber(
+    1,
+    illumination,
+    shadowPreservation / 100,
+  );
+  const litPaint = recombineShadowPass(
+    paintBaseLuminance,
+    preservedIllumination,
+  );
+  const detailedPaint = recombineTexturePass(
+    litPaint,
+    texture,
+    (texturePreservation / 100) * 0.95,
+  );
 
   return {
     l: mixNumber(base.l, detailedPaint, replacement),

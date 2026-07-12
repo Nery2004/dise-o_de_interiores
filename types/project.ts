@@ -1,7 +1,7 @@
 import type { BlendMode, WallMask } from "@/types/editor";
 import type { DesignProposal } from "@/types/proposal";
 
-export const CURRENT_PROJECT_VERSION = 2;
+export const CURRENT_PROJECT_VERSION = 3;
 
 export type ProjectImage = {
   name: string;

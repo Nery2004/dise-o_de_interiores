@@ -10,6 +10,7 @@ import type {
   RenderQuality,
   WallMask,
 } from "@/types/editor";
+import { WhiteBaseControls } from "@/components/white-base-controls";
 
 const qualityOptions: Array<{
   label: string;
@@ -61,7 +62,13 @@ function RangeControl({
 }
 
 export function PaintSimulationControls() {
-  const { globalBlendMode, masks, selectedMaskId, updateMask } = useEditor();
+  const {
+    globalBlendMode,
+    masks,
+    selectedMaskId,
+    setWhiteBasePreview,
+    updateMask,
+  } = useEditor();
   const selectedMask = masks.find((mask) => mask.id === selectedMaskId);
 
   if (!selectedMask) {
@@ -85,6 +92,11 @@ export function PaintSimulationControls() {
     );
   }
 
+  function setPaintMode(paintMode: PaintMode) {
+    updatePaint({ paintMode });
+    if (paintMode === "direct") setWhiteBasePreview(false);
+  }
+
   return (
     <section className="mt-5 rounded-md border border-[#dfe4dc] bg-[#f7faf6] p-4">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#647064]">
@@ -101,9 +113,7 @@ export function PaintSimulationControls() {
             type="checkbox"
             checked={settings.paintMode === "white-base"}
             onChange={(event) =>
-              updatePaint({
-                paintMode: event.target.checked ? "white-base" : "direct",
-              })
+              setPaintMode(event.target.checked ? "white-base" : "direct")
             }
             className="h-4 w-4 accent-[#50634f]"
           />
@@ -116,7 +126,7 @@ export function PaintSimulationControls() {
           <select
             value={settings.paintMode}
             onChange={(event) =>
-              updatePaint({ paintMode: event.target.value as PaintMode })
+              setPaintMode(event.target.value as PaintMode)
             }
             className="mt-2 h-10 w-full rounded-md border border-[#dfe3e8] bg-white px-3 text-sm"
           >
@@ -124,6 +134,10 @@ export function PaintSimulationControls() {
             <option value="white-base">Base blanca</option>
           </select>
         </label>
+
+        {settings.paintMode === "white-base" ? (
+          <WhiteBaseControls mask={selectedMask} />
+        ) : null}
 
         <RangeControl
           label="Intensidad"

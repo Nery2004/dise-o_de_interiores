@@ -10,14 +10,15 @@ import {
   oklabToRgb,
   rgbToOklab,
   type RgbColor,
-} from "@/lib/paint/colorMath";
+} from "@/lib/colors/colorSpace";
 import type { ResolvedPaintSettings } from "@/lib/paint/paintSettings";
 import { extractIlluminationPass } from "@/lib/paint/ShadowPass";
 import {
   extractTexturePass,
   recombineTexturePass,
 } from "@/lib/paint/TexturePass";
-import { applyWhiteBasePass } from "@/lib/paint/WhiteBasePass";
+import { renderAdaptiveWhiteBase } from "@/lib/paint/whiteBaseRenderer";
+import type { EffectiveWhiteBaseSettings } from "@/lib/paint/whiteBaseOptimizer";
 
 export type PaintPixelInput = {
   averageLuminance: number;
@@ -25,6 +26,8 @@ export type PaintPixelInput = {
   settings: ResolvedPaintSettings;
   source: RgbColor;
   target: RgbColor;
+  whiteBaseSettings: EffectiveWhiteBaseSettings;
+  whiteBasePreviewOnly?: boolean;
 };
 
 export function processPaintPixel({
@@ -33,14 +36,22 @@ export function processPaintPixel({
   settings,
   source,
   target,
+  whiteBaseSettings,
+  whiteBasePreviewOnly = false,
 }: PaintPixelInput): RgbColor {
   const sourceLab = rgbToOklab(source);
   const targetLab = rgbToOklab(target);
   const baseLab =
     settings.paintMode === "white-base"
-      ? applyWhiteBasePass(sourceLab, settings.primerCoverage)
+      ? renderAdaptiveWhiteBase({
+          averageLuminance,
+          localLuminance,
+          settings: whiteBaseSettings,
+          source: sourceLab,
+        })
       : sourceLab;
   const baseRgb = oklabToRgb(baseLab);
+  if (whiteBasePreviewOnly) return baseRgb;
   const texture = extractTexturePass(sourceLab.l, localLuminance);
   const illumination = extractIlluminationPass(
     localLuminance,
@@ -54,8 +65,10 @@ export function processPaintPixel({
         base: baseLab,
         illumination,
         intensity: settings.paintIntensity,
+        shadowPreservation: whiteBaseSettings.shadowPreservation,
         target: targetLab,
         texture,
+        texturePreservation: whiteBaseSettings.texturePreservation,
       }),
     );
   }
@@ -68,7 +81,7 @@ export function processPaintPixel({
   const preservedLuminance = recombineTexturePass(
     mixNumber(mixedLab.l, sourceLab.l, 0.72),
     texture,
-    0.75,
+    (whiteBaseSettings.texturePreservation / 100) * 0.85,
   );
 
   return oklabToRgb({

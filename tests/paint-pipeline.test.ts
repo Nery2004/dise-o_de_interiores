@@ -3,20 +3,30 @@ import test from "node:test";
 import { applyBlendPass } from "@/lib/paint/BlendPass";
 import { findMaskBounds } from "@/lib/paint/MaskFeatherPass";
 import { processPaintPixel } from "@/lib/paint/PaintPipeline";
-import { applyWhiteBasePass } from "@/lib/paint/WhiteBasePass";
+import { renderAdaptiveWhiteBase } from "@/lib/paint/whiteBaseRenderer";
 import {
-  hexToRgb,
+  hexToRgbColor,
   oklabToRgb,
   rgbToOklab,
-} from "@/lib/paint/colorMath";
+} from "@/lib/colors/colorSpace";
 import {
   DEFAULT_PAINT_SETTINGS,
   resolvePaintSettings,
 } from "@/lib/paint/paintSettings";
 import type { WallMask } from "@/types/editor";
+import {
+  DEFAULT_WHITE_BASE_SETTINGS,
+  resolveEffectiveWhiteBaseSettings,
+} from "@/lib/paint/whiteBaseOptimizer";
+
+const effectiveWhiteBase = resolveEffectiveWhiteBaseSettings(
+  DEFAULT_WHITE_BASE_SETTINGS,
+  null,
+  100,
+);
 
 test("OKLab conserva el color al convertir ida y vuelta", () => {
-  const source = hexToRgb("#A8B5A2");
+  const source = hexToRgbColor("#A8B5A2");
   const roundTrip = oklabToRgb(rgbToOklab(source));
   assert.ok(Math.abs(roundTrip.r - source.r) < 0.00001);
   assert.ok(Math.abs(roundTrip.g - source.g) < 0.00001);
@@ -24,35 +34,42 @@ test("OKLab conserva el color al convertir ida y vuelta", () => {
 });
 
 test("la base blanca reduce croma sin borrar la luminancia", () => {
-  const beige = rgbToOklab(hexToRgb("#C7A97D"));
-  const primed = applyWhiteBasePass(beige, 100);
-  assert.ok(Math.hypot(primed.a, primed.b) < Math.hypot(beige.a, beige.b) * 0.01);
+  const beige = rgbToOklab(hexToRgbColor("#C7A97D"));
+  const primed = renderAdaptiveWhiteBase({
+    averageLuminance: beige.l,
+    localLuminance: beige.l,
+    settings: effectiveWhiteBase,
+    source: beige,
+  });
+  assert.ok(Math.hypot(primed.a, primed.b) < Math.hypot(beige.a, beige.b) * 0.7);
   assert.ok(primed.l > beige.l);
-  assert.ok(primed.l - beige.l < 0.03);
+  assert.ok(primed.l - beige.l < 0.08);
 });
 
 test("Paint Simulation mantiene la jerarquía entre sombra y luz", () => {
   const settings = { ...DEFAULT_PAINT_SETTINGS, paintIntensity: 150 };
-  const target = hexToRgb("#A8B5A2");
+  const target = hexToRgbColor("#A8B5A2");
   const shadow = processPaintPixel({
     averageLuminance: 0.7,
     localLuminance: 0.4,
     settings,
-    source: hexToRgb("#756A5E"),
+    source: hexToRgbColor("#756A5E"),
     target,
+    whiteBaseSettings: effectiveWhiteBase,
   });
   const highlight = processPaintPixel({
     averageLuminance: 0.7,
     localLuminance: 0.95,
     settings,
-    source: hexToRgb("#F1E7D8"),
+    source: hexToRgbColor("#F1E7D8"),
     target,
+    whiteBaseSettings: effectiveWhiteBase,
   });
   assert.ok(rgbToOklab(highlight).l > rgbToOklab(shadow).l + 0.2);
 });
 
 test("intensidad cero en modo directo conserva el píxel sin volverlo transparente", () => {
-  const source = hexToRgb("#C7A97D");
+  const source = hexToRgbColor("#C7A97D");
   const result = processPaintPixel({
     averageLuminance: rgbToOklab(source).l,
     localLuminance: rgbToOklab(source).l,
@@ -62,7 +79,8 @@ test("intensidad cero en modo directo conserva el píxel sin volverlo transparen
       paintMode: "direct",
     },
     source,
-    target: hexToRgb("#A8B5A2"),
+    target: hexToRgbColor("#A8B5A2"),
+    whiteBaseSettings: effectiveWhiteBase,
   });
   assert.ok(Math.abs(result.r - source.r) < 0.00001);
   assert.ok(Math.abs(result.g - source.g) < 0.00001);

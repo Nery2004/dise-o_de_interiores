@@ -1,4 +1,4 @@
-import { clamp01 } from "@/lib/paint/colorMath";
+import { clamp01 } from "@/lib/colors/colorSpace";
 
 export function extractTexturePass(luminance: number, localLuminance: number) {
   return luminance - localLuminance;

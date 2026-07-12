@@ -2,10 +2,9 @@ import { maskHasExportableColor } from "@/lib/mask-geometry";
 import { applyMaskFeatherPass } from "@/lib/paint/MaskFeatherPass";
 import { processPaintPixel } from "@/lib/paint/PaintPipeline";
 import {
-  hexToRgb,
+  hexToRgbColor,
   rgbToOklab,
-  type RgbColor,
-} from "@/lib/paint/colorMath";
+} from "@/lib/colors/colorSpace";
 import {
   PAINT_QUALITY_SCALE,
   resolvePaintSettings,
@@ -16,14 +15,14 @@ import {
   getRenderContext,
   type RenderCanvas,
 } from "@/lib/paint/renderCanvas";
+import {
+  getSourceRaster,
+  loadPaintImage,
+  readRasterRgb,
+} from "@/lib/paint/imageRaster";
+import { analyzeWallBase } from "@/lib/paint/wallBaseAnalysisService";
+import { resolveEffectiveWhiteBaseSettings } from "@/lib/paint/whiteBaseOptimizer";
 import type { BlendMode, LoadedImage, WallMask } from "@/types/editor";
-
-type SourceRaster = {
-  data: Uint8ClampedArray;
-  height: number;
-  scale: number;
-  width: number;
-};
 
 type RenderedMaskLayer = {
   canvas: RenderCanvas;
@@ -40,10 +39,9 @@ type RenderPaintSceneOptions = {
   image: LoadedImage;
   includeOriginal: boolean;
   masks: WallMask[];
+  whiteBasePreviewMaskId?: string | null;
 };
 
-const imageCache = new Map<string, Promise<HTMLImageElement>>();
-const sourceRasterCache = new Map<string, Promise<SourceRaster>>();
 const layerCache = new Map<string, Promise<RenderedMaskLayer | null>>();
 
 function rememberLimited<K, V>(cache: Map<K, V>, key: K, value: V, limit: number) {
@@ -54,43 +52,11 @@ function rememberLimited<K, V>(cache: Map<K, V>, key: K, value: V, limit: number
   return value;
 }
 
-function loadImage(image: LoadedImage) {
-  const cached = imageCache.get(image.url);
-  if (cached) return cached;
-  const pending = new Promise<HTMLImageElement>((resolve, reject) => {
-    const element = new Image();
-    element.onload = () => resolve(element);
-    element.onerror = () => reject(new Error("Image load failed."));
-    element.src = image.url;
-  });
-  return rememberLimited(imageCache, image.url, pending, 4);
-}
-
-async function getSourceRaster(image: LoadedImage, scale: number) {
-  const key = `${image.url}:${scale}`;
-  const cached = sourceRasterCache.get(key);
-  if (cached) return cached;
-  const pending = loadImage(image).then((element) => {
-    const width = Math.max(1, Math.round(image.dimensions.width * scale));
-    const height = Math.max(1, Math.round(image.dimensions.height * scale));
-    const canvas = createRenderCanvas(width, height);
-    const context = getRenderContext(canvas);
-    context.imageSmoothingEnabled = true;
-    context.drawImage(element, 0, 0, width, height);
-    return {
-      data: context.getImageData(0, 0, width, height).data,
-      height,
-      scale,
-      width,
-    };
-  });
-  return rememberLimited(sourceRasterCache, key, pending, 4);
-}
-
 function maskCacheKey(
   image: LoadedImage,
   mask: WallMask,
   globalBlendMode: BlendMode,
+  whiteBasePreviewOnly: boolean,
 ) {
   return `${image.url}:${JSON.stringify({
     blendMode: mask.blendMode ?? globalBlendMode,
@@ -103,23 +69,18 @@ function maskCacheKey(
     primerCoverage: mask.primerCoverage,
     refinement: mask.refinement,
     renderQuality: mask.renderQuality,
+    whiteBasePreviewOnly,
+    whiteBaseSettings: mask.whiteBaseSettings,
   })}`;
-}
-
-function readRgb(data: Uint8ClampedArray, index: number): RgbColor {
-  return {
-    r: data[index] / 255,
-    g: data[index + 1] / 255,
-    b: data[index + 2] / 255,
-  };
 }
 
 async function renderMaskLayer(
   image: LoadedImage,
   mask: WallMask,
   globalBlendMode: BlendMode,
+  whiteBasePreviewOnly: boolean,
 ): Promise<RenderedMaskLayer | null> {
-  if (!mask.color) return null;
+  if (!mask.color && !whiteBasePreviewOnly) return null;
   const settings = resolvePaintSettings(mask, globalBlendMode);
   const scale = PAINT_QUALITY_SCALE[settings.renderQuality];
   const source = await getSourceRaster(image, scale);
@@ -130,6 +91,15 @@ async function renderMaskLayer(
     settings.edgeFeather,
   );
   if (!featheredMask) return null;
+  const analysisResult =
+    settings.paintMode === "white-base"
+      ? await analyzeWallBase(image, mask)
+      : null;
+  const whiteBaseSettings = resolveEffectiveWhiteBaseSettings(
+    mask.whiteBaseSettings,
+    analysisResult?.analysis ?? null,
+    settings.primerCoverage,
+  );
 
   const { bounds, alpha } = featheredMask;
   const pixelCount = bounds.width * bounds.height;
@@ -143,7 +113,7 @@ async function renderMaskLayer(
       const sourceY = bounds.y + y;
       const sourceIndex = (sourceY * source.width + sourceX) * 4;
       const cropIndex = y * bounds.width + x;
-      const value = rgbToOklab(readRgb(source.data, sourceIndex)).l;
+      const value = rgbToOklab(readRasterRgb(source.data, sourceIndex)).l;
       const weight = alpha[sourceY * source.width + sourceX] / 255;
       luminance[cropIndex] = value;
       weightedLuminance += value * weight;
@@ -151,8 +121,10 @@ async function renderMaskLayer(
     }
   }
 
-  const averageLuminance =
+  const sampledAverageLuminance =
     totalWeight > 0 ? weightedLuminance / totalWeight : 0.7;
+  const averageLuminance =
+    analysisResult?.analysis.averageLuminance ?? sampledAverageLuminance;
   const blurRadius = settings.renderQuality === "draft" ? 1 : settings.renderQuality === "high" ? 2 : 3;
   const localLuminance = createLocalLuminanceField(
     luminance,
@@ -160,7 +132,7 @@ async function renderMaskLayer(
     bounds.height,
     blurRadius,
   );
-  const target = hexToRgb(mask.color);
+  const target = hexToRgbColor(mask.color ?? "#FFFFFF");
   const layerCanvas = createRenderCanvas(bounds.width, bounds.height);
   const layerContext = getRenderContext(layerCanvas);
   const output = layerContext.createImageData(bounds.width, bounds.height);
@@ -178,8 +150,10 @@ async function renderMaskLayer(
         averageLuminance,
         localLuminance: localLuminance[cropIndex],
         settings,
-        source: readRgb(source.data, sourceIndex),
+        source: readRasterRgb(source.data, sourceIndex),
         target,
+        whiteBasePreviewOnly,
+        whiteBaseSettings,
       });
       output.data[outputIndex] = Math.round(painted.r * 255);
       output.data[outputIndex + 1] = Math.round(painted.g * 255);
@@ -202,11 +176,22 @@ function getRenderedMaskLayer(
   image: LoadedImage,
   mask: WallMask,
   globalBlendMode: BlendMode,
+  whiteBasePreviewOnly: boolean,
 ) {
-  const key = maskCacheKey(image, mask, globalBlendMode);
+  const key = maskCacheKey(
+    image,
+    mask,
+    globalBlendMode,
+    whiteBasePreviewOnly,
+  );
   const cached = layerCache.get(key);
   if (cached) return cached;
-  const pending = renderMaskLayer(image, mask, globalBlendMode);
+  const pending = renderMaskLayer(
+    image,
+    mask,
+    globalBlendMode,
+    whiteBasePreviewOnly,
+  );
   return rememberLimited(layerCache, key, pending, 24);
 }
 
@@ -216,6 +201,7 @@ export async function renderPaintScene({
   image,
   includeOriginal,
   masks,
+  whiteBasePreviewMaskId,
 }: RenderPaintSceneOptions) {
   canvas.width = image.dimensions.width;
   canvas.height = image.dimensions.height;
@@ -226,7 +212,7 @@ export async function renderPaintScene({
 
   if (includeOriginal) {
     context.drawImage(
-      await loadImage(image),
+      await loadPaintImage(image),
       0,
       0,
       image.dimensions.width,
@@ -234,10 +220,19 @@ export async function renderPaintScene({
     );
   }
 
-  const visibleMasks = masks.filter(maskHasExportableColor);
+  const visibleMasks = masks.filter(
+    (mask) =>
+      maskHasExportableColor(mask) ||
+      (mask.visible && mask.id === whiteBasePreviewMaskId),
+  );
   const layers = await Promise.all(
     visibleMasks.map((mask) =>
-      getRenderedMaskLayer(image, mask, globalBlendMode),
+      getRenderedMaskLayer(
+        image,
+        mask,
+        globalBlendMode,
+        mask.id === whiteBasePreviewMaskId,
+      ),
     ),
   );
   layers.forEach((layer) => {

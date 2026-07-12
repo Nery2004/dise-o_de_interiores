@@ -22,6 +22,7 @@ import type {
   LoadedImage,
   WallMask,
   BrushStroke,
+  WhiteBaseSettings,
 } from "@/types/editor";
 import type { InteriorProject } from "@/types/project";
 import { addRecentColor } from "@/lib/colors/colorPreferences";
@@ -37,6 +38,8 @@ type EditorContextValue = EditorState & {
   setStatus: (status: EditorStatus) => void;
   addMask: (mask: WallMask) => void;
   updateMask: (id: string, data: Partial<WallMask>) => void;
+  setWhiteBaseAnalysis: (id: string, settings: WhiteBaseSettings) => void;
+  setWhiteBasePreview: (enabled: boolean) => void;
   updateMaskPoints: (id: string, points: ImagePoint[]) => void;
   deleteMask: (id: string) => void;
   selectMask: (id: string | null) => void;
@@ -106,6 +109,7 @@ const initialState: EditorState = {
   brushOpacity: 1,
   maskOnlyPreview: false,
   invertRefinementPreview: false,
+  whiteBasePreviewMaskId: null,
 };
 
 export const EditorContext = createContext<EditorContextValue | null>(null);
@@ -120,6 +124,9 @@ function cloneMasks(masks: WallMask[]) {
       addStrokes: mask.refinement.addStrokes.map((stroke) => ({ ...stroke, points: clonePoints(stroke.points) ?? [] })),
       removeStrokes: mask.refinement.removeStrokes.map((stroke) => ({ ...stroke, points: clonePoints(stroke.points) ?? [] })),
     } : undefined,
+    whiteBaseSettings: mask.whiteBaseSettings
+      ? { ...mask.whiteBaseSettings }
+      : undefined,
   }));
 }
 
@@ -327,7 +334,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     addMask: (mask) => setState((current) => withMaskHistory(current, [
       ...current.masks.map((item) => ({ ...item, selected: false })),
       { ...prepareMask(mask), selected: true },
-    ], { selectedMaskId: mask.id })),
+    ], { selectedMaskId: mask.id, whiteBasePreviewMaskId: null })),
     updateMask: (id, data) => setState((current) => {
       const shouldRecord = [
         "points",
@@ -339,12 +346,25 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         "paintIntensity",
         "edgeFeather",
         "renderQuality",
+        "whiteBaseSettings",
       ].some((key) => key in data);
       const masks = current.masks.map((mask) => mask.id === id
         ? { ...mask, ...data, updatedAt: new Date().toISOString() }
         : mask);
       return shouldRecord ? withMaskHistory(current, masks) : { ...current, masks };
     }),
+    setWhiteBaseAnalysis: (id, settings) => setState((current) => ({
+      ...current,
+      masks: current.masks.map((mask) =>
+        mask.id === id
+          ? { ...mask, whiteBaseSettings: settings }
+          : mask),
+    })),
+    setWhiteBasePreview: (enabled) => setState((current) => ({
+      ...current,
+      whiteBasePreviewMaskId:
+        enabled && current.selectedMaskId ? current.selectedMaskId : null,
+    })),
     updateMaskPoints: (id, points) => setState((current) => {
       const mask = current.masks.find((item) => item.id === id);
       if (!mask?.points || JSON.stringify(mask.points) === JSON.stringify(points)) return current;
@@ -362,6 +382,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         editingStartPoints: current.editingMaskId === id ? null : current.editingStartPoints,
         maskOnlyPreview: current.selectedMaskId === id ? false : current.maskOnlyPreview,
         invertRefinementPreview: current.selectedMaskId === id ? false : current.invertRefinementPreview,
+        whiteBasePreviewMaskId:
+          current.whiteBasePreviewMaskId === id
+            ? null
+            : current.whiteBasePreviewMaskId,
       },
     )),
     selectMask: (id) => setState((current) => {
@@ -379,6 +403,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         editingStartPoints: startsEditing ? clonePoints(selected.points) ?? null : null,
         editingHistoryStart: startsEditing ? current.undoStack.length : 0,
         moveWholeMask: false,
+        whiteBasePreviewMaskId:
+          current.whiteBasePreviewMaskId === id
+            ? current.whiteBasePreviewMaskId
+            : null,
       };
     }),
     replaceMasks: (masks) => setState((current) => withMaskHistory(current, masks.map(prepareMask), {
@@ -388,6 +416,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       editingStartPoints: null,
       maskOnlyPreview: false,
       invertRefinementPreview: false,
+      whiteBasePreviewMaskId: null,
     })),
     toggleMaskVisibility: (id) => setState((current) => ({ ...current, masks: current.masks.map((mask) =>
       mask.id === id ? { ...mask, visible: !mask.visible } : mask),
@@ -399,6 +428,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       editingStartPoints: null,
       maskOnlyPreview: false,
       invertRefinementPreview: false,
+      whiteBasePreviewMaskId: null,
     })),
     addBrushStroke: (maskId, stroke) => setState((current) => {
       const mask = current.masks.find((item) => item.id === maskId);

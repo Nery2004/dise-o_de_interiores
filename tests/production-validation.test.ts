@@ -21,11 +21,27 @@ test("valida uploads y límites de dimensiones", () => {
   assert.equal(validateImageDimensions(5_001, 5_000), false);
 });
 
-test("valida importación y migra proyectos v1 a v2", () => {
-  assert.equal(validateImportedProject(baseProject).version, 2);
-  const legacy = { ...baseProject, version: 1 } as unknown as InteriorProject;
+test("valida importación y migra proyectos anteriores a v3", () => {
+  assert.equal(validateImportedProject(baseProject).version, 3);
+  const legacy = {
+    ...baseProject,
+    version: 1,
+    masks: [{
+      id: "legacy-wall",
+      name: "Pared anterior",
+      type: "manual" as const,
+      visible: true,
+      selected: true,
+      opacity: 0.45,
+      points: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 80 }],
+      createdAt: "2026-01-01T00:00:00.000Z",
+    }],
+  } as unknown as InteriorProject;
   const migrated = migrateProject(legacy);
-  assert.equal(migrated.version, 2);
+  assert.equal(migrated.version, 3);
+  assert.equal(migrated.masks[0].whiteBaseSettings?.mode, "auto");
+  assert.equal(migrated.masks[0].whiteBaseSettings?.shadowPreservation, 90);
+  assert.equal(migrated.masks[0].whiteBaseSettings?.texturePreservation, 90);
   assert.deepEqual(migrated.proposals, []);
   assert.throws(() => validateImportedProject({ ...baseProject, originalImage: { ...baseProject.originalImage, width: -1 } }));
 });

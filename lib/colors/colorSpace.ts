@@ -1,5 +1,6 @@
 export type RgbColor = { r: number; g: number; b: number };
 export type OklabColor = { l: number; a: number; b: number };
+export type HslColor = { h: number; s: number; l: number };
 
 export function clamp01(value: number) {
   return Math.min(1, Math.max(0, value));
@@ -9,13 +10,59 @@ export function mixNumber(first: number, second: number, amount: number) {
   return first + (second - first) * clamp01(amount);
 }
 
-export function hexToRgb(hex: string): RgbColor {
+export function hexToRgbColor(hex: string): RgbColor {
   const normalized = hex.replace(/^#/, "");
   const value = Number.parseInt(normalized, 16);
   return {
     r: ((value >> 16) & 255) / 255,
     g: ((value >> 8) & 255) / 255,
     b: (value & 255) / 255,
+  };
+}
+
+export function rgbColorToHex(color: RgbColor) {
+  return `#${[color.r, color.g, color.b]
+    .map((channel) => Math.round(clamp01(channel) * 255).toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase()}`;
+}
+
+export function rgbToHslColor(color: RgbColor): HslColor {
+  const maximum = Math.max(color.r, color.g, color.b);
+  const minimum = Math.min(color.r, color.g, color.b);
+  const delta = maximum - minimum;
+  let hue = 0;
+  if (delta > 0) {
+    if (maximum === color.r) hue = ((color.g - color.b) / delta) % 6;
+    else if (maximum === color.g) hue = (color.b - color.r) / delta + 2;
+    else hue = (color.r - color.g) / delta + 4;
+    hue *= 60;
+    if (hue < 0) hue += 360;
+  }
+  const lightness = (maximum + minimum) / 2;
+  const saturation =
+    delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1));
+  return { h: hue, s: saturation, l: lightness };
+}
+
+export function hslToRgbColor(color: HslColor): RgbColor {
+  const hue = ((color.h % 360) + 360) % 360;
+  const saturation = clamp01(color.s);
+  const lightness = clamp01(color.l);
+  const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+  const x = chroma * (1 - Math.abs(((hue / 60) % 2) - 1));
+  const offset = lightness - chroma / 2;
+  let channels = [0, 0, 0];
+  if (hue < 60) channels = [chroma, x, 0];
+  else if (hue < 120) channels = [x, chroma, 0];
+  else if (hue < 180) channels = [0, chroma, x];
+  else if (hue < 240) channels = [0, x, chroma];
+  else if (hue < 300) channels = [x, 0, chroma];
+  else channels = [chroma, 0, x];
+  return {
+    r: channels[0] + offset,
+    g: channels[1] + offset,
+    b: channels[2] + offset,
   };
 }
 

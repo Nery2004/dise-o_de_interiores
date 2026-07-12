@@ -4,6 +4,7 @@ import type {
   RenderQuality,
   WallMask,
 } from "@/types/editor";
+import { DEFAULT_WHITE_BASE_SETTINGS } from "@/lib/paint/whiteBaseOptimizer";
 
 export type ResolvedPaintSettings = {
   blendMode: BlendMode;
@@ -70,5 +71,9 @@ export function withDefaultPaintSettings(mask: WallMask): WallMask {
     primerCoverage:
       mask.primerCoverage ?? DEFAULT_PAINT_SETTINGS.primerCoverage,
     renderQuality: mask.renderQuality ?? DEFAULT_PAINT_SETTINGS.renderQuality,
+    whiteBaseSettings: {
+      ...DEFAULT_WHITE_BASE_SETTINGS,
+      ...mask.whiteBaseSettings,
+    },
   };
 }

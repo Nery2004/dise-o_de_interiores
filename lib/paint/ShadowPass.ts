@@ -1,4 +1,4 @@
-import { clamp01 } from "@/lib/paint/colorMath";
+import { clamp01 } from "@/lib/colors/colorSpace";
 
 export function extractIlluminationPass(
   localLuminance: number,
