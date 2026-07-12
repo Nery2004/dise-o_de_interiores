@@ -55,6 +55,10 @@ export function EditableMaskOverlay({ dimensions, mask }: EditableMaskOverlayPro
     }
   }, [mask.points]);
 
+  useEffect(() => () => {
+    dragRef.current = null;
+  }, []);
+
   function beginPointDrag(event: PointerEvent<SVGCircleElement>, pointIndex: number) {
     event.preventDefault();
     event.stopPropagation();
@@ -110,6 +114,9 @@ export function EditableMaskOverlay({ dimensions, mask }: EditableMaskOverlayPro
   function finishDrag(event: PointerEvent<SVGElement>) {
     if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) return;
     dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
     updateMaskPoints(mask.id, draftPointsRef.current);
   }
 

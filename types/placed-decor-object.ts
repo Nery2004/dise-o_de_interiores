@@ -86,6 +86,7 @@ export type ObjectInteractionMode =
   | "resizing"
   | "rotating"
   | "perspective"
+  | "marquee"
   | "surface"
   | "horizon";
 export type ObjectResizeHandle =

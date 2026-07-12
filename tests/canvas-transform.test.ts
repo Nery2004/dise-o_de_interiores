@@ -5,6 +5,9 @@ import {
   clampTranslation,
   clampZoom,
   getComparisonClipPath,
+  imageToNormalizedPoint,
+  normalizedToImagePoint,
+  viewportToImagePoint,
   imagePointToScreenPoint,
   screenPointToImagePoint,
   type CanvasTransform,
@@ -27,6 +30,29 @@ test("calculateFitScale aplica contain con margen sin deformar", () => {
     ),
     0.375,
   );
+});
+
+test("viewport, imagen y coordenadas normalizadas comparten conversiones canónicas", () => {
+  const image = { width: 1600, height: 900 };
+  const point = viewportToImagePoint(
+    { x: 300, y: 250 },
+    { left: 100, top: 100, width: 800, height: 450 },
+    image,
+  );
+  assert.deepEqual(point, { x: 400, y: 300 });
+  assert.deepEqual(normalizedToImagePoint(imageToNormalizedPoint(point, image), image), point);
+  assert.deepEqual(
+    viewportToImagePoint(
+      { x: -100, y: 1_000 },
+      { left: 0, top: 0, width: 800, height: 450 },
+      image,
+    ),
+    { x: 0, y: 900 },
+  );
+  assert.deepEqual(normalizedToImagePoint({ x: -1, y: 2 }, image), {
+    x: 0,
+    y: 900,
+  });
 });
 
 test("el zoom nunca baja del fit ni supera 400 %", () => {

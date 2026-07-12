@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useEffect,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
@@ -49,8 +50,10 @@ export function DecorObjectsLayer({
   const editor = useEditor();
   const placement = useDecorPlacement();
   const lighting = useRoomLighting();
+  const setObjectInteractionMode = placement.setObjectInteractionMode;
   const layerRef = useRef<HTMLDivElement>(null);
   const interactionRef = useRef<ActiveInteraction | null>(null);
+  const lightingTimerRef = useRef<number | null>(null);
   const [previewObject, setPreviewObject] = useState<PlacedDecorObject | null>(
     null,
   );
@@ -58,6 +61,23 @@ export function DecorObjectsLayer({
   const [marquee, setMarquee] = useState<MarqueeSelection | null>(null);
   const interactive =
     editor.activeTool === "objects" || editor.activeTool === "select";
+
+  useEffect(
+    () => () => {
+      interactionRef.current = null;
+      setObjectInteractionMode("idle");
+    },
+    [setObjectInteractionMode],
+  );
+
+  useEffect(
+    () => () => {
+      if (lightingTimerRef.current !== null) {
+        window.clearTimeout(lightingTimerRef.current);
+      }
+    },
+    [],
+  );
 
   function beginInteraction(
     kind: ActiveInteraction["kind"],
@@ -109,8 +129,15 @@ export function DecorObjectsLayer({
         toast.error("La transformación debe conservar un cuadrilátero válido.");
       else if (active.kind === "moving") {
         placement.finalizeObjectPlacement(active.object.id, previewObject);
-        if (previewObject.lightingMode === "auto" && !previewObject.lightingLocked)
-          window.setTimeout(() => void lighting.adaptObject(previewObject), 180);
+        if (previewObject.lightingMode === "auto" && !previewObject.lightingLocked) {
+          if (lightingTimerRef.current !== null) {
+            window.clearTimeout(lightingTimerRef.current);
+          }
+          lightingTimerRef.current = window.setTimeout(() => {
+            lightingTimerRef.current = null;
+            void lighting.adaptObject(previewObject);
+          }, 180);
+        }
       } else placement.updatePlacedObject(active.object.id, previewObject);
     }
     interactionRef.current = null;
@@ -158,6 +185,7 @@ export function DecorObjectsLayer({
         if (interactive) {
           event.currentTarget.setPointerCapture(event.pointerId);
           setMarquee({ start: point, current: point, additive: event.shiftKey || event.metaKey || event.ctrlKey });
+          placement.setObjectInteractionMode("marquee");
         } else placement.clearObjectSelection();
       }}
       onPointerMove={(event) => {
@@ -262,12 +290,24 @@ export function DecorObjectsLayer({
           const ids = placement.placedObjects.filter((object) => object.visible && object.x + object.width / 2 >= left && object.x - object.width / 2 <= right && object.y + object.height / 2 >= top && object.y - object.height / 2 <= bottom).map((object) => object.id);
           placement.selectPlacedObjects(ids, marquee.additive ? "add" : "replace");
           setMarquee(null);
+          placement.setObjectInteractionMode("idle");
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+          }
           return;
         }
         finishInteraction(event);
       }}
-      onPointerCancel={(event) => finishInteraction(event, false)}
-      onLostPointerCapture={(event) => finishInteraction(event)}
+      onPointerCancel={(event) => {
+        setMarquee(null);
+        placement.setObjectInteractionMode("idle");
+        finishInteraction(event, false);
+      }}
+      onLostPointerCapture={(event) => {
+        setMarquee(null);
+        placement.setObjectInteractionMode("idle");
+        finishInteraction(event);
+      }}
       onPointerLeave={() => {
         if (!interactionRef.current) setCursorPoint(null);
       }}

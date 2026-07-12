@@ -10,6 +10,7 @@ import {
 import { withLightingDefaults } from "@/lib/lighting/lightProfile";
 import type { RoomLightProfile } from "@/types/lighting";
 import type { ObjectGroup } from "@/types/object-group";
+import { sanitizeProjectReferences } from "@/lib/projects/projectReferenceIntegrity";
 
 const blendModes: BlendMode[] = [
   "paint-simulation",
@@ -22,95 +23,70 @@ const blendModes: BlendMode[] = [
 ];
 const hexPattern = /^#[0-9a-f]{6}$/i;
 
-export function migrateProject(project: InteriorProject) {
-  if (project.version === 1 || project.version === 2 || project.version === 3) {
-    const proposals = project.version === 1 ? [] : (project.proposals ?? []);
-    return {
-      ...project,
-      version: CURRENT_PROJECT_VERSION,
-      masks: project.masks.map(withDefaultPaintSettings),
-      placedObjects: [],
-      objectGroups: [],
-      objectFolders: [],
-      favoriteObjectIds: [],
-      placementSurfaces: [],
-      perspectiveGuide: null,
-      roomLightProfiles: [],
-      activeRoomLightProfileId: undefined,
-      proposals: proposals.map((proposal) => ({
-        ...proposal,
-        masksSnapshot: proposal.masksSnapshot.map(withDefaultPaintSettings),
-        placedObjectsSnapshot: [],
-        objectGroupsSnapshot: [],
-        placementSurfacesSnapshot: [],
-        perspectiveGuideSnapshot: null,
-        roomLightProfileSnapshot: undefined,
-      })),
-    } as InteriorProject;
-  }
-  if (project.version === 4) {
-    const legacy = project as InteriorProject & {
-      placementSurfaces?: PlacementSurface[];
-      perspectiveGuide?: PerspectiveGuide | null;
-    };
-    return {
-      ...project,
-      version: CURRENT_PROJECT_VERSION,
-      placedObjects: (project.placedObjects ?? []).map(withPerspectiveDefaults),
-      objectGroups: [],
-      objectFolders: [],
-      favoriteObjectIds: [],
-      placementSurfaces: legacy.placementSurfaces ?? [],
-      perspectiveGuide: legacy.perspectiveGuide ?? null,
-      roomLightProfiles: [],
-      activeRoomLightProfileId: undefined,
-      proposals: (project.proposals ?? []).map((proposal) => ({
-        ...proposal,
-        placedObjectsSnapshot: (proposal.placedObjectsSnapshot ?? []).map(
-          withPerspectiveDefaults,
-        ),
-        objectGroupsSnapshot: [],
-        placementSurfacesSnapshot: proposal.placementSurfacesSnapshot ?? [],
-        perspectiveGuideSnapshot: proposal.perspectiveGuideSnapshot ?? null,
-        roomLightProfileSnapshot: undefined,
-      })),
-    } as InteriorProject;
-  }
-  if (project.version === 5) {
-    return {
-      ...project,
-      version: CURRENT_PROJECT_VERSION,
-      placedObjects: (project.placedObjects ?? []).map((object) =>
-        withLightingDefaults(object, categoryForPlacedObject(object)),
-      ),
-      objectGroups: [],
-      objectFolders: [],
-      favoriteObjectIds: [],
-      roomLightProfiles: [],
-      activeRoomLightProfileId: undefined,
-      proposals: (project.proposals ?? []).map((proposal) => ({
-        ...proposal,
-        placedObjectsSnapshot: (proposal.placedObjectsSnapshot ?? []).map((object) =>
-          withLightingDefaults(object, categoryForPlacedObject(object)),
-        ),
-        objectGroupsSnapshot: [],
-        roomLightProfileSnapshot: undefined,
-      })),
-    } as InteriorProject;
-  }
-  if (project.version === 6) {
-    return {
-      ...project,
-      version: CURRENT_PROJECT_VERSION,
-      placedObjects: project.placedObjects.map((object) => withLightingDefaults(object, categoryForPlacedObject(object))),
-      objectGroups: [],
-      objectFolders: [],
-      favoriteObjectIds: [],
-      proposals: project.proposals.map((proposal) => ({ ...proposal, placedObjectsSnapshot: proposal.placedObjectsSnapshot.map((object) => withLightingDefaults(object, categoryForPlacedObject(object))), objectGroupsSnapshot: [] })),
-    } as InteriorProject;
-  }
-  if (project.version !== CURRENT_PROJECT_VERSION)
-    throw new Error("INCOMPATIBLE_VERSION");
+function migrateProjectOneVersion(project: InteriorProject): InteriorProject {
+  if (project.version === 1) return { ...project, version: 2, proposals: [] };
+  if (project.version === 2) return {
+    ...project,
+    version: 3,
+    masks: project.masks.map(withDefaultPaintSettings),
+    proposals: (project.proposals ?? []).map((proposal) => ({ ...proposal, masksSnapshot: proposal.masksSnapshot.map(withDefaultPaintSettings) })),
+  };
+  if (project.version === 3) return {
+    ...project,
+    version: 4,
+    placedObjects: [],
+    proposals: (project.proposals ?? []).map((proposal) => ({ ...proposal, placedObjectsSnapshot: [] })),
+  };
+  if (project.version === 4) return {
+    ...project,
+    version: 5,
+    placedObjects: (project.placedObjects ?? []).map(withPerspectiveDefaults),
+    placementSurfaces: project.placementSurfaces ?? [],
+    perspectiveGuide: project.perspectiveGuide ?? null,
+    proposals: (project.proposals ?? []).map((proposal) => ({
+      ...proposal,
+      placedObjectsSnapshot: (proposal.placedObjectsSnapshot ?? []).map(withPerspectiveDefaults),
+      placementSurfacesSnapshot: proposal.placementSurfacesSnapshot ?? [],
+      perspectiveGuideSnapshot: proposal.perspectiveGuideSnapshot ?? null,
+    })),
+  };
+  if (project.version === 5) return {
+    ...project,
+    version: 6,
+    placedObjects: (project.placedObjects ?? []).map((object) => withLightingDefaults(object, categoryForPlacedObject(object))),
+    roomLightProfiles: [],
+    activeRoomLightProfileId: undefined,
+    proposals: (project.proposals ?? []).map((proposal) => ({
+      ...proposal,
+      placedObjectsSnapshot: (proposal.placedObjectsSnapshot ?? []).map((object) => withLightingDefaults(object, categoryForPlacedObject(object))),
+      roomLightProfileSnapshot: undefined,
+    })),
+  };
+  if (project.version === 6) return {
+    ...project,
+    version: 7,
+    placedObjects: project.placedObjects.map((object) => withLightingDefaults(object, categoryForPlacedObject(object))),
+    objectGroups: [],
+    objectFolders: [],
+    favoriteObjectIds: [],
+    proposals: project.proposals.map((proposal) => ({
+      ...proposal,
+      placedObjectsSnapshot: proposal.placedObjectsSnapshot.map((object) => withLightingDefaults(object, categoryForPlacedObject(object))),
+      objectGroupsSnapshot: [],
+    })),
+  };
+  throw new Error("INCOMPATIBLE_VERSION");
+}
+
+export function migrateProjectToLatestVersion(input: InteriorProject) {
+  if (!Number.isInteger(input.version) || input.version < 1 || input.version > CURRENT_PROJECT_VERSION) throw new Error("INCOMPATIBLE_VERSION");
+  let project = input;
+  while (project.version < CURRENT_PROJECT_VERSION) project = migrateProjectOneVersion(project);
+  return project;
+}
+
+export function migrateProject(input: InteriorProject) {
+  const project = sanitizeProjectReferences(migrateProjectToLatestVersion(input));
   if (
     !Array.isArray(project.placedObjects) ||
     project.placedObjects.some(

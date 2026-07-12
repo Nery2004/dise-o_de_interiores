@@ -86,6 +86,16 @@ export function useCanvasTransform({
   }, [onScaleChange]);
 
   useEffect(() => {
+    if (activeTool === "pan") return;
+    const pan = panRef.current;
+    const viewport = viewportRef.current;
+    if (pan && viewport?.hasPointerCapture(pan.pointerId)) {
+      viewport.releasePointerCapture(pan.pointerId);
+    }
+    panRef.current = null;
+  }, [activeTool]);
+
+  useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
 
@@ -279,7 +289,7 @@ export function useCanvasTransform({
     fitImageToViewport,
     fitScale,
     handleWheel,
-    interactionMode,
+    interactionMode: activeTool === "pan" ? interactionMode : "idle",
     transform,
     viewportPointerHandlers,
     viewportRef: viewportRef as RefObject<HTMLDivElement>,

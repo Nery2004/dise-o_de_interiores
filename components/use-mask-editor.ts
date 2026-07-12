@@ -3,15 +3,7 @@
 import { useCallback, useEffect } from "react";
 import { useEditor } from "@/components/editor-context";
 import { clampPointToImage, insertPointBetween } from "@/lib/geometry/maskGeometry";
-
-function isTypingTarget(target: EventTarget | null) {
-  return target instanceof HTMLElement && (
-    target.tagName === "INPUT" ||
-    target.tagName === "TEXTAREA" ||
-    target.tagName === "SELECT" ||
-    target.isContentEditable
-  );
-}
+import { isTypingTarget } from "@/lib/editor/keyboardShortcuts";
 
 export function useMaskEditor() {
   const editor = useEditor();
@@ -50,7 +42,7 @@ export function useMaskEditor() {
   useEffect(() => {
     if (editor.activeTool !== "edit-mask") return;
     function handleKeyDown(event: KeyboardEvent) {
-      if (isTypingTarget(event.target) || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.defaultPrevented || isTypingTarget(event.target) || event.metaKey || event.ctrlKey || event.altKey) return;
       if (event.key === "Escape") {
         event.preventDefault();
         editor.cancelMaskEditing();

@@ -1,0 +1,10 @@
+{
+  "id": "fixture-wall",
+  "name": "Pared de prueba",
+  "type": "manual",
+  "visible": true,
+  "selected": true,
+  "opacity": 0.45,
+  "points": [{ "x": 0, "y": 0 }, { "x": 320, "y": 0 }, { "x": 320, "y": 140 }, { "x": 0, "y": 140 }],
+  "createdAt": "2026-07-12T00:00:00.000Z"
+}

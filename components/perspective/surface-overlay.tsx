@@ -9,6 +9,7 @@ import { useDecorPlacement } from "@/components/decor-placement-context";
 import { useEditor } from "@/components/editor-context";
 import { clientPointToImagePoint } from "@/lib/decor/objectPlacementGeometry";
 import { polygonCentroid } from "@/lib/perspective/surfaceGeometry";
+import { isTypingTarget } from "@/lib/editor/keyboardShortcuts";
 import type { ImageDimensions } from "@/types/editor";
 
 const colors = {
@@ -44,6 +45,7 @@ export function SurfaceOverlay({
       }
     | null
   >(null);
+  const previousToolRef = useRef(editor.activeTool);
   const inverse = 1 / Math.max(canvasScale, 0.01);
   const fullInteractive =
     editor.activeTool === "define-surface" || editor.activeTool === "horizon";
@@ -84,12 +86,28 @@ export function SurfaceOverlay({
   function finishDrag(event: ReactPointerEvent) {
     if (dragRef.current?.pointerId !== event.pointerId) return;
     dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
     placement.commitHistoryTransaction();
   }
 
   useEffect(() => {
+    if (previousToolRef.current === editor.activeTool) return;
+    previousToolRef.current = editor.activeTool;
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    placement.commitHistoryTransaction();
+  }, [editor.activeTool, placement]);
+
+  useEffect(() => {
     function keyDown(event: KeyboardEvent) {
-      if (editor.activeTool !== "define-surface") return;
+      if (
+        event.defaultPrevented ||
+        isTypingTarget(event.target) ||
+        editor.activeTool !== "define-surface"
+      )
+        return;
       if (event.key === "Enter") {
         event.preventDefault();
         placement.finishSurfaceDraft();
@@ -142,8 +160,11 @@ export function SurfaceOverlay({
       }}
       onPointerMove={continueDrag}
       onPointerUp={finishDrag}
-      onPointerCancel={() => {
+      onPointerCancel={(event) => {
         dragRef.current = null;
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+          event.currentTarget.releasePointerCapture(event.pointerId);
+        }
         placement.commitHistoryTransaction();
       }}
     >

@@ -1,5 +1,6 @@
 import type { ImageDimensions, ImagePoint } from "@/types/editor";
 import { clampPointToImage } from "@/lib/geometry/maskGeometry";
+import { viewportToImagePoint } from "@/lib/canvas/canvasTransformUtils";
 
 export function distanceBetweenPoints(first: ImagePoint, second: ImagePoint) {
   return Math.hypot(first.x - second.x, first.y - second.y);
@@ -26,13 +27,7 @@ export function clientPointToImage(
   bounds: Pick<DOMRect, "left" | "top" | "width" | "height">,
   dimensions: ImageDimensions,
 ) {
-  return clampPointToImage(
-    {
-      x: ((clientPoint.x - bounds.left) / bounds.width) * dimensions.width,
-      y: ((clientPoint.y - bounds.top) / bounds.height) * dimensions.height,
-    },
-    dimensions,
-  );
+  return clampPointToImage(viewportToImagePoint(clientPoint, bounds, dimensions), dimensions);
 }
 
 export function shouldAddBrushPoint(

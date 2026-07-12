@@ -12,6 +12,7 @@ import {
 import { normalizeExportFilename } from "@/lib/proposals/proposalUtils";
 import { useDecorPlacement } from "@/components/decor-placement-context";
 import { useRoomLighting } from "@/components/room-lighting-context";
+import { getEditorErrorMessage } from "@/lib/errors/editorError";
 export function ComparisonExportDialog({
   open,
   onClose,
@@ -55,7 +56,7 @@ export function ComparisonExportDialog({
       );
       onClose();
     } catch (error) {
-      toast.error(error instanceof Error && error.message === "DECOR_ASSET_LOAD_FAILED" ? "No se pudo cargar este objeto." : "No se pudo generar la comparación.");
+      toast.error(getEditorErrorMessage(error, "No se pudo generar la comparación."));
     }
   }
   return (

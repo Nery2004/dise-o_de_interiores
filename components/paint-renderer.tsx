@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useEditor } from "@/components/editor-context";
 import { renderPaintScene } from "@/lib/paint/CanvasRenderer";
+import { beginPerformanceMeasure } from "@/lib/performance/performanceMonitor";
 
 export function PaintRenderer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -22,6 +23,7 @@ export function PaintRenderer() {
     let cancelled = false;
     const frame = requestAnimationFrame(() => {
       if (cancelled) return;
+      const finishMeasure = beginPerformanceMeasure("render");
       const rendered = document.createElement("canvas");
       void renderPaintScene({
         canvas: rendered,
@@ -35,7 +37,7 @@ export function PaintRenderer() {
         canvas.width = rendered.width;
         canvas.height = rendered.height;
         canvas.getContext("2d")?.drawImage(rendered, 0, 0);
-      });
+      }).catch(() => {}).finally(finishMeasure);
     });
     return () => {
       cancelled = true;

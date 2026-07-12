@@ -11,6 +11,7 @@ import { getAutomaticObjectLighting } from "@/lib/lighting/objectLightMatcher";
 import { analyzeRoomLighting } from "@/lib/lighting/roomLightAnalyzer";
 import type { RoomLightProfile } from "@/types/lighting";
 import type { PlacedDecorObject } from "@/types/placed-decor-object";
+import { disposeLightingWorker } from "@/lib/lighting/lightingWorkerClient";
 
 type PreparedLighting = { profiles: RoomLightProfile[]; activeId?: string };
 type RoomLightingContextValue = {
@@ -66,6 +67,7 @@ export function RoomLightingProvider({ children }: { children: ReactNode }) {
   }, [activeProfileId]);
   useEffect(() => () => {
     if (profileTimerRef.current) window.clearTimeout(profileTimerRef.current);
+    disposeLightingWorker();
   }, []);
 
   useEffect(() => {

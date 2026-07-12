@@ -8,6 +8,7 @@ import { useEditor } from "@/components/editor-context";
 import { useProject } from "@/components/project-context";
 import { getProposalColors } from "@/lib/proposals/proposalStatistics";
 import { FullscreenButton } from "@/components/fullscreen-button";
+import { isTypingTarget } from "@/lib/editor/keyboardShortcuts";
 
 export function PresentationMode() {
   const comparison = useComparison();
@@ -30,12 +31,7 @@ export function PresentationMode() {
   );
   useEffect(() => {
     function keydown(event: KeyboardEvent) {
-      if (
-        event.target instanceof HTMLElement &&
-        (["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName) ||
-          event.target.isContentEditable)
-      )
-        return;
+      if (event.defaultPrevented || isTypingTarget(event.target)) return;
       if (event.key === "ArrowRight")
         setIndex(
           (current) => (current + 1) % Math.max(1, project.proposals.length),

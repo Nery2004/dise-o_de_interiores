@@ -4,29 +4,32 @@ import { useEffect } from "react";
 import { useDecorPlacement } from "@/components/decor-placement-context";
 import { useEditor } from "@/components/editor-context";
 import { clampObjectToImage } from "@/lib/decor/objectPlacementGeometry";
-
-function isTypingTarget(target: EventTarget | null) {
-  return target instanceof HTMLElement && (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) || target.isContentEditable);
-}
+import {
+  getHistoryShortcut,
+  hasPrimaryModifier,
+  isTypingTarget,
+} from "@/lib/editor/keyboardShortcuts";
 
 export function ObjectKeyboardShortcuts() {
   const editor = useEditor();
   const placement = useDecorPlacement();
   useEffect(() => {
     function keydown(event: KeyboardEvent) {
-      const modifier = event.metaKey || event.ctrlKey;
-      if (modifier && event.key.toLowerCase() === "z" && (event.shiftKey ? placement.canRedo : placement.canUndo)) {
+      if (event.defaultPrevented || isTypingTarget(event.target)) return;
+      const modifier = hasPrimaryModifier(event);
+      const historyShortcut = getHistoryShortcut(event);
+      if (historyShortcut === "undo" && placement.canUndo) {
         event.preventDefault(); event.stopImmediatePropagation();
-        if (event.shiftKey) placement.redo(); else placement.undo();
+        placement.undo();
         return;
       }
-      if (modifier && event.key.toLowerCase() === "y" && placement.canRedo) {
+      if (historyShortcut === "redo" && placement.canRedo) {
         event.preventDefault(); event.stopImmediatePropagation(); placement.redo(); return;
       }
       if (event.key === "Escape" && placement.pendingDecorObject) {
         event.preventDefault(); placement.cancelPendingObject(); return;
       }
-      if (isTypingTarget(event.target) || (editor.activeTool !== "objects" && editor.activeTool !== "select")) return;
+      if (editor.activeTool !== "objects" && editor.activeTool !== "select") return;
       const selected = placement.placedObjects.find((object) => object.id === placement.selectedObjectId);
       if ((event.key === "Delete" || event.key === "Backspace") && selected) {
         event.preventDefault(); placement.deleteSelectedObjects(); return;

@@ -8,6 +8,7 @@ import { EditableMaskOverlay } from "@/components/editable-mask-overlay";
 import { useEditor } from "@/components/editor-context";
 import { pointsToSvgString } from "@/lib/mask-geometry";
 import { getStoredPaintPreferences } from "@/lib/paint/paintPreferences";
+import { isTypingTarget } from "@/lib/editor/keyboardShortcuts";
 import type { ImageDimensions, ImagePoint } from "@/types/editor";
 
 type MaskOverlayProps = {
@@ -70,6 +71,7 @@ export function MaskOverlay({ dimensions }: MaskOverlayProps) {
     }
 
     function handleKeyDown(event: KeyboardEvent) {
+      if (event.defaultPrevented || isTypingTarget(event.target)) return;
       if (event.key === "Enter") {
         event.preventDefault();
         finishManualMask();

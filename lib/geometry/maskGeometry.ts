@@ -1,31 +1,5 @@
 import type { ImageDimensions, ImagePoint } from "@/types/editor";
 
-export type ViewTransform = {
-  scale: number;
-  offsetX: number;
-  offsetY: number;
-};
-
-export function screenToImageCoordinates(
-  point: ImagePoint,
-  transform: ViewTransform,
-): ImagePoint {
-  return {
-    x: (point.x - transform.offsetX) / transform.scale,
-    y: (point.y - transform.offsetY) / transform.scale,
-  };
-}
-
-export function imageToScreenCoordinates(
-  point: ImagePoint,
-  transform: ViewTransform,
-): ImagePoint {
-  return {
-    x: point.x * transform.scale + transform.offsetX,
-    y: point.y * transform.scale + transform.offsetY,
-  };
-}
-
 export function clampPointToImage(
   point: ImagePoint,
   dimensions: ImageDimensions,

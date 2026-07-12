@@ -4,7 +4,35 @@ import type { RenderQuality } from "@/types/editor";
 import type { PlacedDecorObject } from "@/types/placed-decor-object";
 
 const cache = new Map<string, Promise<HTMLCanvasElement>>();
+const cacheBytes = new Map<string, number>();
 const MAX_CACHE_ENTRIES = 48;
+const MAX_CACHE_BYTES = 96 * 1024 * 1024;
+
+function trimCache() {
+  let bytes = Array.from(cacheBytes.values()).reduce(
+    (total, value) => total + value,
+    0,
+  );
+  while (cache.size > MAX_CACHE_ENTRIES || bytes > MAX_CACHE_BYTES) {
+    const oldestKey = cache.keys().next().value as string | undefined;
+    if (!oldestKey) break;
+    cache.delete(oldestKey);
+    bytes -= cacheBytes.get(oldestKey) ?? 0;
+    cacheBytes.delete(oldestKey);
+  }
+}
+
+export function getDecorObjectRenderCacheStats() {
+  return {
+    entries: cache.size,
+    estimatedBytes: Array.from(cacheBytes.values()).reduce(
+      (total, value) => total + value,
+      0,
+    ),
+    maxEntries: MAX_CACHE_ENTRIES,
+    maxBytes: MAX_CACHE_BYTES,
+  };
+}
 
 export function objectRenderCacheKey(object: PlacedDecorObject, quality: RenderQuality) {
   return JSON.stringify([
@@ -21,7 +49,11 @@ export async function renderDecorObjectAsset(
 ) {
   const key = objectRenderCacheKey(object, quality);
   const existing = cache.get(key);
-  if (existing) return existing;
+  if (existing) {
+    cache.delete(key);
+    cache.set(key, existing);
+    return existing;
+  }
   const operation = loadDecorAsset(object.assetUrl).then(async (image) => {
     const factor = quality === "draft" ? 0.5 : 1;
     const source = document.createElement("canvas");
@@ -36,11 +68,19 @@ export async function renderDecorObjectAsset(
     return processObjectCanvasAsync(source, source.width, source.height, object);
   });
   cache.set(key, operation);
-  if (cache.size > MAX_CACHE_ENTRIES) cache.delete(cache.keys().next().value!);
-  operation.catch(() => cache.delete(key));
+  trimCache();
+  operation.then((canvas) => {
+    if (cache.get(key) !== operation) return;
+    cacheBytes.set(key, canvas.width * canvas.height * 4);
+    trimCache();
+  }).catch(() => {
+    cache.delete(key);
+    cacheBytes.delete(key);
+  });
   return operation;
 }
 
 export function clearDecorObjectRenderCache() {
   cache.clear();
+  cacheBytes.clear();
 }

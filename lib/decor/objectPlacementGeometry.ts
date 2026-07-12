@@ -1,6 +1,7 @@
 import type { DecorObject } from "@/types/decor-object";
 import type { ImageDimensions, ImagePoint } from "@/types/editor";
 import type { ObjectResizeHandle, PlacedDecorObject } from "@/types/placed-decor-object";
+import { viewportToImagePoint } from "@/lib/canvas/canvasTransformUtils";
 
 export type ObjectBounds = { left: number; top: number; right: number; bottom: number; width: number; height: number };
 
@@ -49,7 +50,7 @@ export function getInitialObjectSize(object: DecorObject, image: ImageDimensions
 }
 
 export function clientPointToImagePoint(point: ImagePoint, bounds: Pick<DOMRect, "left" | "top" | "width" | "height">, image: ImageDimensions): ImagePoint {
-  return { x: (point.x - bounds.left) * image.width / Math.max(1, bounds.width), y: (point.y - bounds.top) * image.height / Math.max(1, bounds.height) };
+  return viewportToImagePoint(point, bounds, image);
 }
 
 export function getObjectBounds(object: Pick<PlacedDecorObject, "x" | "y" | "width" | "height">): ObjectBounds {

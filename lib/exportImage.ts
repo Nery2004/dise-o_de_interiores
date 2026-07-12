@@ -4,6 +4,8 @@ import { renderPlacedDecorObjects } from "@/lib/decor/renderPlacedDecorObjects";
 import type { PlacedDecorObject } from "@/types/placed-decor-object";
 import type { RoomLightProfile } from "@/types/lighting";
 import type { PlacementSurface } from "@/types/perspective";
+import { beginPerformanceMeasure } from "@/lib/performance/performanceMonitor";
+import { EditorError } from "@/lib/errors/editorError";
 
 type ExportImageOptions = {
   image: LoadedImage;
@@ -19,7 +21,7 @@ function canvasToPngBlob(canvas: HTMLCanvasElement) {
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (!blob) {
-        reject(new Error("Canvas export failed."));
+        reject(new EditorError("EXPORT_FAILED"));
         return;
       }
       resolve(blob);
@@ -36,23 +38,28 @@ export async function exportEditedImage({
   placementSurfaces = [],
   includeOriginal = true,
 }: ExportImageOptions) {
-  const canvas = document.createElement("canvas");
-  await renderPaintScene({
-    canvas,
-    globalBlendMode,
-    image,
-    includeOriginal,
-    masks,
-  });
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("Canvas export failed.");
-  const failures = await renderPlacedDecorObjects(context, placedObjects, {
-    profiles: roomLightProfiles,
-    surfaces: placementSurfaces,
-    quality: "ultra",
-  });
-  if (failures.length) throw new Error("DECOR_ASSET_LOAD_FAILED");
-  return canvasToPngBlob(canvas);
+  const finishMeasure = beginPerformanceMeasure("export");
+  try {
+    const canvas = document.createElement("canvas");
+    await renderPaintScene({
+      canvas,
+      globalBlendMode,
+      image,
+      includeOriginal,
+      masks,
+    });
+    const context = canvas.getContext("2d");
+    if (!context) throw new EditorError("EXPORT_FAILED");
+    const failures = await renderPlacedDecorObjects(context, placedObjects, {
+      profiles: roomLightProfiles,
+      surfaces: placementSurfaces,
+      quality: "ultra",
+    });
+    if (failures.length) throw new EditorError("ASSET_LOAD_FAILED");
+    return await canvasToPngBlob(canvas);
+  } finally {
+    finishMeasure();
+  }
 }
 
 export function downloadBlob(blob: Blob, filename: string) {

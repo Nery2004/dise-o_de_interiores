@@ -55,7 +55,17 @@ export function BrushRefinementOverlay({ dimensions }: { dimensions: ImageDimens
     drawDisplay();
   }, [dimensions, drawDisplay, isActive, selectedMask]);
 
+  useEffect(() => {
+    if (isActive) return;
+    pointerIdRef.current = null;
+    pointsRef.current = [];
+    alphaCanvasRef.current = null;
+  }, [isActive]);
+
   useEffect(() => () => {
+    pointerIdRef.current = null;
+    pointsRef.current = [];
+    alphaCanvasRef.current = null;
     if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
   }, []);
 
@@ -107,6 +117,9 @@ export function BrushRefinementOverlay({ dimensions }: { dimensions: ImageDimens
     event.preventDefault();
     event.stopPropagation();
     pointerIdRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
     const points = [...pointsRef.current];
     pointsRef.current = [];
     if (points.length === 0) return;

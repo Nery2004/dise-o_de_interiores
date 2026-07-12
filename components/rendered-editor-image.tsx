@@ -9,6 +9,7 @@ import { renderPlacedDecorObjects } from "@/lib/decor/renderPlacedDecorObjects";
 import type { PlacedDecorObject } from "@/types/placed-decor-object";
 import { toast } from "sonner";
 import { useRoomLighting } from "@/components/room-lighting-context";
+import { beginPerformanceMeasure } from "@/lib/performance/performanceMonitor";
 
 let reportedDecorRenderFailure = false;
 
@@ -32,6 +33,7 @@ export function RenderedEditorImage({
     if (!canvas) return;
     let cancelled = false;
     const frame = requestAnimationFrame(() => {
+      const finishMeasure = beginPerformanceMeasure("render");
       const rendered = document.createElement("canvas");
       void renderPaintScene({
         canvas: rendered,
@@ -48,7 +50,7 @@ export function RenderedEditorImage({
         canvas.width = rendered.width;
         canvas.height = rendered.height;
         canvas.getContext("2d")?.drawImage(rendered, 0, 0);
-      });
+      }).catch(() => {}).finally(finishMeasure);
     });
     return () => {
       cancelled = true;

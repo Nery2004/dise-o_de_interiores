@@ -10,6 +10,7 @@ import { useProject } from "@/components/project-context";
 import { useDecorPlacement } from "@/components/decor-placement-context";
 import { useRoomLighting } from "@/components/room-lighting-context";
 import { useState } from "react";
+import { getEditorErrorMessage } from "@/lib/errors/editorError";
 
 function HeaderButton({
   children,
@@ -80,7 +81,7 @@ export function EditorHeader() {
       downloadBlob(blob, "interior-color-studio-export.png");
       toast.success("Imagen descargada correctamente.");
     } catch (error) {
-      toast.error(error instanceof Error && error.message === "DECOR_ASSET_LOAD_FAILED" ? "No se pudo cargar este objeto." : "No se pudo exportar la imagen.");
+      toast.error(getEditorErrorMessage(error, "No se pudo exportar la imagen."));
     } finally {
       setStatus("ready");
     }

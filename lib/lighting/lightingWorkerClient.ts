@@ -4,6 +4,17 @@ let worker: Worker | null = null;
 let sequence = 0;
 const pending = new Map<number, { resolve: (data: ImageData | null) => void; width: number; height: number }>();
 
+export function getLightingWorkerStatus() {
+  return { active: worker !== null, pendingRequests: pending.size };
+}
+
+export function disposeLightingWorker() {
+  for (const request of pending.values()) request.resolve(null);
+  pending.clear();
+  worker?.terminate();
+  worker = null;
+}
+
 function getWorker() {
   if (typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined") return null;
   if (worker) return worker;
@@ -15,10 +26,7 @@ function getWorker() {
     request.resolve(new ImageData(new Uint8ClampedArray(event.data.data), request.width, request.height));
   };
   worker.onerror = () => {
-    for (const request of pending.values()) request.resolve(null);
-    pending.clear();
-    worker?.terminate();
-    worker = null;
+    disposeLightingWorker();
   };
   return worker;
 }

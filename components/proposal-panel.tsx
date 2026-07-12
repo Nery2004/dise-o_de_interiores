@@ -20,6 +20,7 @@ import { useProject } from "@/components/project-context";
 import { SaveProposalDialog } from "@/components/save-proposal-dialog";
 import { FullscreenButton } from "@/components/fullscreen-button";
 import { downloadBlob, exportEditedImage } from "@/lib/exportImage";
+import { getEditorErrorMessage } from "@/lib/errors/editorError";
 import {
   countColoredWalls,
   getDominantColor,
@@ -61,7 +62,7 @@ export function ProposalPanel() {
         `${normalizeExportFilename(project.activeProjectName ?? "proyecto")}-${normalizeExportFilename(proposal.name)}.png`,
       );
     } catch (error) {
-      toast.error(error instanceof Error && error.message === "DECOR_ASSET_LOAD_FAILED" ? "No se pudo cargar este objeto." : "No se pudo exportar esta propuesta.");
+      toast.error(getEditorErrorMessage(error, "No se pudo exportar esta propuesta."));
     }
   }
   function compare() {

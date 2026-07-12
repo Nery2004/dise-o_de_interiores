@@ -29,6 +29,10 @@ import { addRecentColor } from "@/lib/colors/colorPreferences";
 import { validateImageUploadMetadata } from "@/lib/images/imageValidation";
 import { withDefaultPaintSettings } from "@/lib/paint/paintSettings";
 import { getStoredPaintPreferences } from "@/lib/paint/paintPreferences";
+import {
+  getHistoryShortcut,
+  isTypingTarget,
+} from "@/lib/editor/keyboardShortcuts";
 
 type EditorContextValue = EditorState & {
   canUndo: boolean;
@@ -113,6 +117,7 @@ const initialState: EditorState = {
 };
 
 export const EditorContext = createContext<EditorContextValue | null>(null);
+const MAX_EDITOR_HISTORY = 100;
 
 function cloneMasks(masks: WallMask[]) {
   return masks.map((mask) => ({
@@ -152,7 +157,10 @@ function withMaskHistory(
     ...current,
     ...additions,
     masks,
-    undoStack: [...current.undoStack, cloneMasks(current.masks)],
+    undoStack: [
+      ...current.undoStack.slice(-(MAX_EDITOR_HISTORY - 1)),
+      cloneMasks(current.masks),
+    ],
     redoStack: [],
   };
 }
@@ -171,16 +179,6 @@ function getImageFormat(file: File) {
   return file.type.split("/")[1]?.toUpperCase() ??
     file.name.split(".").pop()?.toUpperCase() ??
     "Desconocido";
-}
-
-function isTypingTarget(target: EventTarget | null) {
-  return (
-    target instanceof HTMLElement &&
-    (target.tagName === "INPUT" ||
-      target.tagName === "TEXTAREA" ||
-      target.tagName === "SELECT" ||
-      target.isContentEditable)
-  );
 }
 
 function getValidToolForImageWithoutMasks(tool: EditorTool): EditorTool {
@@ -535,7 +533,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         masks: cloneMasks(previous),
         selectedMaskId,
         undoStack: current.undoStack.slice(0, -1),
-        redoStack: [...current.redoStack, cloneMasks(current.masks)],
+        redoStack: [
+          ...current.redoStack.slice(-(MAX_EDITOR_HISTORY - 1)),
+          cloneMasks(current.masks),
+        ],
         selectedPointIndexes: [],
       };
     }),
@@ -548,7 +549,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         ...current,
         masks: cloneMasks(next),
         selectedMaskId,
-        undoStack: [...current.undoStack, cloneMasks(current.masks)],
+        undoStack: [
+          ...current.undoStack.slice(-(MAX_EDITOR_HISTORY - 1)),
+          cloneMasks(current.masks),
+        ],
         redoStack: current.redoStack.slice(0, -1),
         selectedPointIndexes: [],
       };
@@ -618,13 +622,13 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.defaultPrevented) return;
       if (isTypingTarget(event.target)) return;
-      const modifier = event.metaKey || event.ctrlKey;
-      if (modifier && event.key.toLowerCase() === "z") {
+      const shortcut = getHistoryShortcut(event);
+      if (shortcut === "undo") {
         event.preventDefault();
-        if (event.shiftKey) value.redo(); else value.undo();
+        value.undo();
         return;
       }
-      if (modifier && event.key.toLowerCase() === "y") {
+      if (shortcut === "redo") {
         event.preventDefault();
         value.redo();
       }

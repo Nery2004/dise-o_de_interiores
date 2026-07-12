@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { ImageDimensions, ImagePoint } from "@/types/editor";
+import type { ImageDimensions, ImagePoint, NormalizedPoint, ScreenPoint, ViewportPoint } from "@/types/editor";
 
 export const CANVAS_MAX_SCALE = 4;
 export const CANVAS_FIT_PADDING = 32;
@@ -98,8 +98,8 @@ export function getComparisonClipPath(
     : `inset(0 0 ${100 - safePosition}% 0)`;
 }
 
-export function screenPointToImagePoint(
-  point: ImagePoint,
+export function screenToImagePoint(
+  point: ScreenPoint,
   viewport: ViewportSize,
   image: ImageDimensions,
   transform: CanvasTransform,
@@ -119,7 +119,7 @@ export function imagePointToScreenPoint(
   viewport: ViewportSize,
   image: ImageDimensions,
   transform: CanvasTransform,
-): ImagePoint {
+): ScreenPoint {
   return {
     x:
       viewport.width / 2 +
@@ -130,4 +130,34 @@ export function imagePointToScreenPoint(
       transform.translateY +
       (point.y - image.height / 2) * transform.scale,
   };
+}
+
+export const screenPointToImagePoint = screenToImagePoint;
+
+export function imageToScreenPoint(
+  point: ImagePoint,
+  viewport: ViewportSize,
+  image: ImageDimensions,
+  transform: CanvasTransform,
+) {
+  return imagePointToScreenPoint(point, viewport, image, transform);
+}
+
+export function viewportToImagePoint(
+  point: ViewportPoint,
+  bounds: Pick<DOMRect, "left" | "top" | "width" | "height">,
+  image: ImageDimensions,
+): ImagePoint {
+  return {
+    x: Math.min(image.width, Math.max(0, (point.x - bounds.left) * image.width / Math.max(1, bounds.width))),
+    y: Math.min(image.height, Math.max(0, (point.y - bounds.top) * image.height / Math.max(1, bounds.height))),
+  };
+}
+
+export function imageToNormalizedPoint(point: ImagePoint, image: ImageDimensions): NormalizedPoint {
+  return { x: point.x / Math.max(1, image.width), y: point.y / Math.max(1, image.height) };
+}
+
+export function normalizedToImagePoint(point: NormalizedPoint, image: ImageDimensions): ImagePoint {
+  return { x: Math.min(1, Math.max(0, point.x)) * image.width, y: Math.min(1, Math.max(0, point.y)) * image.height };
 }

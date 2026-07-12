@@ -35,6 +35,11 @@ import type { DesignProposal } from "@/types/proposal";
 import { useDecorPlacement } from "@/components/decor-placement-context";
 import { useRoomLighting } from "@/components/room-lighting-context";
 import { useDecorObjects } from "@/components/use-decor-objects";
+import {
+  hasPrimaryModifier,
+  isTypingTarget,
+} from "@/lib/editor/keyboardShortcuts";
+import { getEditorErrorMessage } from "@/lib/errors/editorError";
 
 export type ProjectSaveStatus = "unsaved" | "saving" | "saved" | "error";
 
@@ -87,11 +92,10 @@ type ProjectContextValue = {
 const ProjectContext = createContext<ProjectContextValue | null>(null);
 
 function storageErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message === "DECOR_ASSET_LOAD_FAILED")
-    return "No se pudo cargar este objeto.";
-  return error instanceof DOMException && error.name === "QuotaExceededError"
-    ? "El almacenamiento local está lleno."
-    : "No se pudo guardar el proyecto en este dispositivo.";
+  return getEditorErrorMessage(
+    error,
+    "No se pudo guardar el proyecto en este dispositivo.",
+  );
 }
 
 export function ProjectProvider({
@@ -432,7 +436,12 @@ export function ProjectProvider({
 
   useEffect(() => {
     function handleSaveShortcut(event: KeyboardEvent) {
-      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "s")
+      if (
+        event.defaultPrevented ||
+        isTypingTarget(event.target) ||
+        !hasPrimaryModifier(event) ||
+        event.key.toLowerCase() !== "s"
+      )
         return;
       event.preventDefault();
       if (activeProjectId) void saveCurrentProject();
@@ -535,11 +544,7 @@ export function ProjectProvider({
         toast.success("Propuesta guardada correctamente.");
         return true;
       } catch (error) {
-        toast.error(
-          error instanceof Error && error.message === "DECOR_ASSET_LOAD_FAILED"
-            ? "No se pudo cargar este objeto."
-            : "No se pudo generar esta propuesta.",
-        );
+        toast.error(getEditorErrorMessage(error, "No se pudo generar esta propuesta."));
         return false;
       }
     },

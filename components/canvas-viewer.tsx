@@ -202,7 +202,7 @@ function TransformedCanvas({ image }: { image: LoadedImage }) {
       <PaintRenderer />
       <RefinedMaskLayer dimensions={image.dimensions} />
       <MaskOverlay dimensions={image.dimensions} />
-      <DecorObjectsLayer dimensions={image.dimensions} canvasScale={transform.scale} />
+      <DecorObjectsLayer key={editor.activeTool} dimensions={image.dimensions} canvasScale={transform.scale} />
       <SurfaceOverlay dimensions={image.dimensions} canvasScale={transform.scale} />
       <LightDirectionOverlay dimensions={image.dimensions} />
       <RulersOverlay dimensions={image.dimensions} />

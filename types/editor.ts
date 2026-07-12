@@ -89,6 +89,19 @@ export type ImagePoint = {
   y: number;
 };
 
+/** Browser client coordinates relative to the screen viewport. */
+export type ScreenPoint = { x: number; y: number };
+/** Coordinates relative to the editor viewport. */
+export type ViewportPoint = { x: number; y: number };
+/** Unit coordinates persisted only after conversion to image space. */
+export type NormalizedPoint = { x: number; y: number };
+
+export type EditorInteractionState =
+  | "idle" | "panning" | "zooming" | "comparing" | "selecting-mask"
+  | "drawing-mask" | "editing-mask-point" | "refining-mask" | "placing-object"
+  | "moving-object" | "resizing-object" | "rotating-object"
+  | "editing-perspective" | "marquee-selecting";
+
 export type BrushStroke = {
   id: string;
   mode: "add" | "remove";
