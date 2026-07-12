@@ -58,6 +58,35 @@ export function SurfaceOverlay({
       : null;
   }
 
+  function continueDrag(event: ReactPointerEvent) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const point = imagePoint(event);
+    if (!point) return;
+    if (drag.kind === "point")
+      placement.updateSurfacePoint(
+        drag.surfaceId,
+        drag.pointIndex,
+        point,
+        false,
+      );
+    else {
+      placement.movePlacementSurface(
+        drag.surfaceId,
+        point.x - drag.lastPoint.x,
+        point.y - drag.lastPoint.y,
+        false,
+      );
+      drag.lastPoint = point;
+    }
+  }
+
+  function finishDrag(event: ReactPointerEvent) {
+    if (dragRef.current?.pointerId !== event.pointerId) return;
+    dragRef.current = null;
+    placement.commitHistoryTransaction();
+  }
+
   useEffect(() => {
     function keyDown(event: KeyboardEvent) {
       if (editor.activeTool !== "define-surface") return;
@@ -111,34 +140,8 @@ export function SurfaceOverlay({
           placement.finishSurfaceDraft();
         }
       }}
-      onPointerMove={(event) => {
-        const drag = dragRef.current;
-        if (!drag || drag.pointerId !== event.pointerId) return;
-        const point = imagePoint(event);
-        if (!point) return;
-        if (drag.kind === "point")
-          placement.updateSurfacePoint(
-            drag.surfaceId,
-            drag.pointIndex,
-            point,
-            false,
-          );
-        else {
-          placement.movePlacementSurface(
-            drag.surfaceId,
-            point.x - drag.lastPoint.x,
-            point.y - drag.lastPoint.y,
-            false,
-          );
-          drag.lastPoint = point;
-        }
-      }}
-      onPointerUp={(event) => {
-        if (dragRef.current?.pointerId === event.pointerId) {
-          dragRef.current = null;
-          placement.commitHistoryTransaction();
-        }
-      }}
+      onPointerMove={continueDrag}
+      onPointerUp={finishDrag}
       onPointerCancel={() => {
         dragRef.current = null;
         placement.commitHistoryTransaction();
@@ -161,31 +164,38 @@ export function SurfaceOverlay({
                 strokeDasharray={
                   surface.detected ? `${7 * inverse} ${5 * inverse}` : undefined
                 }
-                style={{
-                  pointerEvents:
-                    surface.selected &&
-                    !fullInteractive &&
-                    !placement.isPlacingObject &&
-                    !surface.locked
-                      ? "stroke"
-                      : "none",
-                  cursor: "move",
-                }}
-                onPointerDown={(event) => {
-                  const point = imagePoint(event);
-                  if (!point) return;
-                  event.preventDefault();
-                  event.stopPropagation();
-                  event.currentTarget.setPointerCapture(event.pointerId);
-                  dragRef.current = {
-                    kind: "surface",
-                    pointerId: event.pointerId,
-                    surfaceId: surface.id,
-                    lastPoint: point,
-                  };
-                  placement.beginHistoryTransaction();
-                }}
+                style={{ pointerEvents: "none" }}
               />
+              {surface.selected &&
+              !fullInteractive &&
+              !placement.isPlacingObject &&
+              !surface.locked ? (
+                <polyline
+                  points={[...surface.points, surface.points[0]]
+                    .map((point) => `${point.x},${point.y}`)
+                    .join(" ")}
+                  fill="none"
+                  stroke="transparent"
+                  strokeWidth={14 * inverse}
+                  style={{ pointerEvents: "stroke", cursor: "move" }}
+                  onPointerDown={(event) => {
+                    const point = imagePoint(event);
+                    if (!point) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                    dragRef.current = {
+                      kind: "surface",
+                      pointerId: event.pointerId,
+                      surfaceId: surface.id,
+                      lastPoint: point,
+                    };
+                    placement.beginHistoryTransaction();
+                  }}
+                  onPointerMove={continueDrag}
+                  onPointerUp={finishDrag}
+                />
+              ) : null}
               <text
                 x={polygonCentroid(surface.points).x}
                 y={polygonCentroid(surface.points).y}
@@ -290,9 +300,54 @@ export function SurfaceOverlay({
                     };
                     placement.beginHistoryTransaction();
                   }}
+                  onPointerMove={continueDrag}
+                  onPointerUp={finishDrag}
                 />
               )),
             )
+        : null}
+      {!fullInteractive && !placement.isPlacingObject
+        ? placement.placementSurfaces
+            .filter(
+              (surface) =>
+                surface.visible && surface.selected && !surface.locked,
+            )
+            .map((surface) => {
+              const center = polygonCentroid(surface.points);
+              return (
+                <button
+                  key={`move-${surface.id}`}
+                  type="button"
+                  aria-label={`Mover superficie completa ${surface.name}`}
+                  className="object-transform-handle pointer-events-auto absolute grid place-items-center rounded-full border-2 bg-white text-[9px] font-bold shadow"
+                  style={
+                    {
+                      left: center.x,
+                      top: center.y,
+                      borderColor: colors[surface.type],
+                      "--object-handle-size": `${18 * inverse}px`,
+                      cursor: "move",
+                    } as React.CSSProperties
+                  }
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                    dragRef.current = {
+                      kind: "surface",
+                      pointerId: event.pointerId,
+                      surfaceId: surface.id,
+                      lastPoint: center,
+                    };
+                    placement.beginHistoryTransaction();
+                  }}
+                  onPointerMove={continueDrag}
+                  onPointerUp={finishDrag}
+                >
+                  +
+                </button>
+              );
+            })
         : null}
     </div>
   );

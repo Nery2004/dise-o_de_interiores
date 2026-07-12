@@ -56,6 +56,10 @@ const rugBefore = await evaluate(`(() => { const object = document.querySelector
 let corner = await rect('button[aria-label^="Ajustar esquina 1"]');
 await drag({ x: corner.centerX, y: corner.centerY }, { x: corner.centerX + 35, y: corner.centerY - 18 });
 const rugAfter = await evaluate(`(() => { const object = document.querySelector('[data-placed-decor-object]'); return { left: parseFloat(object.style.left), top: parseFloat(object.style.top), width: parseFloat(object.style.width), height: parseFloat(object.style.height) }; })()`);
+await evaluate(`Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Pared principal (heurística)Pared')?.click()`);
+await waitFor(`document.querySelectorAll('button[aria-label^="Mover punto"]').length === 4`);
+const surfaceMoveHandle = await rect('button[aria-label^="Mover superficie completa"]');
+await drag({ x: surfaceMoveHandle.centerX, y: surfaceMoveHandle.centerY }, { x: surfaceMoveHandle.centerX + 24, y: surfaceMoveHandle.centerY + 18 });
 
 await evaluate(`Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Cuadros')?.click()`);
 await waitFor(`Array.from(document.querySelectorAll('button')).some(button => button.textContent.includes('Cuadro abstracto cálido'))`);
@@ -77,7 +81,7 @@ await evaluate(`Array.from(document.querySelectorAll('button')).find(button => b
 await waitFor(`document.querySelector('[role="dialog"] input')`);
 await evaluate(`(() => { const input = document.querySelector('[role="dialog"] input'); const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; setter.call(input, 'Prueba perspectiva E2E'); input.dispatchEvent(new Event('input', { bubbles: true })); document.querySelector('[role="dialog"] form').requestSubmit(); return true; })()`);
 await waitFor(`document.body.textContent.includes('Prueba perspectiva E2E')`, 20_000);
-const persisted = await evaluate(`new Promise((resolve, reject) => { const request = indexedDB.open('interior-color-studio'); request.onerror = () => reject(request.error); request.onsuccess = () => { const tx = request.result.transaction('projects', 'readonly'); const all = tx.objectStore('projects').getAll(); all.onerror = () => reject(all.error); all.onsuccess = () => { const project = all.result.find(item => item.name === 'Prueba perspectiva E2E'); resolve(project ? { id: project.id, version: project.version, surfaces: project.placementSurfaces?.length, objects: project.placedObjects?.length, perspectiveObjects: project.placedObjects?.filter(item => item.perspectivePoints && item.surfaceId).length, guide: Boolean(project.perspectiveGuide?.vanishingPoint1) } : null); }; }; })`);
+const persisted = await evaluate(`new Promise((resolve, reject) => { const request = indexedDB.open('interior-color-studio'); request.onerror = () => reject(request.error); request.onsuccess = () => { const tx = request.result.transaction('projects', 'readonly'); const all = tx.objectStore('projects').getAll(); all.onerror = () => reject(all.error); all.onsuccess = () => { const project = all.result.filter(item => item.name === 'Prueba perspectiva E2E').sort((a, b) => a.updatedAt.localeCompare(b.updatedAt)).at(-1); const wall = project?.placementSurfaces?.find(item => item.type === 'wall'); resolve(project ? { id: project.id, version: project.version, surfaces: project.placementSurfaces?.length, wallX: wall?.points?.[0]?.x, surfaceMoved: wall?.points?.[0]?.x > project.originalImage.width * 0.045, objects: project.placedObjects?.length, perspectiveObjects: project.placedObjects?.filter(item => item.perspectivePoints && item.surfaceId).length, guide: Boolean(project.perspectiveGuide?.vanishingPoint1) } : null); }; }; })`);
 if (!persisted?.id) throw new Error("El proyecto de perspectiva no fue persistido.");
 
 await command("Page.navigate", { url: `http://localhost:3000/editor?project=${encodeURIComponent(persisted.id)}` });
@@ -93,6 +97,8 @@ while (Date.now() - started < 20_000) { downloads = (await readdir(downloadPath)
 
 const summary = {
   heuristicSurfaces: persisted.surfaces === 2,
+  movedSurfaceFirstX: persisted.wallX,
+  wholeSurfaceMoved: persisted.surfaceMoved,
   rugWarpedOnFloor: rugBefore.canvas && rugBefore.width > 0 && rugBefore.height > 0,
   freeCornerChanged: Math.abs(rugBefore.left - rugAfter.left) > 1 || Math.abs(rugBefore.top - rugAfter.top) > 1 || Math.abs(rugBefore.width - rugAfter.width) > 1 || Math.abs(rugBefore.height - rugAfter.height) > 1,
   anchoredPerspectiveObjects: persisted.objects === 2 && persisted.perspectiveObjects === 2,
