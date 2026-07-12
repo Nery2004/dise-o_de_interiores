@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, type ReactNode, useContext, useState } from "react";
+import { useEditor } from "@/components/editor-context";
 import type { ComparisonMode } from "@/types/proposal";
 
 type ComparisonContextValue = {
@@ -18,13 +19,56 @@ type ComparisonContextValue = {
 
 const ComparisonContext = createContext<ComparisonContextValue | null>(null);
 
-export function ComparisonProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<ComparisonMode>("edited");
+function ComparisonStateProvider({
+  children,
+  initialMode,
+}: {
+  children: ReactNode;
+  initialMode: ComparisonMode;
+}) {
+  const [mode, setMode] = useState<ComparisonMode>(initialMode);
   const [comparisonPosition, setPosition] = useState(50);
   const [syncViews, setSyncViews] = useState(true);
   const [presentationMode, setPresentationMode] = useState(false);
   const [includeExportInfo, setIncludeExportInfo] = useState(false);
-  return <ComparisonContext.Provider value={{ mode, comparisonPosition, syncViews, presentationMode, includeExportInfo, setMode, setComparisonPosition: (position) => setPosition(Math.min(100, Math.max(0, position))), setSyncViews, setPresentationMode, setIncludeExportInfo }}>{children}</ComparisonContext.Provider>;
+
+  return (
+    <ComparisonContext.Provider
+      value={{
+        mode,
+        comparisonPosition,
+        syncViews,
+        presentationMode,
+        includeExportInfo,
+        setMode,
+        setComparisonPosition: (position) =>
+          setPosition(Math.min(100, Math.max(0, position))),
+        setSyncViews,
+        setPresentationMode,
+        setIncludeExportInfo,
+      }}
+    >
+      {children}
+    </ComparisonContext.Provider>
+  );
 }
 
-export function useComparison() { const context = useContext(ComparisonContext); if (!context) throw new Error("useComparison debe usarse dentro de ComparisonProvider."); return context; }
+export function ComparisonProvider({ children }: { children: ReactNode }) {
+  const { activeTool, image } = useEditor();
+  return (
+    <ComparisonStateProvider
+      key={image?.url ?? "no-image"}
+      initialMode={activeTool === "compare" ? "slider" : "edited"}
+    >
+      {children}
+    </ComparisonStateProvider>
+  );
+}
+
+export function useComparison() {
+  const context = useContext(ComparisonContext);
+  if (!context) {
+    throw new Error("useComparison debe usarse dentro de ComparisonProvider.");
+  }
+  return context;
+}

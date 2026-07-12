@@ -93,6 +93,10 @@ export function MaskOverlay({ dimensions }: MaskOverlayProps) {
           : "absolute inset-0 h-full w-full"
       }
       viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
+      style={{
+        touchAction:
+          isManualSelection || activeTool === "edit-mask" ? "none" : "auto",
+      }}
       aria-hidden="true"
       onClick={(event) => {
         if (activeTool === "edit-mask") {

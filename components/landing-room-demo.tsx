@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { BeforeAfterClip } from "@/components/before-after-clip";
+import { ComparisonHandle } from "@/components/comparison-handle";
 import { interiorColors } from "@/data/interiorColors";
 
 const demoColors = [
@@ -22,6 +24,7 @@ export function LandingRoomDemo({
 }) {
   const [color, setColor] = useState(demoColors[0]);
   const [position, setPosition] = useState(58);
+  const comparisonRef = useRef<HTMLDivElement>(null);
   return (
     <div className="overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-[0_24px_70px_rgba(42,48,43,.16)]">
       <div className="flex items-center gap-2 border-b border-[var(--line)] bg-white px-4 py-3">
@@ -32,19 +35,20 @@ export function LandingRoomDemo({
           Vista previa del espacio
         </span>
       </div>
-      <div className="relative aspect-[3/2] overflow-hidden bg-[#e8e4dc]">
+      <div
+        ref={comparisonRef}
+        className="relative aspect-[3/2] overflow-hidden bg-[#e8e4dc] select-none"
+      >
         <Image
           src="/interior-studio-room.png"
           alt="Sala de ejemplo para comparar colores de pared"
           fill
           priority={priority}
           sizes="(max-width: 768px) 100vw, 720px"
-          className="object-cover"
+          className="canvas-fixed-image pointer-events-none object-cover"
+          draggable={false}
         />
-        <div
-          className="absolute inset-0"
-          style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
-        >
+        <BeforeAfterClip direction="vertical" position={position}>
           <div
             className="absolute inset-0 opacity-75 mix-blend-multiply"
             style={{
@@ -52,30 +56,19 @@ export function LandingRoomDemo({
               clipPath: "polygon(0 4%, 72% 0, 69% 61%, 0 72%)",
             }}
           />
-        </div>
-        <div
-          className="pointer-events-none absolute inset-y-0 w-0.5 bg-white shadow"
-          style={{ left: `${position}%` }}
-        >
-          <span className="absolute left-1/2 top-1/2 grid h-9 w-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-white bg-[var(--graphite)] text-xs text-white shadow-lg">
-            ↔
-          </span>
-        </div>
+        </BeforeAfterClip>
+        <ComparisonHandle
+          containerRef={comparisonRef}
+          direction="vertical"
+          position={position}
+          onPositionChange={setPosition}
+        />
         <span className="absolute left-3 top-3 rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
           Después
         </span>
         <span className="absolute right-3 top-3 rounded-full bg-white/85 px-3 py-1 text-xs font-semibold text-[var(--graphite)] backdrop-blur">
           Antes
         </span>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={position}
-          onChange={(event) => setPosition(Number(event.target.value))}
-          aria-label="Comparar antes y después"
-          className="absolute inset-0 h-full w-full cursor-ew-resize opacity-0"
-        />
       </div>
       {showPalette ? (
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4">

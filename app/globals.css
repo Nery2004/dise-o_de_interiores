@@ -58,3 +58,8 @@ a,
 input {
   -webkit-tap-highlight-color: transparent;
 }
+
+.canvas-fixed-image {
+  -webkit-user-drag: none;
+  user-select: none;
+}

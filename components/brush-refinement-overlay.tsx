@@ -68,6 +68,7 @@ export function BrushRefinementOverlay({ dimensions }: { dimensions: ImageDimens
       return;
     }
     event.preventDefault();
+    event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     pointerIdRef.current = event.pointerId;
     const point = pointFromEvent(event);
@@ -83,6 +84,8 @@ export function BrushRefinementOverlay({ dimensions }: { dimensions: ImageDimens
     const point = pointFromEvent(event);
     setCursorPoint(point);
     if (pointerIdRef.current !== event.pointerId) return;
+    event.preventDefault();
+    event.stopPropagation();
     const previous = pointsRef.current.at(-1);
     if (!shouldAddBrushPoint(previous, point, editor.brushSize) || !previous) return;
     pointsRef.current.push(point);
@@ -95,6 +98,8 @@ export function BrushRefinementOverlay({ dimensions }: { dimensions: ImageDimens
 
   function finishStroke(event: PointerEvent<HTMLCanvasElement>) {
     if (pointerIdRef.current !== event.pointerId) return;
+    event.preventDefault();
+    event.stopPropagation();
     pointerIdRef.current = null;
     const points = [...pointsRef.current];
     pointsRef.current = [];

@@ -174,6 +174,14 @@ function isTypingTarget(target: EventTarget | null) {
   );
 }
 
+function getValidToolForImageWithoutMasks(tool: EditorTool): EditorTool {
+  return tool === "edit-mask" ||
+    tool === "add-to-mask" ||
+    tool === "remove-from-mask"
+    ? "select"
+    : tool;
+}
+
 export function EditorProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<EditorState>(initialState);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -202,7 +210,19 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         dimensions,
       };
 
-      setState({ ...initialState, image, originalFile: file, temporaryUrl: objectUrl, dimensions, status: "ready" });
+      setState((current) => {
+        const activeTool = getValidToolForImageWithoutMasks(current.activeTool);
+        return {
+          ...initialState,
+          image,
+          originalFile: file,
+          temporaryUrl: objectUrl,
+          dimensions,
+          status: "ready",
+          activeTool,
+          isDrawingMask: activeTool === "manual-select",
+        };
+      });
       toast.success("Imagen cargada.");
     } catch {
       URL.revokeObjectURL(objectUrl);

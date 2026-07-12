@@ -21,7 +21,7 @@ export function MaskControlPoint({ index, point, selected, zoom, onPointerDown }
       stroke={selected ? "#92400e" : "#2563eb"}
       strokeWidth={2}
       vectorEffect="non-scaling-stroke"
-      className="cursor-grab active:cursor-grabbing"
+      className="cursor-grab touch-none active:cursor-grabbing"
       onPointerDown={(event) => onPointerDown(event, index)}
     />
   );
