@@ -40,10 +40,11 @@ export function renderAdaptiveWhiteBase({
   );
   const neutralBaseline =
     averageLuminance + (1 - averageLuminance) * brightness * primer * 0.28;
-  const contrastedBaseline = clamp01(
-    averageLuminance + (neutralBaseline - averageLuminance) * (1 + contrast),
+  const contrastedIllumination = Math.max(
+    0.15,
+    1 + (preservedIllumination - 1) * (1 + contrast),
   );
-  const litBase = clamp01(contrastedBaseline * preservedIllumination);
+  const litBase = clamp01(neutralBaseline * contrastedIllumination);
   const texture = extractTexturePass(source.l, localLuminance);
   const detailedBase = recombineTexturePass(
     litBase,

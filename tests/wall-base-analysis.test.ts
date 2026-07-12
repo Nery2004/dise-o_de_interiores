@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { hexToRgbColor } from "@/lib/colors/colorSpace";
+import {
+  hexToRgbColor,
+  rgbToHslColor,
+  rgbToOklab,
+} from "@/lib/colors/colorSpace";
 import type { FeatheredMask } from "@/lib/paint/MaskFeatherPass";
 import type { SourceRaster } from "@/lib/paint/imageRaster";
 import { createWallAnalysisKey } from "@/lib/paint/wallBaseAnalysisService";
@@ -13,8 +17,11 @@ import {
   clampWhiteBaseSettings,
   DEFAULT_WHITE_BASE_SETTINGS,
   getRecommendedWhiteBaseSettings,
+  resolveEffectiveWhiteBaseSettings,
 } from "@/lib/paint/whiteBaseOptimizer";
 import type { LoadedImage, WallMask } from "@/types/editor";
+import { processPaintPixel } from "@/lib/paint/PaintPipeline";
+import { DEFAULT_PAINT_SETTINGS } from "@/lib/paint/paintSettings";
 
 function makeRaster(colors: string[], width = colors.length): SourceRaster {
   const height = Math.ceil(colors.length / width);
@@ -44,6 +51,30 @@ function analyzeSolid(color: string) {
     source,
     mask: fullMask(10, 10),
     quality: "ultra",
+  });
+}
+
+function hueDistance(first: number, second: number) {
+  const difference = Math.abs(first - second) % 360;
+  return Math.min(difference, 360 - difference);
+}
+
+function renderAutomatic(sourceHex: string, targetHex: string, local?: number) {
+  const analysis = analyzeSolid(sourceHex);
+  const source = hexToRgbColor(sourceHex);
+  const target = hexToRgbColor(targetHex);
+  const whiteBaseSettings = resolveEffectiveWhiteBaseSettings(
+    DEFAULT_WHITE_BASE_SETTINGS,
+    analysis,
+    100,
+  );
+  return processPaintPixel({
+    averageLuminance: analysis.averageLuminance,
+    localLuminance: local ?? rgbToOklab(source).l,
+    settings: DEFAULT_PAINT_SETTINGS,
+    source,
+    target,
+    whiteBaseSettings,
   });
 }
 
@@ -157,4 +188,43 @@ test("invalida la firma cuando cambia imagen, geometría o refinamiento", () => 
       },
     }),
   );
+});
+
+test("neutraliza beige, azul y amarillo antes del nuevo matiz", () => {
+  const cases = [
+    ["#C8B49A", "#A8B5A2"],
+    ["#789CC8", "#C98276"],
+    ["#E2C84B", "#A7BED3"],
+  ] as const;
+  cases.forEach(([source, target]) => {
+    const outputHue = rgbToHslColor(renderAutomatic(source, target)).h;
+    const targetHue = rgbToHslColor(hexToRgbColor(target)).h;
+    assert.ok(hueDistance(outputHue, targetHue) < 20);
+  });
+});
+
+test("una pared blanca recibe neutralización suave", () => {
+  const analysis = analyzeSolid("#F4F2ED");
+  const recommendation = getRecommendedWhiteBaseSettings(analysis);
+  assert.equal(analysis.profile, "neutral-light");
+  assert.ok(recommendation.neutralizationStrength <= 40);
+  assert.ok(recommendation.primerCoverage <= 60);
+});
+
+test("aclara pared oscura conservando sombra y detalle", () => {
+  const source = "#4B4D50";
+  const target = "#F5F1E8";
+  const sourceLuminance = rgbToOklab(hexToRgbColor(source)).l;
+  const shadow = rgbToOklab(renderAutomatic(source, target, 0.28)).l;
+  const lit = rgbToOklab(renderAutomatic(source, target, 0.5)).l;
+  assert.ok(lit > sourceLuminance);
+  assert.ok(shadow < lit - 0.15);
+});
+
+test("conserva variación de alta frecuencia sin amplificarla", () => {
+  const darker = rgbToOklab(renderAutomatic("#9B948A", "#A8B5A2", 0.68)).l;
+  const lighter = rgbToOklab(renderAutomatic("#B5AEA4", "#A8B5A2", 0.68)).l;
+  const difference = lighter - darker;
+  assert.ok(difference > 0.01);
+  assert.ok(difference < 0.15);
 });

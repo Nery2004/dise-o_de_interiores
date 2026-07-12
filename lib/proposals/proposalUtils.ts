@@ -11,6 +11,9 @@ export function cloneProposalMasks(masks: WallMask[]) {
       addStrokes: mask.refinement.addStrokes.map((stroke) => ({ ...stroke, points: stroke.points.map((point) => ({ ...point })) })),
       removeStrokes: mask.refinement.removeStrokes.map((stroke) => ({ ...stroke, points: stroke.points.map((point) => ({ ...point })) })),
     } : undefined,
+    whiteBaseSettings: mask.whiteBaseSettings
+      ? { ...mask.whiteBaseSettings }
+      : undefined,
   }));
 }
 
