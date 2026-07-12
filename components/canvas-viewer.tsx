@@ -8,6 +8,7 @@ import { BrushRefinementOverlay } from "@/components/brush-refinement-overlay";
 import { ComparisonHandle } from "@/components/comparison-handle";
 import { ComparisonModeSelector } from "@/components/comparison-mode-selector";
 import { DrawingHelpOverlay } from "@/components/drawing-help-overlay";
+import { DecorObjectsLayer } from "@/components/decor/decor-objects-layer";
 import { useComparison } from "@/components/comparison-context";
 import { useEditor } from "@/components/editor-context";
 import { ImageUploader } from "@/components/image-uploader";
@@ -198,6 +199,7 @@ function TransformedCanvas({ image }: { image: LoadedImage }) {
       <PaintRenderer />
       <RefinedMaskLayer dimensions={image.dimensions} />
       <MaskOverlay dimensions={image.dimensions} />
+      <DecorObjectsLayer dimensions={image.dimensions} canvasScale={transform.scale} />
       <BrushRefinementOverlay dimensions={image.dimensions} />
     </>
   );

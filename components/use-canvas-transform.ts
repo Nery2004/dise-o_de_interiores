@@ -25,7 +25,11 @@ export type InteractionMode =
   | "comparing"
   | "editing-point"
   | "drawing-mask"
-  | "refining-mask";
+  | "refining-mask"
+  | "placing-object"
+  | "moving-object"
+  | "resizing-object"
+  | "rotating-object";
 
 type PanState = {
   pointerId: number;

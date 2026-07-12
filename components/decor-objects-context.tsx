@@ -64,8 +64,8 @@ export function DecorObjectsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearPendingDecorObject = useCallback(async () => {
-    await pendingDecorObjectRepository.clearPendingObject();
     setPendingState(null);
+    await pendingDecorObjectRepository.clearPendingObject();
   }, []);
 
   const toggleFavorite = useCallback(async (id: string) => {

@@ -52,13 +52,14 @@ export function ProposalPanel() {
         image: editor.image,
         masks: proposal.masksSnapshot,
         globalBlendMode: editor.globalBlendMode,
+        placedObjects: proposal.placedObjectsSnapshot,
       });
       downloadBlob(
         blob,
         `${normalizeExportFilename(project.activeProjectName ?? "proyecto")}-${normalizeExportFilename(proposal.name)}.png`,
       );
-    } catch {
-      toast.error("No se pudo exportar esta propuesta.");
+    } catch (error) {
+      toast.error(error instanceof Error && error.message === "DECOR_ASSET_LOAD_FAILED" ? "No se pudo cargar este objeto." : "No se pudo exportar esta propuesta.");
     }
   }
   function compare() {

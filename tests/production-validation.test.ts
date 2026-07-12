@@ -9,7 +9,7 @@ import type { InteriorProject } from "@/types/project";
 const baseProject = {
   id: "project-1", name: "Sala", version: 2, createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z",
   originalImage: { name: "sala.png", type: "image/png", width: 100, height: 80, size: 100, dataUrl: "data:image/png;base64,AA==" },
-  masks: [], activeColor: null, selectedMaskId: null, globalBlendMode: "multiply",
+  masks: [], placedObjects: [], activeColor: null, selectedMaskId: null, globalBlendMode: "multiply",
   editorSettings: { zoom: 1, beforeAfterEnabled: false, maskPreviewEnabled: true, brushSize: 40, brushHardness: 0.7, brushOpacity: 1 }, proposals: [],
 } satisfies InteriorProject;
 
@@ -21,8 +21,8 @@ test("valida uploads y límites de dimensiones", () => {
   assert.equal(validateImageDimensions(5_001, 5_000), false);
 });
 
-test("valida importación y migra proyectos anteriores a v3", () => {
-  assert.equal(validateImportedProject(baseProject).version, 3);
+test("valida importación y migra proyectos anteriores a v4", () => {
+  assert.equal(validateImportedProject(baseProject).version, 4);
   const legacy = {
     ...baseProject,
     version: 1,
@@ -38,11 +38,12 @@ test("valida importación y migra proyectos anteriores a v3", () => {
     }],
   } as unknown as InteriorProject;
   const migrated = migrateProject(legacy);
-  assert.equal(migrated.version, 3);
+  assert.equal(migrated.version, 4);
   assert.equal(migrated.masks[0].whiteBaseSettings?.mode, "auto");
   assert.equal(migrated.masks[0].whiteBaseSettings?.shadowPreservation, 90);
   assert.equal(migrated.masks[0].whiteBaseSettings?.texturePreservation, 90);
   assert.deepEqual(migrated.proposals, []);
+  assert.deepEqual(migrated.placedObjects, []);
   assert.throws(() => validateImportedProject({ ...baseProject, originalImage: { ...baseProject.originalImage, width: -1 } }));
 });
 

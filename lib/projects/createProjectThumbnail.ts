@@ -1,8 +1,9 @@
 import { exportEditedImage } from "@/lib/exportImage";
 import type { BlendMode, LoadedImage, WallMask } from "@/types/editor";
+import type { PlacedDecorObject } from "@/types/placed-decor-object";
 
-export async function createProjectThumbnail(image: LoadedImage, masks: WallMask[], globalBlendMode: BlendMode) {
-  const blob = await exportEditedImage({ image, masks, globalBlendMode });
+export async function createProjectThumbnail(image: LoadedImage, masks: WallMask[], globalBlendMode: BlendMode, placedObjects: PlacedDecorObject[] = []) {
+  const blob = await exportEditedImage({ image, masks, globalBlendMode, placedObjects });
   const url = URL.createObjectURL(blob);
   try {
     const source = await new Promise<HTMLImageElement>((resolve, reject) => {

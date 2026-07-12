@@ -1,5 +1,6 @@
 import type { WallMask } from "@/types/editor";
 import type { DesignProposal } from "@/types/proposal";
+import type { PlacedDecorObject } from "@/types/placed-decor-object";
 
 export function cloneProposalMasks(masks: WallMask[]) {
   return masks.map((mask) => ({
@@ -19,4 +20,5 @@ export function cloneProposalMasks(masks: WallMask[]) {
 
 export function createProposalSnapshot(masks: WallMask[]) { return cloneProposalMasks(masks); }
 export function applyProposalSnapshot(proposal: DesignProposal) { return cloneProposalMasks(proposal.masksSnapshot); }
+export function clonePlacedDecorObjects(objects: PlacedDecorObject[]) { return objects.map((object) => ({ ...object, selected: false })); }
 export function normalizeExportFilename(value: string) { return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "propuesta"; }

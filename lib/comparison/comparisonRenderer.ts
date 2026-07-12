@@ -1,6 +1,7 @@
 import { exportEditedImage } from "@/lib/exportImage";
 import type { BlendMode, LoadedImage, WallMask } from "@/types/editor";
 import type { DesignProposal } from "@/types/proposal";
+import type { PlacedDecorObject } from "@/types/placed-decor-object";
 
 function loadImage(source: string | Blob) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
@@ -32,6 +33,7 @@ export async function renderProposal(
     image,
     masks: proposal.masksSnapshot,
     globalBlendMode: blendMode,
+    placedObjects: proposal.placedObjectsSnapshot,
   });
 }
 export async function renderSideBySideComparison({
@@ -41,6 +43,7 @@ export async function renderSideBySideComparison({
   split = false,
   includeInfo = false,
   title,
+  placedObjects = [],
 }: {
   image: LoadedImage;
   masks: WallMask[];
@@ -48,10 +51,11 @@ export async function renderSideBySideComparison({
   split?: boolean;
   includeInfo?: boolean;
   title?: string;
+  placedObjects?: PlacedDecorObject[];
 }) {
   const [original, edited] = await Promise.all([
     loadImage(image.url),
-    exportEditedImage({ image, masks, globalBlendMode: blendMode }).then(
+    exportEditedImage({ image, masks, globalBlendMode: blendMode, placedObjects }).then(
       loadImage,
     ),
   ]);

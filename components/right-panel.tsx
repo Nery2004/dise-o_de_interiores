@@ -12,12 +12,15 @@ import { ProposalPanel } from "@/components/proposal-panel";
 import { PaintSimulationControls } from "@/components/paint-simulation-controls";
 import { EditorObjectsPanel } from "@/components/decor/editor-objects-panel";
 import { PendingDecorObjectNotice } from "@/components/decor/pending-decor-object-notice";
+import { ObjectInspectorPanel } from "@/components/decor/object-inspector-panel";
+import { useDecorPlacement } from "@/components/decor-placement-context";
 
 function EmptyValue() {
   return <span className="text-[#a0a7b1]">-</span>;
 }
 
 export function RightPanel() {
+  const placement = useDecorPlacement();
   const {
     activeColor,
     activeTool,
@@ -43,6 +46,7 @@ export function RightPanel() {
     <aside className="max-h-[calc(100vh-8.5rem)] overflow-auto rounded-lg border border-[#dde1e7] bg-white p-4 shadow-sm">
       {activeTool === "objects" ? <div className="mb-5"><EditorObjectsPanel /></div> : null}
       <PendingDecorObjectNotice />
+      {activeTool !== "objects" && placement.placedObjects.length ? <ObjectInspectorPanel /> : null}
       <section>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8290]">
           Propiedades

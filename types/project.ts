@@ -1,7 +1,8 @@
 import type { BlendMode, WallMask } from "@/types/editor";
 import type { DesignProposal } from "@/types/proposal";
+import type { PlacedDecorObject } from "@/types/placed-decor-object";
 
-export const CURRENT_PROJECT_VERSION = 3;
+export const CURRENT_PROJECT_VERSION = 4;
 
 export type ProjectImage = {
   name: string;
@@ -23,6 +24,7 @@ export type InteriorProject = {
   originalImage: ProjectImage;
   originalImageBlob?: Blob;
   masks: WallMask[];
+  placedObjects: PlacedDecorObject[];
   activeColor: string | null;
   selectedMaskId: string | null;
   globalBlendMode: BlendMode;

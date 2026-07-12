@@ -10,6 +10,7 @@ import {
   renderSideBySideComparison,
 } from "@/lib/comparison/comparisonRenderer";
 import { normalizeExportFilename } from "@/lib/proposals/proposalUtils";
+import { useDecorPlacement } from "@/components/decor-placement-context";
 export function ComparisonExportDialog({
   open,
   onClose,
@@ -20,6 +21,7 @@ export function ComparisonExportDialog({
   const editor = useEditor();
   const project = useProject();
   const comparison = useComparison();
+  const placement = useDecorPlacement();
   const [format, setFormat] = useState<"side" | "split" | "grid">("side");
   if (!open) return null;
   async function run() {
@@ -38,6 +40,7 @@ export function ComparisonExportDialog({
               image: editor.image,
               masks: editor.masks,
               blendMode: editor.globalBlendMode,
+              placedObjects: placement.placedObjects,
               split: format === "split",
               includeInfo: comparison.includeExportInfo,
               title: project.activeProjectName ?? undefined,
@@ -47,8 +50,8 @@ export function ComparisonExportDialog({
         `${normalizeExportFilename(project.activeProjectName ?? "proyecto")}-comparacion.png`,
       );
       onClose();
-    } catch {
-      toast.error("No se pudo generar la comparación.");
+    } catch (error) {
+      toast.error(error instanceof Error && error.message === "DECOR_ASSET_LOAD_FAILED" ? "No se pudo cargar este objeto." : "No se pudo generar la comparación.");
     }
   }
   return (

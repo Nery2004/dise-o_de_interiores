@@ -10,8 +10,9 @@ import { migrateProject } from "@/lib/projects/projectValidation";
 import { CURRENT_PROJECT_VERSION, type InteriorProject } from "@/types/project";
 import { consumePendingEditorColor } from "@/lib/colors/colorPreferences";
 import { createProposalThumbnail } from "@/lib/proposals/createProposalThumbnail";
-import { applyProposalSnapshot, createProposalSnapshot } from "@/lib/proposals/proposalUtils";
+import { applyProposalSnapshot, clonePlacedDecorObjects, createProposalSnapshot } from "@/lib/proposals/proposalUtils";
 import type { DesignProposal } from "@/types/proposal";
+import { useDecorPlacement } from "@/components/decor-placement-context";
 
 export type ProjectSaveStatus = "unsaved" | "saving" | "saved" | "error";
 
@@ -57,6 +58,7 @@ type ProjectContextValue = {
 const ProjectContext = createContext<ProjectContextValue | null>(null);
 
 function storageErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message === "DECOR_ASSET_LOAD_FAILED") return "No se pudo cargar este objeto.";
   return error instanceof DOMException && error.name === "QuotaExceededError"
     ? "El almacenamiento local está lleno."
     : "No se pudo guardar el proyecto en este dispositivo.";
@@ -64,6 +66,7 @@ function storageErrorMessage(error: unknown) {
 
 export function ProjectProvider({ children, initialProjectId }: { children: ReactNode; initialProjectId?: string }) {
   const editor = useEditor();
+  const placement = useDecorPlacement();
   const router = useRouter();
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [activeProjectName, setActiveProjectName] = useState<string | null>(null);
@@ -84,6 +87,7 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
   const pendingActionRef = useRef<(() => void) | null>(null);
   const savePromiseRef = useRef<Promise<boolean> | null>(null);
   const activeProjectIdRef = useRef<string | null>(null);
+  const restoringProjectRef = useRef(false);
 
   const signature = useMemo(() => JSON.stringify({
     image: editor.image ? [editor.image.name, editor.image.size, editor.image.dimensions] : null,
@@ -91,12 +95,13 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
     activeColor: editor.activeColor,
     selectedMaskId: editor.selectedMaskId,
     globalBlendMode: editor.globalBlendMode,
+    placedObjects: placement.placedObjects.map((object) => ({ ...object, selected: false })),
     settings: [editor.zoom, editor.beforeAfterEnabled, editor.maskPreviewEnabled, editor.brushSize, editor.brushHardness, editor.brushOpacity],
     proposals,
-  }), [editor.activeColor, editor.beforeAfterEnabled, editor.brushHardness, editor.brushOpacity, editor.brushSize, editor.globalBlendMode, editor.image, editor.maskPreviewEnabled, editor.masks, editor.selectedMaskId, editor.zoom, proposals]);
+  }), [editor.activeColor, editor.beforeAfterEnabled, editor.brushHardness, editor.brushOpacity, editor.brushSize, editor.globalBlendMode, editor.image, editor.maskPreviewEnabled, editor.masks, editor.selectedMaskId, editor.zoom, placement.placedObjects, proposals]);
 
   useEffect(() => {
-    if (signatureRef.current === null || skipDirtyRef.current) {
+    if (signatureRef.current === null || skipDirtyRef.current || restoringProjectRef.current) {
       signatureRef.current = signature;
       skipDirtyRef.current = false;
       return;
@@ -116,6 +121,8 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
       const project = migrateProject(stored);
       if (!project.originalImageBlob || !Array.isArray(project.masks) || project.originalImage.width <= 0 || project.originalImage.height <= 0) throw new Error("CORRUPT_PROJECT");
       skipDirtyRef.current = true;
+      restoringProjectRef.current = true;
+      placement.prepareProjectRestore(project.placedObjects);
       await editor.restoreProject(project);
       const pendingColor = await consumePendingEditorColor();
       if (pendingColor) {
@@ -137,10 +144,12 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
         setSaveStatus("unsaved");
         setRevision((current) => current + 1);
       }
+      window.setTimeout(() => { restoringProjectRef.current = false; }, 0);
     } catch (error) {
+      restoringProjectRef.current = false;
       toast.error(error instanceof Error && error.message === "INCOMPATIBLE_VERSION" ? "Este proyecto fue creado con una versión incompatible." : "No se pudo cargar la imagen del proyecto.");
     }
-  }, [editor]);
+  }, [editor, placement]);
 
   useEffect(() => {
     if (!initialProjectId) return;
@@ -169,8 +178,8 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
         const existing = activeProjectId ? await getProjectById(activeProjectId) : undefined;
         const now = new Date().toISOString();
         const imageUnchanged = existing?.originalImage.name === editor.image!.name && existing.originalImage.size === editor.image!.size && existing.originalImage.type === editor.image!.type;
-        const visualUnchanged = imageUnchanged && existing?.globalBlendMode === editor.globalBlendMode && JSON.stringify(existing?.masks) === JSON.stringify(editor.masks);
-        const thumbnail = visualUnchanged && existing?.thumbnail ? existing.thumbnail : await createProjectThumbnail(editor.image!, editor.masks, editor.globalBlendMode);
+        const visualUnchanged = imageUnchanged && existing?.globalBlendMode === editor.globalBlendMode && JSON.stringify(existing?.masks) === JSON.stringify(editor.masks) && JSON.stringify(existing?.placedObjects) === JSON.stringify(clonePlacedDecorObjects(placement.placedObjects));
+        const thumbnail = visualUnchanged && existing?.thumbnail ? existing.thumbnail : await createProjectThumbnail(editor.image!, editor.masks, editor.globalBlendMode, placement.placedObjects);
         const id = existing?.id ?? crypto.randomUUID();
         const project: InteriorProject = {
           id,
@@ -183,6 +192,7 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
           originalImage: { name: editor.image!.name, type: editor.image!.type, width: editor.image!.dimensions.width, height: editor.image!.dimensions.height, size: editor.image!.size },
           originalImageBlob: imageUnchanged && existing?.originalImageBlob ? existing.originalImageBlob : editor.originalFile!,
           masks: editor.masks,
+          placedObjects: clonePlacedDecorObjects(placement.placedObjects),
           activeColor: editor.activeColor,
           selectedMaskId: editor.selectedMaskId,
           globalBlendMode: editor.globalBlendMode,
@@ -210,7 +220,7 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
     })();
     savePromiseRef.current = operation;
     return operation;
-  }, [activeProjectDescription, activeProjectId, activeProjectName, editor, proposals]);
+  }, [activeProjectDescription, activeProjectId, activeProjectName, editor, placement.placedObjects, proposals]);
 
   useEffect(() => {
     if (!autosaveEnabled || !activeProjectId || !isDirty || isSaving) return;
@@ -248,6 +258,7 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
   const resetProject = useCallback(() => {
     skipDirtyRef.current = true;
     editor.resetImage();
+    placement.resetPlacedObjects();
     setActiveProjectId(null);
     activeProjectIdRef.current = null;
     setActiveProjectName(null);
@@ -258,7 +269,7 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
     setLastSavedAt(null);
     setIsDirty(false);
     setSaveStatus("saved");
-  }, [editor]);
+  }, [editor, placement]);
 
   const guardAction = useCallback((action: () => void) => {
     if (!isDirty) { action(); return; }
@@ -271,17 +282,18 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
     try {
       const now = new Date().toISOString();
       const snapshot = createProposalSnapshot(editor.masks);
-      const thumbnail = await createProposalThumbnail(editor.image, snapshot, editor.globalBlendMode);
-      const proposal: DesignProposal = { id: crypto.randomUUID(), name: data.name.trim().slice(0, 80), description: data.description?.trim().slice(0, 300) || undefined, tags: data.tags, createdAt: now, updatedAt: now, thumbnail, masksSnapshot: snapshot, activeColor: editor.activeColor };
+      const objectsSnapshot = clonePlacedDecorObjects(placement.placedObjects);
+      const thumbnail = await createProposalThumbnail(editor.image, snapshot, editor.globalBlendMode, objectsSnapshot);
+      const proposal: DesignProposal = { id: crypto.randomUUID(), name: data.name.trim().slice(0, 80), description: data.description?.trim().slice(0, 300) || undefined, tags: data.tags, createdAt: now, updatedAt: now, thumbnail, masksSnapshot: snapshot, placedObjectsSnapshot: objectsSnapshot, activeColor: editor.activeColor };
       setProposals((current) => [...current, proposal]);
       setActiveProposalId(proposal.id);
       toast.success("Propuesta guardada correctamente.");
       return true;
-    } catch {
-      toast.error("No se pudo generar esta propuesta.");
+    } catch (error) {
+      toast.error(error instanceof Error && error.message === "DECOR_ASSET_LOAD_FAILED" ? "No se pudo cargar este objeto." : "No se pudo generar esta propuesta.");
       return false;
     }
-  }, [editor]);
+  }, [editor, placement.placedObjects]);
 
   const value = useMemo<ProjectContextValue>(() => ({
     activeProjectId, activeProjectName, activeProjectDescription, isDirty, isSaving, lastSavedAt, autosaveEnabled, saveStatus, saveDialogOpen, unsavedDialogOpen,
@@ -307,12 +319,12 @@ export function ProjectProvider({ children, initialProjectId }: { children: Reac
     proposals, activeProposalId, selectedProposalIds, createProposal,
     updateProposal: (id, changes) => setProposals((current) => current.map((proposal) => proposal.id === id ? { ...proposal, ...changes, id, updatedAt: new Date().toISOString() } : proposal)),
     deleteProposal: (id) => { setProposals((current) => current.filter((proposal) => proposal.id !== id)); setSelectedProposalIds((current) => current.filter((item) => item !== id)); if (activeProposalId === id) setActiveProposalId(null); },
-    duplicateProposal: (id) => setProposals((current) => { const source = current.find((proposal) => proposal.id === id); if (!source) return current; const now = new Date().toISOString(); return [...current, { ...source, id: crypto.randomUUID(), name: `${source.name} (copia)`, createdAt: now, updatedAt: now, masksSnapshot: createProposalSnapshot(source.masksSnapshot) }]; }),
-    applyProposal: (id) => { const proposal = proposals.find((item) => item.id === id); if (!proposal) { toast.error("No se pudo cargar esta propuesta."); return false; } editor.replaceMasks(applyProposalSnapshot(proposal)); editor.setActiveColor(proposal.activeColor ?? null); setActiveProposalId(id); return true; },
+    duplicateProposal: (id) => setProposals((current) => { const source = current.find((proposal) => proposal.id === id); if (!source) return current; const now = new Date().toISOString(); return [...current, { ...source, id: crypto.randomUUID(), name: `${source.name} (copia)`, createdAt: now, updatedAt: now, masksSnapshot: createProposalSnapshot(source.masksSnapshot), placedObjectsSnapshot: clonePlacedDecorObjects(source.placedObjectsSnapshot) }]; }),
+    applyProposal: (id) => { const proposal = proposals.find((item) => item.id === id); if (!proposal) { toast.error("No se pudo cargar esta propuesta."); return false; } editor.replaceMasks(applyProposalSnapshot(proposal)); placement.replacePlacedObjects(clonePlacedDecorObjects(proposal.placedObjectsSnapshot)); editor.setActiveColor(proposal.activeColor ?? null); setActiveProposalId(id); return true; },
     toggleProposalSelection: (id) => setSelectedProposalIds((current) => { if (current.includes(id)) return current.filter((item) => item !== id); if (current.length >= 4) { toast.error("Selecciona entre 2 y 4 propuestas."); return current; } return [...current, id]; }),
     compareProposals: () => { if (selectedProposalIds.length < 2 || selectedProposalIds.length > 4) { toast.error("Selecciona entre 2 y 4 propuestas."); return false; } return true; },
     clearProposalSelection: () => setSelectedProposalIds([]),
-  }), [activeProjectDescription, activeProjectId, activeProjectName, activeProposalId, autosaveEnabled, createProposal, editor, executePending, guardAction, isDirty, isSaving, lastSavedAt, loadProject, proposals, resetProject, router, saveCurrentProject, saveDialogOpen, saveStatus, selectedProposalIds, unsavedDialogOpen]);
+  }), [activeProjectDescription, activeProjectId, activeProjectName, activeProposalId, autosaveEnabled, createProposal, editor, executePending, guardAction, isDirty, isSaving, lastSavedAt, loadProject, placement, proposals, resetProject, router, saveCurrentProject, saveDialogOpen, saveStatus, selectedProposalIds, unsavedDialogOpen]);
 
   return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>;
 }

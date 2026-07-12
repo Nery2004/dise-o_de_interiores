@@ -1,10 +1,13 @@
 import { renderPaintScene } from "@/lib/paint/CanvasRenderer";
 import type { BlendMode, LoadedImage, WallMask } from "@/types/editor";
+import { renderPlacedDecorObjects } from "@/lib/decor/renderPlacedDecorObjects";
+import type { PlacedDecorObject } from "@/types/placed-decor-object";
 
 type ExportImageOptions = {
   image: LoadedImage;
   masks: WallMask[];
   globalBlendMode: BlendMode;
+  placedObjects?: PlacedDecorObject[];
 };
 
 function canvasToPngBlob(canvas: HTMLCanvasElement) {
@@ -23,6 +26,7 @@ export async function exportEditedImage({
   globalBlendMode,
   image,
   masks,
+  placedObjects = [],
 }: ExportImageOptions) {
   const canvas = document.createElement("canvas");
   await renderPaintScene({
@@ -32,6 +36,10 @@ export async function exportEditedImage({
     includeOriginal: true,
     masks,
   });
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Canvas export failed.");
+  const failures = await renderPlacedDecorObjects(context, placedObjects);
+  if (failures.length) throw new Error("DECOR_ASSET_LOAD_FAILED");
   return canvasToPngBlob(canvas);
 }
 

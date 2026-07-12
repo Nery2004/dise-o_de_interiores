@@ -77,6 +77,7 @@ export function LeftToolbar() {
                   if (beforeAfterEnabled) toggleBeforeAfter();
                   comparison.setMode("slider");
                 }
+                if (tool.id === "objects") comparison.setMode("edited");
               }}
               className={cn(
                 "flex h-12 items-center justify-between rounded-md border px-3 text-left text-sm font-medium transition",

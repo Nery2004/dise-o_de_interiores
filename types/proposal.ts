@@ -1,4 +1,5 @@
 import type { WallMask } from "@/types/editor";
+import type { PlacedDecorObject } from "@/types/placed-decor-object";
 
 export type DesignProposal = {
   id: string;
@@ -8,6 +9,7 @@ export type DesignProposal = {
   updatedAt: string;
   thumbnail?: string;
   masksSnapshot: WallMask[];
+  placedObjectsSnapshot: PlacedDecorObject[];
   activeColor?: string | null;
   tags?: string[];
   isFavorite?: boolean;

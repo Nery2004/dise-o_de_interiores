@@ -11,6 +11,7 @@ import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 import { PendingEditorColor } from "@/components/pending-editor-color";
 import { useComparison } from "@/components/comparison-context";
 import { PresentationMode } from "@/components/presentation-mode";
+import { ObjectKeyboardShortcuts } from "@/components/decor/object-keyboard-shortcuts";
 
 export function EditorLayout({ loadPendingColor = false }: { loadPendingColor?: boolean }) {
   const comparison = useComparison();
@@ -26,6 +27,7 @@ export function EditorLayout({ loadPendingColor = false }: { loadPendingColor?: 
       <FooterStatus />
       <SaveProjectDialog />
       <UnsavedChangesDialog />
+      <ObjectKeyboardShortcuts />
       {loadPendingColor ? <PendingEditorColor /> : null}
       <Toaster richColors position="top-right" />
     </main>

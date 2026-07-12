@@ -7,6 +7,7 @@ import { downloadBlob, exportEditedImage } from "@/lib/exportImage";
 import { maskHasExportableColor } from "@/lib/mask-geometry";
 import { cn } from "@/lib/utils";
 import { useProject } from "@/components/project-context";
+import { useDecorPlacement } from "@/components/decor-placement-context";
 
 function HeaderButton({
   children,
@@ -35,6 +36,7 @@ function HeaderButton({
 
 export function EditorHeader() {
   const project = useProject();
+  const placement = useDecorPlacement();
   const {
     globalBlendMode,
     canRedo,
@@ -54,8 +56,8 @@ export function EditorHeader() {
       return;
     }
 
-    if (!masks.some(maskHasExportableColor)) {
-      toast.error("Aplica un color a una pared antes de descargar.");
+    if (!masks.some(maskHasExportableColor) && !placement.placedObjects.some((object) => object.visible)) {
+      toast.error("Aplica un color o coloca un objeto antes de descargar.");
       return;
     }
 
@@ -65,12 +67,13 @@ export function EditorHeader() {
         globalBlendMode,
         image,
         masks,
+        placedObjects: placement.placedObjects,
       });
 
       downloadBlob(blob, "interior-color-studio-export.png");
       toast.success("Imagen descargada correctamente.");
-    } catch {
-      toast.error("No se pudo exportar la imagen.");
+    } catch (error) {
+      toast.error(error instanceof Error && error.message === "DECOR_ASSET_LOAD_FAILED" ? "No se pudo cargar este objeto." : "No se pudo exportar la imagen.");
     } finally {
       setStatus("ready");
     }
@@ -116,11 +119,11 @@ export function EditorHeader() {
           <Save size={16} />
           {project.isSaving ? "Guardando..." : "Guardar proyecto"}
         </HeaderButton>
-        <HeaderButton disabled={!canUndo} onClick={undo}>
+        <HeaderButton disabled={!canUndo && !placement.canUndo} onClick={placement.canUndo ? placement.undo : undo}>
           <Undo2 size={16} />
           Deshacer
         </HeaderButton>
-        <HeaderButton disabled={!canRedo} onClick={redo}>
+        <HeaderButton disabled={!canRedo && !placement.canRedo} onClick={placement.canRedo ? placement.redo : redo}>
           <Redo2 size={16} />
           Rehacer
         </HeaderButton>
