@@ -103,6 +103,7 @@ export function EditorHeader() {
         </button>
         <button type="button" onClick={() => project.navigateWithGuard("/projects")} className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[#dfe3e8] bg-white px-3 text-sm font-medium text-[#30343b] shadow-sm"><FolderKanban size={16} />Mis proyectos</button>
         <button type="button" onClick={() => project.navigateWithGuard(project.activeProjectId ? `/colors?project=${encodeURIComponent(project.activeProjectId)}` : "/colors")} className="inline-flex h-10 items-center justify-center rounded-md border border-[#dfe3e8] bg-white px-3 text-sm font-medium text-[#30343b] shadow-sm">Colores</button>
+        <button type="button" onClick={() => project.navigateWithGuard("/objects")} className="inline-flex h-10 items-center justify-center rounded-md border border-[#dfe3e8] bg-white px-3 text-sm font-medium text-[#30343b] shadow-sm">Objetos</button>
         <HeaderButton onClick={project.openImageAsNewProject}>
           <FolderOpen size={16} />
           Abrir imagen

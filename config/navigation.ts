@@ -1,9 +1,10 @@
 export const publicNavigation = [
   { href: "/", label: "Inicio" },
-  { href: "/#como-funciona", label: "Cómo funciona" },
-  { href: "/colors", label: "Colores" },
-  { href: "/projects", label: "Mis proyectos" },
   { href: "/editor", label: "Editor" },
+  { href: "/colors", label: "Colores" },
+  { href: "/objects", label: "Objetos" },
+  { href: "/projects", label: "Mis proyectos" },
+  { href: "/#como-funciona", label: "Cómo funciona" },
 ] as const;
 
 export const footerNavigation = [

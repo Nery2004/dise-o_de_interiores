@@ -18,6 +18,7 @@ export type MoodBoard = {
 
 export type EditorTool =
   | "select"
+  | "objects"
   | "manual-select"
   | "edit-mask"
   | "add-to-mask"

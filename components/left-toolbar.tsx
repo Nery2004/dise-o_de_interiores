@@ -2,6 +2,7 @@
 
 import {
   Brush,
+  Armchair,
   CircleMinus,
   CirclePlus,
   Eraser,
@@ -20,6 +21,7 @@ import { useComparison } from "@/components/comparison-context";
 
 const toolIcons: Record<EditorTool, React.ComponentType<{ size?: number }>> = {
   select: MousePointer2,
+  objects: Armchair,
   "manual-select": PenTool,
   "edit-mask": Scan,
   "add-to-mask": CirclePlus,

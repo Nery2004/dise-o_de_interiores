@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Manrope, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { getSiteUrl } from "@/lib/site-url";
+import { DecorObjectsProvider } from "@/components/decor-objects-context";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -44,7 +45,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${manrope.variable} ${geistMono.variable}`}>
-      <body>{children}</body>
+      <body><DecorObjectsProvider>{children}</DecorObjectsProvider></body>
     </html>
   );
 }
