@@ -12,6 +12,7 @@ type ExportImageOptions = {
   placedObjects?: PlacedDecorObject[];
   roomLightProfiles?: RoomLightProfile[];
   placementSurfaces?: PlacementSurface[];
+  includeOriginal?: boolean;
 };
 
 function canvasToPngBlob(canvas: HTMLCanvasElement) {
@@ -33,13 +34,14 @@ export async function exportEditedImage({
   placedObjects = [],
   roomLightProfiles = [],
   placementSurfaces = [],
+  includeOriginal = true,
 }: ExportImageOptions) {
   const canvas = document.createElement("canvas");
   await renderPaintScene({
     canvas,
     globalBlendMode,
     image,
-    includeOriginal: true,
+    includeOriginal,
     masks,
   });
   const context = canvas.getContext("2d");

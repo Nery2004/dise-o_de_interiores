@@ -99,6 +99,8 @@ export function lightingDefaults(
   | "adaptTexture"
   | "grain"
   | "shadowSettings"
+  | "tags"
+  | "relativeScale"
 > {
   return {
     lightingMode: "auto",
@@ -116,6 +118,8 @@ export function lightingDefaults(
     adaptTexture: true,
     grain: 0,
     shadowSettings: defaultShadowForCategory(category, surfaceType),
+    tags: [],
+    relativeScale: "medium",
   };
 }
 
@@ -127,6 +131,8 @@ export function withLightingDefaults(
   return {
     ...defaults,
     ...object,
+    tags: Array.isArray(object.tags) ? object.tags : [],
+    relativeScale: object.relativeScale ?? "medium",
     shadowSettings: {
       ...defaults.shadowSettings!,
       ...(object.shadowSettings ?? {}),

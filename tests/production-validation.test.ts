@@ -31,6 +31,9 @@ const baseProject = {
   },
   masks: [],
   placedObjects: [],
+  objectGroups: [],
+  objectFolders: [],
+  favoriteObjectIds: [],
   placementSurfaces: [],
   perspectiveGuide: null,
   roomLightProfiles: [],
@@ -77,8 +80,8 @@ test("valida uploads y límites de dimensiones", () => {
   assert.equal(validateImageDimensions(5_001, 5_000), false);
 });
 
-test("valida importación y migra proyectos anteriores a v6", () => {
-  assert.equal(validateImportedProject(baseProject).version, 6);
+test("valida importación y migra proyectos anteriores a v7", () => {
+  assert.equal(validateImportedProject(baseProject).version, 7);
   const legacy = {
     ...baseProject,
     version: 1,
@@ -100,7 +103,7 @@ test("valida importación y migra proyectos anteriores a v6", () => {
     ],
   } as unknown as InteriorProject;
   const migrated = migrateProject(legacy);
-  assert.equal(migrated.version, 6);
+  assert.equal(migrated.version, 7);
   assert.equal(migrated.masks[0].whiteBaseSettings?.mode, "auto");
   assert.equal(migrated.masks[0].whiteBaseSettings?.shadowPreservation, 90);
   assert.equal(migrated.masks[0].whiteBaseSettings?.texturePreservation, 90);

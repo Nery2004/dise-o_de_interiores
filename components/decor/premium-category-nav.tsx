@@ -1,0 +1,10 @@
+"use client";
+
+import { Armchair, BedDouble, BookOpen, Boxes, LampFloor, PanelTop, Paintbrush, Package, Sofa, Sprout, Table2, UtensilsCrossed } from "lucide-react";
+import { premiumDecorCategories, premiumDecorCategoryColors, premiumDecorCategoryLabels, type DecorObject, type PremiumDecorCategory } from "@/types/decor-object";
+
+const icons = [Sofa, Armchair, Sofa, Armchair, PanelTop, Table2, Table2, UtensilsCrossed, Table2, BookOpen, Boxes, Sprout, Sprout, Paintbrush, PanelTop, LampFloor, PanelTop, PanelTop, Package, Package, Package, BedDouble, Table2, PanelTop];
+
+export function PremiumCategoryNav({ objects, selected, onSelect }: { objects: DecorObject[]; selected: PremiumDecorCategory | ""; onSelect: (category: PremiumDecorCategory | "") => void }) {
+  return <nav aria-label="Categorías premium" className="mt-7 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6"><button type="button" onClick={() => onSelect("")} className={`flex min-h-16 items-center gap-2 rounded-xl border px-3 text-left ${!selected ? "border-[#202621] bg-[#202621] text-white" : "bg-white"}`}><Package size={19} /><span><span className="block text-xs font-semibold">Todo el catálogo</span><span className="text-[10px] opacity-70">{objects.length} objetos</span></span></button>{premiumDecorCategories.map((category, index) => { const Icon = icons[index]; const count = objects.filter((object) => object.catalogCategory === category).length; return <button key={category} type="button" onClick={() => onSelect(category)} className={`flex min-h-16 items-center gap-2 rounded-xl border px-3 text-left ${selected === category ? "border-[#202621] bg-[#202621] text-white" : "bg-white"}`}><span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-white" style={{ backgroundColor: premiumDecorCategoryColors[category] }}><Icon size={16} /></span><span className="min-w-0"><span className="block truncate text-xs font-semibold">{premiumDecorCategoryLabels[category]}</span><span className="text-[10px] opacity-70">{count}</span></span></button>; })}</nav>;
+}

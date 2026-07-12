@@ -2,6 +2,7 @@ import type { WallMask } from "@/types/editor";
 import type { DesignProposal } from "@/types/proposal";
 import type { PlacedDecorObject } from "@/types/placed-decor-object";
 import type { PerspectiveGuide, PlacementSurface } from "@/types/perspective";
+import type { ObjectGroup } from "@/types/object-group";
 
 export function cloneProposalMasks(masks: WallMask[]) {
   return masks.map((mask) => ({
@@ -36,6 +37,7 @@ export function applyProposalSnapshot(proposal: DesignProposal) {
 export function clonePlacedDecorObjects(objects: PlacedDecorObject[]) {
   return objects.map((object) => ({
     ...object,
+    tags: [...object.tags],
     selected: false,
     perspectivePoints: object.perspectivePoints
       ? {
@@ -47,6 +49,9 @@ export function clonePlacedDecorObjects(objects: PlacedDecorObject[]) {
       : undefined,
     shadowSettings: object.shadowSettings ? { ...object.shadowSettings } : undefined,
   }));
+}
+export function cloneObjectGroups(groups: ObjectGroup[]) {
+  return groups.map((group) => ({ ...group, objectIds: [...group.objectIds], tags: [...group.tags] }));
 }
 export function clonePlacementSurfaces(surfaces: PlacementSurface[]) {
   return surfaces.map((surface) => ({

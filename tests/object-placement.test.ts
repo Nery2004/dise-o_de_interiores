@@ -208,7 +208,7 @@ test("proyectos v3 migran objetos vacíos y v4 valida objetos colocados", () => 
     ],
   } as unknown as InteriorProject;
   const migrated = migrateProject(legacy);
-  assert.equal(migrated.version, 6);
+  assert.equal(migrated.version, 7);
   assert.deepEqual(migrated.placedObjects, []);
   assert.deepEqual(migrated.proposals[0].placedObjectsSnapshot, []);
   const current = { ...migrated, placedObjects: [placed({ x: 200, y: 150 })] };

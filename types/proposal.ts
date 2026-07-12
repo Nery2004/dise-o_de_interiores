@@ -2,6 +2,7 @@ import type { WallMask } from "@/types/editor";
 import type { PlacedDecorObject } from "@/types/placed-decor-object";
 import type { PerspectiveGuide, PlacementSurface } from "@/types/perspective";
 import type { RoomLightProfile } from "@/types/lighting";
+import type { ObjectGroup } from "@/types/object-group";
 
 export type DesignProposal = {
   id: string;
@@ -12,6 +13,7 @@ export type DesignProposal = {
   thumbnail?: string;
   masksSnapshot: WallMask[];
   placedObjectsSnapshot: PlacedDecorObject[];
+  objectGroupsSnapshot: ObjectGroup[];
   placementSurfacesSnapshot: PlacementSurface[];
   perspectiveGuideSnapshot: PerspectiveGuide | null;
   roomLightProfileSnapshot?: RoomLightProfile;

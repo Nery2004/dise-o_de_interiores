@@ -8,19 +8,21 @@ import { DecorObjectPreview } from "@/components/decor/decor-object-preview";
 import { useProject } from "@/components/project-context";
 import { useEditor } from "@/components/editor-context";
 import { ObjectPropertiesPanel } from "@/components/decor/object-properties-panel";
-import { PlacedObjectsList } from "@/components/decor/placed-objects-list";
 import { useComparison } from "@/components/comparison-context";
 import { SurfacePanel } from "@/components/perspective/surface-panel";
 import { ObjectPerspectiveProperties } from "@/components/perspective/object-perspective-properties";
 import { ObjectLightingPanel } from "@/components/decor/object-lighting-panel";
 import { useDecorPlacement } from "@/components/decor-placement-context";
+import { LayerManager } from "@/components/decor/layer-manager";
+import { ProfessionalObjectInspector } from "@/components/decor/professional-object-inspector";
+import { ObjectStatisticsPanel } from "@/components/decor/object-statistics-panel";
 import { decorObjects } from "@/data/decorObjects";
 import { matchesDecorSearch } from "@/lib/decor/filterDecorObjects";
 import {
-  decorCategoryLabels,
-  decorObjectCategories,
+  premiumDecorCategoryLabels,
+  premiumDecorCategories,
   type DecorObject,
-  type DecorObjectCategory,
+  type PremiumDecorCategory,
 } from "@/types/decor-object";
 
 function MiniObject({
@@ -59,7 +61,7 @@ export function EditorObjectsPanel() {
   const placement = useDecorPlacement();
   const selectedObject = placement.placedObjects.find((item) => item.id === placement.selectedObjectId);
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<DecorObjectCategory | "">("");
+  const [category, setCategory] = useState<PremiumDecorCategory | "">("");
   const favoriteSet = useMemo(
     () => new Set(decor.favorites),
     [decor.favorites],
@@ -73,7 +75,7 @@ export function EditorObjectsPanel() {
       decorObjects
         .filter(
           (object) =>
-            (!category || object.category === category) &&
+            (!category || object.catalogCategory === category) &&
             matchesDecorSearch(object, query),
         )
         .slice(0, 8),
@@ -183,14 +185,14 @@ export function EditorObjectsPanel() {
         >
           Todos
         </button>
-        {decorObjectCategories.map((item) => (
+        {premiumDecorCategories.map((item) => (
           <button
             key={item}
             type="button"
             onClick={() => setCategory(item)}
             className={`shrink-0 rounded-full px-2.5 py-1.5 text-[11px] font-semibold ${category === item ? "bg-[#202621] text-white" : "border bg-white"}`}
           >
-            {decorCategoryLabels[item]}
+            {premiumDecorCategoryLabels[item]}
           </button>
         ))}
       </div>
@@ -250,7 +252,9 @@ export function EditorObjectsPanel() {
       <ObjectPropertiesPanel />
       {selectedObject ? <ObjectLightingPanel object={selectedObject} /> : null}
       <ObjectPerspectiveProperties />
-      <PlacedObjectsList />
+      <ProfessionalObjectInspector />
+      <LayerManager />
+      <ObjectStatisticsPanel />
       <button
         type="button"
         onClick={() => project.navigateWithGuard("/objects")}

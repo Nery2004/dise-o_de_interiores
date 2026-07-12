@@ -49,7 +49,7 @@ test("los filtros se combinan con búsqueda, habitación, color y favoritos", ()
   assert.ok(target);
   const results = filterDecorObjects(decorObjects, "beige", {
     ...EMPTY_DECOR_FILTERS,
-    category: "sillones",
+    category: "sofas",
     style: "moderno",
     room: "sala",
     dominantColor: "#D8C3A5",

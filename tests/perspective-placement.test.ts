@@ -272,7 +272,7 @@ test("un proyecto v4 conserva objetos al migrar y añade perspectiva segura", ()
     proposals: [],
   };
   const migrated = validateImportedProject(project);
-  assert.equal(migrated.version, 6);
+  assert.equal(migrated.version, 7);
   assert.equal(migrated.placedObjects.length, 1);
   assert.equal(migrated.placedObjects[0].perspectiveMode, "none");
   assert.equal(migrated.placedObjects[0].zOrderMode, "manual");

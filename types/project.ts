@@ -3,8 +3,10 @@ import type { DesignProposal } from "@/types/proposal";
 import type { PlacedDecorObject } from "@/types/placed-decor-object";
 import type { PerspectiveGuide, PlacementSurface } from "@/types/perspective";
 import type { RoomLightProfile } from "@/types/lighting";
+import type { ObjectGroup } from "@/types/object-group";
+import type { DecorObjectFolder } from "@/types/decor-object";
 
-export const CURRENT_PROJECT_VERSION = 6;
+export const CURRENT_PROJECT_VERSION = 7;
 
 export type ProjectImage = {
   name: string;
@@ -27,6 +29,9 @@ export type InteriorProject = {
   originalImageBlob?: Blob;
   masks: WallMask[];
   placedObjects: PlacedDecorObject[];
+  objectGroups: ObjectGroup[];
+  objectFolders: DecorObjectFolder[];
+  favoriteObjectIds: string[];
   placementSurfaces: PlacementSurface[];
   perspectiveGuide: PerspectiveGuide | null;
   roomLightProfiles: RoomLightProfile[];

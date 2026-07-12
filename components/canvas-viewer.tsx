@@ -27,6 +27,7 @@ import {
 } from "@/lib/canvas/canvasTransformUtils";
 import type { ImageDimensions, LoadedImage } from "@/types/editor";
 import { LightDirectionOverlay } from "@/components/lighting/light-direction-overlay";
+import { RulersOverlay } from "@/components/decor/rulers-overlay";
 
 const SIDE_BY_SIDE_GAP = 24;
 
@@ -204,6 +205,7 @@ function TransformedCanvas({ image }: { image: LoadedImage }) {
       <DecorObjectsLayer dimensions={image.dimensions} canvasScale={transform.scale} />
       <SurfaceOverlay dimensions={image.dimensions} canvasScale={transform.scale} />
       <LightDirectionOverlay dimensions={image.dimensions} />
+      <RulersOverlay dimensions={image.dimensions} />
       <BrushRefinementOverlay dimensions={image.dimensions} />
     </>
   );

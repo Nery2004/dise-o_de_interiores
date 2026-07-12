@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useProject } from "@/components/project-context";
 import { useDecorPlacement } from "@/components/decor-placement-context";
 import { useRoomLighting } from "@/components/room-lighting-context";
+import { useState } from "react";
 
 function HeaderButton({
   children,
@@ -39,6 +40,7 @@ export function EditorHeader() {
   const project = useProject();
   const placement = useDecorPlacement();
   const lighting = useRoomLighting();
+  const [exportMode, setExportMode] = useState<"all" | "objects" | "paint">("all");
   const {
     globalBlendMode,
     canRedo,
@@ -68,10 +70,11 @@ export function EditorHeader() {
       const blob = await exportEditedImage({
         globalBlendMode,
         image,
-        masks,
-        placedObjects: placement.placedObjects,
+        masks: exportMode === "objects" ? [] : masks,
+        placedObjects: exportMode === "paint" ? [] : placement.placedObjects,
         placementSurfaces: placement.placementSurfaces,
         roomLightProfiles: lighting.profiles,
+        includeOriginal: exportMode !== "objects",
       });
 
       downloadBlob(blob, "interior-color-studio-export.png");
@@ -131,6 +134,7 @@ export function EditorHeader() {
           <Redo2 size={16} />
           Rehacer
         </HeaderButton>
+        <select aria-label="Contenido de exportación" value={exportMode} onChange={(event) => setExportMode(event.target.value as typeof exportMode)} className="h-10 rounded-md border bg-white px-2 text-xs font-semibold"><option value="all">Exportar todo</option><option value="objects">Solo objetos</option><option value="paint">Solo pintura</option></select>
         <HeaderButton disabled={isExporting} onClick={() => void handleDownload()}>
           <Download size={16} />
           {isExporting ? "Exportando..." : "Descargar"}

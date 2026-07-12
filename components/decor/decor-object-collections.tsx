@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock3, Heart } from "lucide-react";
+import { Clock3, Heart, TrendingUp } from "lucide-react";
 import { DecorObjectPreview } from "@/components/decor/decor-object-preview";
 import type { DecorObject } from "@/types/decor-object";
 
@@ -15,4 +15,8 @@ export function DecorObjectFavorites({ objects, onOpen }: { objects: DecorObject
 
 export function RecentDecorObjects({ objects, onOpen }: { objects: DecorObject[]; onOpen: (object: DecorObject) => void }) {
   return <DecorObjectStrip title="Usados recientemente" icon={<Clock3 size={20} />} objects={objects} onOpen={onOpen} />;
+}
+
+export function MostUsedDecorObjects({ objects, onOpen }: { objects: DecorObject[]; onOpen: (object: DecorObject) => void }) {
+  return <DecorObjectStrip title="Más usados" icon={<TrendingUp size={20} />} objects={objects} onOpen={onOpen} />;
 }

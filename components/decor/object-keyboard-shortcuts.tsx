@@ -29,10 +29,15 @@ export function ObjectKeyboardShortcuts() {
       if (isTypingTarget(event.target) || (editor.activeTool !== "objects" && editor.activeTool !== "select")) return;
       const selected = placement.placedObjects.find((object) => object.id === placement.selectedObjectId);
       if ((event.key === "Delete" || event.key === "Backspace") && selected) {
-        event.preventDefault(); placement.deletePlacedObject(selected.id); return;
+        event.preventDefault(); placement.deleteSelectedObjects(); return;
       }
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "d" && selected) {
-        event.preventDefault(); placement.duplicatePlacedObject(selected.id); return;
+        event.preventDefault(); placement.duplicateSelectedObjects(); return;
+      }
+      if (modifier && event.key.toLowerCase() === "g" && selected) {
+        event.preventDefault();
+        if (event.shiftKey) placement.ungroupSelectedObjects(); else placement.groupSelectedObjects();
+        return;
       }
       if (!selected || selected.locked || !editor.dimensions || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
       event.preventDefault();

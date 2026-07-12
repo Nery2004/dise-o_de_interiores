@@ -1,7 +1,7 @@
 "use client";
 
 import { RotateCcw, X } from "lucide-react";
-import { decorObjectCategories, decorObjectStyles, decorRoomTypes, decorCategoryLabels, decorRoomLabels, decorStyleLabels } from "@/types/decor-object";
+import { decorCollectionIds, decorCollectionLabels, decorObjectStyles, decorRoomTypes, premiumDecorCategories, premiumDecorCategoryLabels, decorRoomLabels, decorStyleLabels } from "@/types/decor-object";
 import type { DecorObjectFiltersState } from "@/lib/decor/filterDecorObjects";
 
 function SelectField({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: Array<{ value: string; label: string }> }) {
@@ -10,7 +10,8 @@ function SelectField({ label, value, onChange, options }: { label: string; value
 
 export function DecorObjectFilters({ filters, colors, onChange, onClear, mobile = false, onClose }: { filters: DecorObjectFiltersState; colors: string[]; onChange: (filters: DecorObjectFiltersState) => void; onClear: () => void; mobile?: boolean; onClose?: () => void }) {
   const content = <div className="space-y-4">
-    <SelectField label="Categoría" value={filters.category} onChange={(category) => onChange({ ...filters, category: category as DecorObjectFiltersState["category"] })} options={decorObjectCategories.map((value) => ({ value, label: decorCategoryLabels[value] }))} />
+    <SelectField label="Categoría" value={filters.category} onChange={(category) => onChange({ ...filters, category: category as DecorObjectFiltersState["category"] })} options={premiumDecorCategories.map((value) => ({ value, label: premiumDecorCategoryLabels[value] }))} />
+    <SelectField label="Colección" value={filters.collection} onChange={(collection) => onChange({ ...filters, collection: collection as DecorObjectFiltersState["collection"] })} options={decorCollectionIds.map((value) => ({ value, label: decorCollectionLabels[value] }))} />
     <SelectField label="Estilo" value={filters.style} onChange={(style) => onChange({ ...filters, style: style as DecorObjectFiltersState["style"] })} options={decorObjectStyles.map((value) => ({ value, label: decorStyleLabels[value] }))} />
     <SelectField label="Habitación" value={filters.room} onChange={(room) => onChange({ ...filters, room: room as DecorObjectFiltersState["room"] })} options={decorRoomTypes.map((value) => ({ value, label: decorRoomLabels[value] }))} />
     <label className="block"><span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.13em] text-[#6d756e]">Color dominante</span><select value={filters.dominantColor} onChange={(event) => onChange({ ...filters, dominantColor: event.target.value })} className="h-10 w-full rounded-lg border border-[#ddd6ca] bg-white px-3 text-sm outline-none"><option value="">Todos</option>{colors.map((color) => <option key={color} value={color}>{color}</option>)}</select><span className="mt-2 flex flex-wrap gap-1.5">{colors.slice(0, 12).map((color) => <button key={color} type="button" aria-label={`Filtrar por color ${color}`} title={color} onClick={() => onChange({ ...filters, dominantColor: filters.dominantColor === color ? "" : color })} className={`h-6 w-6 rounded-full border border-black/15 ${filters.dominantColor === color ? "ring-2 ring-[#50634f] ring-offset-2" : ""}`} style={{ backgroundColor: color }} />)}</span></label>

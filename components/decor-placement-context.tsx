@@ -49,19 +49,25 @@ import type {
   PlacementSurfaceType,
 } from "@/types/perspective";
 import { lightingDefaults } from "@/lib/lighting/lightProfile";
+import type { ObjectAlignment, ObjectDistribution, ObjectGroup } from "@/types/object-group";
+import { alignObjects, distributeObjects } from "@/lib/decor/alignmentSystem";
+import { replacePlacedObjectAsset } from "@/lib/decor/objectReplacement";
 
 type PlacementScene = {
   objects: PlacedDecorObject[];
+  groups: ObjectGroup[];
   surfaces: PlacementSurface[];
   guide: PerspectiveGuide | null;
 };
-type PreparedScene = Pick<PlacementScene, "objects" | "surfaces" | "guide">;
+type PreparedScene = Pick<PlacementScene, "objects" | "groups" | "surfaces" | "guide">;
 
 type DecorPlacementContextValue = {
   placedObjects: PlacedDecorObject[];
+  objectGroups: ObjectGroup[];
   placementSurfaces: PlacementSurface[];
   perspectiveGuide: PerspectiveGuide | null;
   selectedObjectId: string | null;
+  selectedObjectIds: string[];
   selectedSurfaceId: string | null;
   surfaceDraftPoints: ImagePoint[];
   surfaceDraftType: PlacementSurfaceType;
@@ -82,7 +88,20 @@ type DecorPlacementContextValue = {
   finalizeObjectPlacement: (id: string, candidate: PlacedDecorObject) => void;
   deletePlacedObject: (id: string) => void;
   duplicatePlacedObject: (id: string) => void;
-  selectPlacedObject: (id: string | null) => void;
+  selectPlacedObject: (id: string | null, options?: { additive?: boolean; toggle?: boolean }) => void;
+  selectPlacedObjects: (ids: string[], mode?: "replace" | "add" | "toggle") => void;
+  duplicateSelectedObjects: () => void;
+  deleteSelectedObjects: () => void;
+  setSelectedObjectsVisibility: (visible: boolean) => void;
+  setSelectedObjectsLocked: (locked: boolean) => void;
+  groupSelectedObjects: () => void;
+  ungroupSelectedObjects: () => void;
+  alignSelectedObjects: (alignment: ObjectAlignment) => void;
+  distributeSelectedObjects: (direction: ObjectDistribution) => void;
+  replacePlacedObjectAsset: (id: string, replacement: DecorObject) => void;
+  updateObjectGroup: (id: string, changes: Partial<ObjectGroup>) => void;
+  scaleSelectedObjects: (factor: number) => void;
+  rotateSelectedObjects: (degrees: number) => void;
   clearObjectSelection: () => void;
   bringForward: (id: string) => void;
   sendBackward: (id: string) => void;
@@ -139,6 +158,7 @@ type DecorPlacementContextValue = {
     objects: PlacedDecorObject[],
     surfaces?: PlacementSurface[],
     guide?: PerspectiveGuide | null,
+    groups?: ObjectGroup[],
   ) => void;
   resetPlacedObjects: () => void;
   undo: () => void;
@@ -155,6 +175,7 @@ function cloneScene(scene: PlacementScene): PlacementScene {
   return {
     objects: scene.objects.map((object) => ({
       ...object,
+      tags: [...object.tags],
       perspectivePoints: object.perspectivePoints
         ? {
             topLeft: { ...object.perspectivePoints.topLeft },
@@ -165,6 +186,7 @@ function cloneScene(scene: PlacementScene): PlacementScene {
         : undefined,
       shadowSettings: object.shadowSettings ? { ...object.shadowSettings } : undefined,
     })),
+    groups: scene.groups.map((group) => ({ ...group, objectIds: [...group.objectIds], tags: [...group.tags] })),
     surfaces: scene.surfaces.map((surface) => ({
       ...surface,
       points: surface.points.map((point) => ({ ...point })),
@@ -195,6 +217,7 @@ export function DecorPlacementProvider({ children }: { children: ReactNode }) {
   const decor = useDecorObjects();
   const [sceneState, setSceneState] = useState<PlacementScene>({
     objects: [],
+    groups: [],
     surfaces: [],
     guide: null,
   });
@@ -257,10 +280,11 @@ export function DecorPlacementProvider({ children }: { children: ReactNode }) {
             objects: normalizeObjectZIndexes(
               cloneScene({ ...restored }).objects,
             ),
+            groups: cloneScene({ ...restored }).groups,
             surfaces: cloneScene({ ...restored }).surfaces,
             guide: cloneScene({ ...restored }).guide,
           }
-        : { objects: [], surfaces: [], guide: null },
+        : { objects: [], groups: [], surfaces: [], guide: null },
     );
     setPast([]);
     setFuture([]);
@@ -275,13 +299,14 @@ export function DecorPlacementProvider({ children }: { children: ReactNode }) {
   }, [decor.pendingDecorObject, editor]);
 
   const selectPlacedObject = useCallback(
-    (id: string | null) =>
+    (id: string | null, options: { additive?: boolean; toggle?: boolean } = {}) =>
       applyWithoutHistory((current) => ({
         ...current,
-        objects: current.objects.map((object) => ({
-          ...object,
-          selected: object.id === id,
-        })),
+        objects: current.objects.map((object) => {
+          const target = current.objects.find((item) => item.id === id);
+          const matches = object.id === id || (!options.additive && !options.toggle && target?.groupId !== undefined && object.groupId === target.groupId);
+          return { ...object, selected: options.toggle && object.id === id ? !object.selected : options.additive ? object.selected || matches : matches };
+        }),
         surfaces: current.surfaces.map((surface) => ({
           ...surface,
           selected: false,
@@ -365,7 +390,7 @@ export function DecorPlacementProvider({ children }: { children: ReactNode }) {
   const resetPlacedObjects = useCallback(() => {
     preparedRestoreRef.current = null;
     transactionRef.current = null;
-    setScene({ objects: [], surfaces: [], guide: null });
+    setScene({ objects: [], groups: [], surfaces: [], guide: null });
     setPast([]);
     setFuture([]);
     setSurfaceDraftPoints([]);
@@ -423,9 +448,11 @@ export function DecorPlacementProvider({ children }: { children: ReactNode }) {
   const value = useMemo<DecorPlacementContextValue>(
     () => ({
       placedObjects: sceneState.objects,
+      objectGroups: sceneState.groups,
       placementSurfaces: sceneState.surfaces,
       perspectiveGuide: sceneState.guide,
       selectedObjectId,
+      selectedObjectIds: sceneState.objects.filter((object) => object.selected).map((object) => object.id),
       selectedSurfaceId: selectedSurface,
       surfaceDraftPoints,
       surfaceDraftType,
@@ -508,6 +535,8 @@ export function DecorPlacementProvider({ children }: { children: ReactNode }) {
             baseContactOffset: 0,
             zOrderMode: surface ? "depth" : "manual",
             ...lightingDefaults(object.category, surface?.type ?? defaults.surfaceType),
+            tags: [],
+            relativeScale: "medium",
             createdAt: now,
             updatedAt: now,
           },
@@ -619,6 +648,9 @@ export function DecorPlacementProvider({ children }: { children: ReactNode }) {
           };
         }
         commitScene((current) => {
+          const sourceObject = current.objects.find((object) => object.id === id);
+          const groupDx = sourceObject ? next.x - sourceObject.x : 0;
+          const groupDy = sourceObject ? next.y - sourceObject.y : 0;
           const objects = current.objects.map((object) =>
             object.id === id
               ? {
@@ -629,7 +661,17 @@ export function DecorPlacementProvider({ children }: { children: ReactNode }) {
                   scaleY: next.height / object.originalHeight,
                   updatedAt: new Date().toISOString(),
                 }
-              : object,
+              : sourceObject?.groupId && object.groupId === sourceObject.groupId
+                ? {
+                    ...object,
+                    x: object.x + groupDx,
+                    y: object.y + groupDy,
+                    perspectivePoints: object.perspectivePoints
+                      ? Object.fromEntries(Object.entries(object.perspectivePoints).map(([key, point]) => [key, { x: point.x + groupDx, y: point.y + groupDy }])) as typeof object.perspectivePoints
+                      : undefined,
+                    updatedAt: new Date().toISOString(),
+                  }
+                : object,
           );
           return {
             ...current,
@@ -641,12 +683,12 @@ export function DecorPlacementProvider({ children }: { children: ReactNode }) {
         });
       },
       deletePlacedObject: (id) =>
-        commitScene((current) => ({
-          ...current,
-          objects: normalizeObjectZIndexes(
-            current.objects.filter((object) => object.id !== id),
-          ),
-        })),
+        commitScene((current) => {
+          const objects = normalizeObjectZIndexes(current.objects.filter((object) => object.id !== id));
+          const groups = current.groups.map((group) => ({ ...group, objectIds: group.objectIds.filter((objectId) => objectId !== id) })).filter((group) => group.objectIds.length > 1);
+          const groupIds = new Set(groups.map((group) => group.id));
+          return { ...current, groups, objects: objects.map((object) => object.groupId && !groupIds.has(object.groupId) ? { ...object, groupId: undefined } : object) };
+        }),
       duplicatePlacedObject: (id) => {
         if (!editor.dimensions) return;
         commitScene((current) => {
@@ -676,6 +718,7 @@ export function DecorPlacementProvider({ children }: { children: ReactNode }) {
           const duplicate = clampObjectToImage<PlacedDecorObject>(
             {
               ...source,
+              groupId: undefined,
               perspectivePoints,
               id: crypto.randomUUID(),
               name: `${source.name} copia`,
@@ -702,6 +745,73 @@ export function DecorPlacementProvider({ children }: { children: ReactNode }) {
         });
       },
       selectPlacedObject,
+      selectPlacedObjects: (ids, mode = "replace") =>
+        applyWithoutHistory((current) => {
+          const idSet = new Set(ids);
+          return { ...current, objects: current.objects.map((object) => ({ ...object, selected: mode === "replace" ? idSet.has(object.id) : mode === "add" ? object.selected || idSet.has(object.id) : idSet.has(object.id) ? !object.selected : object.selected })) };
+        }),
+      duplicateSelectedObjects: () => {
+        if (!editor.dimensions) return;
+        commitScene((current) => {
+          const selected = current.objects.filter((object) => object.selected);
+          const now = new Date().toISOString();
+          const groupMap = new Map<string, string>();
+          const duplicates = selected.map((object, index) => {
+            if (object.groupId && !groupMap.has(object.groupId)) groupMap.set(object.groupId, crypto.randomUUID());
+            return clampObjectToImage<PlacedDecorObject>({ ...object, id: crypto.randomUUID(), groupId: object.groupId ? groupMap.get(object.groupId) : undefined, name: `${object.name} copia`, x: object.x + 20, y: object.y + 20, zIndex: current.objects.length + index, selected: true, locked: false, createdAt: now, updatedAt: now, perspectivePoints: object.perspectivePoints ? Object.fromEntries(Object.entries(object.perspectivePoints).map(([key, point]) => [key, { x: point.x + 20, y: point.y + 20 }])) as typeof object.perspectivePoints : undefined }, editor.dimensions!);
+          });
+          const groups = [...current.groups, ...[...groupMap].map(([sourceId, id]) => { const source = current.groups.find((group) => group.id === sourceId)!; return { ...source, id, name: `${source?.name ?? "Grupo"} copia`, objectIds: duplicates.filter((object) => object.groupId === id).map((object) => object.id), createdAt: now, updatedAt: now }; })];
+          return { ...current, groups, objects: normalizeObjectZIndexes([...current.objects.map((object) => ({ ...object, selected: false })), ...duplicates]) };
+        });
+      },
+      deleteSelectedObjects: () => commitScene((current) => { const ids = new Set(current.objects.filter((object) => object.selected).map((object) => object.id)); return { ...current, objects: normalizeObjectZIndexes(current.objects.filter((object) => !ids.has(object.id))), groups: current.groups.map((group) => ({ ...group, objectIds: group.objectIds.filter((id) => !ids.has(id)) })).filter((group) => group.objectIds.length > 1) }; }),
+      setSelectedObjectsVisibility: (visible) => commitScene((current) => ({ ...current, objects: current.objects.map((object) => object.selected ? { ...object, visible, updatedAt: new Date().toISOString() } : object) })),
+      setSelectedObjectsLocked: (locked) => commitScene((current) => ({ ...current, objects: current.objects.map((object) => object.selected ? { ...object, locked, updatedAt: new Date().toISOString() } : object) })),
+      groupSelectedObjects: () => commitScene((current) => {
+        const selected = current.objects.filter((object) => object.selected);
+        if (selected.length < 2) return current;
+        const now = new Date().toISOString();
+        const group: ObjectGroup = { id: crypto.randomUUID(), name: `Grupo ${current.groups.length + 1}`, objectIds: selected.map((object) => object.id), visible: true, locked: false, tags: [], createdAt: now, updatedAt: now };
+        const removedGroupIds = new Set(selected.map((object) => object.groupId).filter((id): id is string => Boolean(id)));
+        return { ...current, groups: [...current.groups.filter((item) => !removedGroupIds.has(item.id)), group], objects: current.objects.map((object) => object.selected ? { ...object, groupId: group.id, updatedAt: now } : object.groupId && removedGroupIds.has(object.groupId) ? { ...object, groupId: undefined } : object) };
+      }),
+      ungroupSelectedObjects: () =>
+        commitScene((current) => {
+          const ids = new Set(
+            current.objects
+              .filter((object) => object.selected)
+              .map((object) => object.groupId)
+              .filter((id): id is string => Boolean(id)),
+          );
+          return {
+            ...current,
+            groups: current.groups.filter((group) => !ids.has(group.id)),
+            objects: current.objects.map((object) =>
+              object.groupId && ids.has(object.groupId)
+                ? { ...object, groupId: undefined, updatedAt: new Date().toISOString() }
+                : object,
+            ),
+          };
+        }),
+      alignSelectedObjects: (alignment) => commitScene((current) => { const selected = alignObjects(current.objects.filter((object) => object.selected), alignment); const map = new Map(selected.map((object) => [object.id, object])); return { ...current, objects: current.objects.map((object) => map.get(object.id) ?? object) }; }),
+      distributeSelectedObjects: (direction) => commitScene((current) => { const selected = distributeObjects(current.objects.filter((object) => object.selected), direction); const map = new Map(selected.map((object) => [object.id, object])); return { ...current, objects: current.objects.map((object) => map.get(object.id) ?? object) }; }),
+      replacePlacedObjectAsset: (id, replacement) => commitScene((current) => ({ ...current, objects: current.objects.map((object) => object.id === id ? replacePlacedObjectAsset(object, replacement) : object) })),
+      updateObjectGroup: (id, changes) => commitScene((current) => ({ ...current, groups: current.groups.map((group) => group.id === id ? { ...group, ...changes, id, updatedAt: new Date().toISOString() } : group), objects: current.objects.map((object) => object.groupId === id ? { ...object, visible: changes.visible ?? object.visible, locked: changes.locked ?? object.locked } : object) })),
+      scaleSelectedObjects: (factor) => commitScene((current) => {
+        const selected = current.objects.filter((object) => object.selected);
+        if (!selected.length) return current;
+        const centerX = selected.reduce((sum, object) => sum + object.x, 0) / selected.length;
+        const centerY = selected.reduce((sum, object) => sum + object.y, 0) / selected.length;
+        return { ...current, objects: current.objects.map((object) => object.selected ? { ...object, x: centerX + (object.x - centerX) * factor, y: centerY + (object.y - centerY) * factor, width: object.width * factor, height: object.height * factor, scaleX: object.scaleX * factor, scaleY: object.scaleY * factor, relativeScale: factor < 1 ? "small" : factor > 1 ? "large" : "medium", updatedAt: new Date().toISOString() } : object) };
+      }),
+      rotateSelectedObjects: (degrees) => commitScene((current) => {
+        const selected = current.objects.filter((object) => object.selected);
+        if (!selected.length) return current;
+        const centerX = selected.reduce((sum, object) => sum + object.x, 0) / selected.length;
+        const centerY = selected.reduce((sum, object) => sum + object.y, 0) / selected.length;
+        const radians = degrees * Math.PI / 180;
+        return { ...current, objects: current.objects.map((object) => { if (!object.selected) return object; const dx = object.x - centerX; const dy = object.y - centerY; return { ...object, x: centerX + dx * Math.cos(radians) - dy * Math.sin(radians), y: centerY + dx * Math.sin(radians) + dy * Math.cos(radians), rotation: object.rotation + degrees, updatedAt: new Date().toISOString() }; }) };
+      }),
       clearObjectSelection: () => selectPlacedObject(null),
       bringForward: (id) => orderOperation(id, "forward"),
       sendBackward: (id) => orderOperation(id, "backward"),
@@ -1001,8 +1111,8 @@ export function DecorPlacementProvider({ children }: { children: ReactNode }) {
         setFuture([]);
         setObjectInteractionMode("idle");
       },
-      prepareProjectRestore: (objects, surfaces = [], guide = null) => {
-        preparedRestoreRef.current = cloneScene({ objects, surfaces, guide });
+      prepareProjectRestore: (objects, surfaces = [], guide = null, groups = []) => {
+        preparedRestoreRef.current = cloneScene({ objects, groups, surfaces, guide });
       },
       resetPlacedObjects,
       undo: () => {

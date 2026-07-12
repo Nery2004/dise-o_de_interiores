@@ -27,6 +27,7 @@ import {
 import { validatePerspectivePoints } from "@/lib/perspective/perspectiveValidation";
 import { toast } from "sonner";
 import { useRoomLighting } from "@/components/room-lighting-context";
+import { getSmartGuides } from "@/lib/decor/alignmentSystem";
 
 type ActiveInteraction = {
   kind: "moving" | "resizing" | "rotating" | "perspective";
@@ -36,6 +37,7 @@ type ActiveInteraction = {
   handle?: ObjectResizeHandle;
   perspectiveIndex?: number;
 };
+type MarqueeSelection = { start: ImagePoint; current: ImagePoint; additive: boolean };
 
 export function DecorObjectsLayer({
   dimensions,
@@ -53,6 +55,7 @@ export function DecorObjectsLayer({
     null,
   );
   const [cursorPoint, setCursorPoint] = useState<ImagePoint | null>(null);
+  const [marquee, setMarquee] = useState<MarqueeSelection | null>(null);
   const interactive =
     editor.activeTool === "objects" || editor.activeTool === "select";
 
@@ -86,7 +89,7 @@ export function DecorObjectsLayer({
       handle,
       perspectiveIndex,
     };
-    placement.selectPlacedObject(object.id);
+    placement.selectPlacedObject(object.id, { additive: event.shiftKey || event.metaKey || event.ctrlKey, toggle: event.metaKey || event.ctrlKey });
     placement.setObjectInteractionMode(kind);
     setPreviewObject(object);
   }
@@ -115,8 +118,17 @@ export function DecorObjectsLayer({
     placement.setObjectInteractionMode("idle");
   }
 
+  const previewSource = previewObject ? placement.placedObjects.find((object) => object.id === previewObject.id) : undefined;
   const displayed = placement.placedObjects
-    .map((object) => (previewObject?.id === object.id ? previewObject : object))
+    .map((object) => {
+      if (previewObject?.id === object.id) return previewObject;
+      if (previewObject?.groupId && object.groupId === previewObject.groupId && previewSource) {
+        const dx = previewObject.x - previewSource.x;
+        const dy = previewObject.y - previewSource.y;
+        return { ...object, x: object.x + dx, y: object.y + dy, perspectivePoints: object.perspectivePoints ? Object.fromEntries(Object.entries(object.perspectivePoints).map(([key, point]) => [key, { x: point.x + dx, y: point.y + dy }])) as typeof object.perspectivePoints : undefined };
+      }
+      return object;
+    })
     .sort((first, second) => first.zIndex - second.zIndex);
   return (
     <div
@@ -143,7 +155,10 @@ export function DecorObjectsLayer({
           setCursorPoint(null);
           return;
         }
-        placement.clearObjectSelection();
+        if (interactive) {
+          event.currentTarget.setPointerCapture(event.pointerId);
+          setMarquee({ start: point, current: point, additive: event.shiftKey || event.metaKey || event.ctrlKey });
+        } else placement.clearObjectSelection();
       }}
       onPointerMove={(event) => {
         if (!layerRef.current) return;
@@ -154,6 +169,10 @@ export function DecorObjectsLayer({
         );
         if (placement.pendingDecorObject && editor.activeTool === "objects")
           setCursorPoint(pointer);
+        if (marquee) {
+          setMarquee((current) => current ? { ...current, current: pointer } : null);
+          return;
+        }
         const active = interactionRef.current;
         if (!active || active.pointerId !== event.pointerId) return;
         event.preventDefault();
@@ -234,7 +253,19 @@ export function DecorObjectsLayer({
           });
         }
       }}
-      onPointerUp={(event) => finishInteraction(event)}
+      onPointerUp={(event) => {
+        if (marquee) {
+          const left = Math.min(marquee.start.x, marquee.current.x);
+          const right = Math.max(marquee.start.x, marquee.current.x);
+          const top = Math.min(marquee.start.y, marquee.current.y);
+          const bottom = Math.max(marquee.start.y, marquee.current.y);
+          const ids = placement.placedObjects.filter((object) => object.visible && object.x + object.width / 2 >= left && object.x - object.width / 2 <= right && object.y + object.height / 2 >= top && object.y - object.height / 2 <= bottom).map((object) => object.id);
+          placement.selectPlacedObjects(ids, marquee.additive ? "add" : "replace");
+          setMarquee(null);
+          return;
+        }
+        finishInteraction(event);
+      }}
       onPointerCancel={(event) => finishInteraction(event, false)}
       onLostPointerCapture={(event) => finishInteraction(event)}
       onPointerLeave={() => {
@@ -249,9 +280,9 @@ export function DecorObjectsLayer({
           draft={previewObject?.id === object.id}
           interactive={interactive && !placement.isPlacingObject}
           onPointerDown={(event) => {
-            placement.selectPlacedObject(object.id);
             if (!object.locked) beginInteraction("moving", object, event);
             else {
+              placement.selectPlacedObject(object.id, { additive: event.shiftKey || event.metaKey || event.ctrlKey, toggle: event.metaKey || event.ctrlKey });
               event.preventDefault();
               event.stopPropagation();
             }
@@ -274,6 +305,8 @@ export function DecorObjectsLayer({
           dimensions={dimensions}
         />
       ) : null}
+      {previewObject ? getSmartGuides(previewObject, placement.placedObjects).map((guide, index) => guide.axis === "x" ? <span key={`${guide.axis}-${guide.value}-${index}`} className="pointer-events-none absolute inset-y-0 z-50 border-l border-dashed border-[#e11d48]" style={{ left: guide.value }}><span className="absolute left-1 top-2 rounded bg-[#e11d48] px-1 text-[9px] text-white">{guide.label}</span></span> : <span key={`${guide.axis}-${guide.value}-${index}`} className="pointer-events-none absolute inset-x-0 z-50 border-t border-dashed border-[#e11d48]" style={{ top: guide.value }}><span className="absolute left-2 top-1 rounded bg-[#e11d48] px-1 text-[9px] text-white">{guide.label}</span></span>) : null}
+      {marquee ? <span className="pointer-events-none absolute z-50 border border-[#2563eb] bg-[#2563eb]/10" style={{ left: Math.min(marquee.start.x, marquee.current.x), top: Math.min(marquee.start.y, marquee.current.y), width: Math.abs(marquee.current.x - marquee.start.x), height: Math.abs(marquee.current.y - marquee.start.y) }} /> : null}
     </div>
   );
 }

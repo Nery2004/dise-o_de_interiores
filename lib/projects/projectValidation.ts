@@ -9,6 +9,7 @@ import {
 } from "@/lib/perspective/objectAnchoring";
 import { withLightingDefaults } from "@/lib/lighting/lightProfile";
 import type { RoomLightProfile } from "@/types/lighting";
+import type { ObjectGroup } from "@/types/object-group";
 
 const blendModes: BlendMode[] = [
   "paint-simulation",
@@ -29,6 +30,9 @@ export function migrateProject(project: InteriorProject) {
       version: CURRENT_PROJECT_VERSION,
       masks: project.masks.map(withDefaultPaintSettings),
       placedObjects: [],
+      objectGroups: [],
+      objectFolders: [],
+      favoriteObjectIds: [],
       placementSurfaces: [],
       perspectiveGuide: null,
       roomLightProfiles: [],
@@ -37,6 +41,7 @@ export function migrateProject(project: InteriorProject) {
         ...proposal,
         masksSnapshot: proposal.masksSnapshot.map(withDefaultPaintSettings),
         placedObjectsSnapshot: [],
+        objectGroupsSnapshot: [],
         placementSurfacesSnapshot: [],
         perspectiveGuideSnapshot: null,
         roomLightProfileSnapshot: undefined,
@@ -52,6 +57,9 @@ export function migrateProject(project: InteriorProject) {
       ...project,
       version: CURRENT_PROJECT_VERSION,
       placedObjects: (project.placedObjects ?? []).map(withPerspectiveDefaults),
+      objectGroups: [],
+      objectFolders: [],
+      favoriteObjectIds: [],
       placementSurfaces: legacy.placementSurfaces ?? [],
       perspectiveGuide: legacy.perspectiveGuide ?? null,
       roomLightProfiles: [],
@@ -61,6 +69,7 @@ export function migrateProject(project: InteriorProject) {
         placedObjectsSnapshot: (proposal.placedObjectsSnapshot ?? []).map(
           withPerspectiveDefaults,
         ),
+        objectGroupsSnapshot: [],
         placementSurfacesSnapshot: proposal.placementSurfacesSnapshot ?? [],
         perspectiveGuideSnapshot: proposal.perspectiveGuideSnapshot ?? null,
         roomLightProfileSnapshot: undefined,
@@ -74,6 +83,9 @@ export function migrateProject(project: InteriorProject) {
       placedObjects: (project.placedObjects ?? []).map((object) =>
         withLightingDefaults(object, categoryForPlacedObject(object)),
       ),
+      objectGroups: [],
+      objectFolders: [],
+      favoriteObjectIds: [],
       roomLightProfiles: [],
       activeRoomLightProfileId: undefined,
       proposals: (project.proposals ?? []).map((proposal) => ({
@@ -81,8 +93,20 @@ export function migrateProject(project: InteriorProject) {
         placedObjectsSnapshot: (proposal.placedObjectsSnapshot ?? []).map((object) =>
           withLightingDefaults(object, categoryForPlacedObject(object)),
         ),
+        objectGroupsSnapshot: [],
         roomLightProfileSnapshot: undefined,
       })),
+    } as InteriorProject;
+  }
+  if (project.version === 6) {
+    return {
+      ...project,
+      version: CURRENT_PROJECT_VERSION,
+      placedObjects: project.placedObjects.map((object) => withLightingDefaults(object, categoryForPlacedObject(object))),
+      objectGroups: [],
+      objectFolders: [],
+      favoriteObjectIds: [],
+      proposals: project.proposals.map((proposal) => ({ ...proposal, placedObjectsSnapshot: proposal.placedObjectsSnapshot.map((object) => withLightingDefaults(object, categoryForPlacedObject(object))), objectGroupsSnapshot: [] })),
     } as InteriorProject;
   }
   if (project.version !== CURRENT_PROJECT_VERSION)
@@ -107,6 +131,9 @@ export function migrateProject(project: InteriorProject) {
     project.placedObjects.some((object) => object.lightProfileId !== undefined && !project.roomLightProfiles.some((profile) => profile.id === object.lightProfileId))
   )
     throw new Error("CORRUPT_PROJECT");
+  if (!validObjectGroups(project.objectGroups, project.placedObjects)) throw new Error("CORRUPT_PROJECT");
+  if (!validObjectFolders(project.objectFolders)) throw new Error("CORRUPT_PROJECT");
+  if (!Array.isArray(project.favoriteObjectIds) || project.favoriteObjectIds.some((id) => typeof id !== "string")) throw new Error("CORRUPT_PROJECT");
   if (
     !Array.isArray(project.proposals) ||
     project.proposals.some(
@@ -174,6 +201,21 @@ function validRoomLightProfile(value: unknown): value is RoomLightProfile {
     ["window", "ceiling-light", "lamp", "mixed", "unknown"].includes(profile.sourceType) &&
     typeof profile.createdAt === "string" && typeof profile.updatedAt === "string"
   );
+}
+
+function validObjectGroups(value: unknown, objects: PlacedDecorObject[]): value is ObjectGroup[] {
+  if (!Array.isArray(value) || value.length > 200) return false;
+  const objectIds = new Set(objects.map((object) => object.id));
+  const groupIds = new Set<string>();
+  for (const group of value as ObjectGroup[]) {
+    if (!group || typeof group !== "object" || typeof group.id !== "string" || groupIds.has(group.id) || typeof group.name !== "string" || !group.name || group.name.length > 80 || !Array.isArray(group.objectIds) || group.objectIds.length < 2 || group.objectIds.some((id) => !objectIds.has(id)) || !Array.isArray(group.tags) || group.tags.some((tag) => typeof tag !== "string") || typeof group.visible !== "boolean" || typeof group.locked !== "boolean") return false;
+    groupIds.add(group.id);
+  }
+  return objects.every((object) => object.groupId === undefined || groupIds.has(object.groupId));
+}
+
+function validObjectFolders(value: unknown) {
+  return Array.isArray(value) && value.length <= 100 && value.every((folder) => folder && typeof folder === "object" && typeof folder.id === "string" && typeof folder.name === "string" && folder.name.length > 0 && folder.name.length <= 60 && Array.isArray(folder.objectIds) && folder.objectIds.every((id: unknown) => typeof id === "string"));
 }
 
 function validPlacedObject(
@@ -265,6 +307,9 @@ function validPlacedObject(
     Math.abs(object.baseContactOffset) <= height &&
     ["manual", "depth"].includes(object.zOrderMode) &&
     ["auto", "manual", "none"].includes(object.lightingMode) &&
+    Array.isArray(object.tags) && object.tags.length <= 30 && object.tags.every((tag) => typeof tag === "string" && tag.length <= 40) &&
+    ["small", "medium", "large"].includes(object.relativeScale) &&
+    (object.groupId === undefined || typeof object.groupId === "string") &&
     [object.adaptDepthBlur, object.adaptTexture].every((item) => typeof item === "boolean") &&
     (object.lightingLocked === undefined || typeof object.lightingLocked === "boolean") &&
     [object.brightness, object.contrast, object.saturation, object.temperature, object.tint, object.exposure, object.highlights, object.shadows, object.sharpness].every((item) => Math.abs(item) <= 100) &&
@@ -550,6 +595,7 @@ function validProposal(value: unknown, width: number, height: number) {
     proposal.placedObjectsSnapshot.every((object) =>
       validPlacedObject(object, width, height),
     ) &&
+    validObjectGroups(proposal.objectGroupsSnapshot, proposal.placedObjectsSnapshot) &&
     Array.isArray(proposal.placementSurfacesSnapshot) &&
     proposal.placementSurfacesSnapshot.length <= 100 &&
     proposal.placementSurfacesSnapshot.every((surface) =>
@@ -563,7 +609,7 @@ function validProposal(value: unknown, width: number, height: number) {
 export function validateImportedProject(value: unknown): InteriorProject {
   if (!value || typeof value !== "object") throw new Error("INVALID_PROJECT");
   const project = value as InteriorProject;
-  if (![1, 2, 3, 4, 5, CURRENT_PROJECT_VERSION].includes(project.version))
+  if (![1, 2, 3, 4, 5, 6, CURRENT_PROJECT_VERSION].includes(project.version))
     throw new Error("INCOMPATIBLE_VERSION");
   if (
     typeof project.name !== "string" ||
@@ -611,7 +657,7 @@ export function validateImportedProject(value: unknown): InteriorProject {
               project.originalImage.width,
               project.originalImage.height,
             )
-          : project.version === 5
+          : project.version === 5 || project.version === 6
             ? !validPlacedObject(withLightingDefaults(object, categoryForPlacedObject(object)), project.originalImage.width, project.originalImage.height)
             : !validPlacedObject(
               object,
@@ -649,6 +695,9 @@ export function validateImportedProject(value: unknown): InteriorProject {
         !project.roomLightProfiles.some((profile) => profile.id === project.activeRoomLightProfileId)))
   )
     throw new Error("INVALID_PROJECT");
+  if (project.version >= 7 && !validObjectGroups(project.objectGroups, project.placedObjects)) throw new Error("INVALID_PROJECT");
+  if (project.version >= 7 && !validObjectFolders(project.objectFolders)) throw new Error("INVALID_PROJECT");
+  if (project.version >= 7 && (!Array.isArray(project.favoriteObjectIds) || project.favoriteObjectIds.length > 1000 || project.favoriteObjectIds.some((id) => typeof id !== "string"))) throw new Error("INVALID_PROJECT");
   if (
     project.version >= 2 &&
     (!Array.isArray(project.proposals) ||
@@ -663,6 +712,7 @@ export function validateImportedProject(value: unknown): InteriorProject {
                 ).map(withPerspectiveDefaults),
                 placementSurfacesSnapshot: [],
                 perspectiveGuideSnapshot: null,
+                objectGroupsSnapshot: [],
               },
               project.originalImage.width,
               project.originalImage.height,
@@ -673,7 +723,10 @@ export function validateImportedProject(value: unknown): InteriorProject {
               ? !validProposal({
                   ...proposal,
                   placedObjectsSnapshot: (proposal.placedObjectsSnapshot ?? []).map((object) => withLightingDefaults(object, categoryForPlacedObject(object))),
+                  objectGroupsSnapshot: [],
                 }, project.originalImage.width, project.originalImage.height)
+            : project.version === 6
+              ? !validProposal({ ...proposal, placedObjectsSnapshot: proposal.placedObjectsSnapshot.map((object) => withLightingDefaults(object, categoryForPlacedObject(object))), objectGroupsSnapshot: [] }, project.originalImage.width, project.originalImage.height)
             : !validProposal(
                 proposal,
                 project.originalImage.width,

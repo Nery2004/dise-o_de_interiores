@@ -1,4 +1,4 @@
-import type { DecorObject, DecorObjectCategory, DecorObjectStyle, DecorRoomType } from "@/types/decor-object";
+import type { DecorCollectionId, DecorObject, DecorObjectCategory, DecorObjectStyle, DecorRoomType, PremiumDecorCategory } from "@/types/decor-object";
 
 type Definition = {
   slug: string;
@@ -74,10 +74,43 @@ const definitions: Definition[] = [
   { slug: "walnut-writing-desk", name: "Escritorio de nogal", category: "escritorios", folder: "desks", style: "clasico", colors: ["#73503A", "#A77B58"], rooms: ["oficina", "sala"], tags: ["nogal", "escritura", "clásico"] },
 ];
 
-export const decorObjects: DecorObject[] = definitions.map((definition, index) => ({
+function catalogCategory(definition: Definition, index: number): PremiumDecorCategory {
+  const byTechnical: Partial<Record<DecorObjectCategory, PremiumDecorCategory>> = {
+    sillas: index % 4 === 0 ? "bancas" : "sillas", macetas: "macetas", plantas: "plantas",
+    lamparas: "lamparas", alfombras: "alfombras", cuadros: "cuadros", estanterias: index % 2 ? "libreros" : "estanterias",
+    camas: "camas", escritorios: "escritorios",
+  };
+  if (definition.category === "sillones") return index % 4 === 0 ? "sofas" : index % 4 === 3 ? "loveseats" : "sillones";
+  if (definition.category === "mesas") return definition.tags.includes("comedor") ? "comedores" : definition.tags.includes("centro") ? "mesas-centro" : "mesas-auxiliares";
+  if (definition.category === "decoracion") return definition.tags.includes("espejo") ? "espejos" : definition.tags.includes("jarrones") ? "jarrones" : "decoracion";
+  return byTechnical[definition.category] ?? "decoracion";
+}
+
+function collectionsFor(definition: Definition): DecorCollectionId[] {
+  const styleMap: Record<DecorObjectStyle, DecorCollectionId[]> = {
+    moderno: ["moderno"], minimalista: ["minimalista", "japandi"], clasico: ["lujo", "vintage"],
+    industrial: ["industrial"], nordico: ["escandinavo", "japandi"], rustico: ["rustico", "mediterraneo"],
+    bohemio: ["bohemio", "mediterraneo"], contemporaneo: ["contemporaneo", "lujo"],
+  };
+  return styleMap[definition.style];
+}
+
+function approximateSize(category: DecorObjectCategory): [number, number, number] {
+  const sizes: Record<DecorObjectCategory, [number, number, number]> = {
+    sillones: [180, 82, 88], sillas: [52, 86, 55], mesas: [110, 45, 65], macetas: [38, 62, 38],
+    plantas: [70, 150, 70], lamparas: [42, 165, 42], alfombras: [200, 2, 140], cuadros: [80, 100, 4],
+    estanterias: [100, 185, 36], decoracion: [45, 55, 30], camas: [180, 105, 210], escritorios: [130, 76, 65],
+  };
+  return sizes[category];
+}
+
+const baseObjects: DecorObject[] = definitions.map((definition, index) => {
+  const [approximateWidthCm, approximateHeightCm, approximateDepthCm] = approximateSize(definition.category);
+  return {
   id: `decor-${String(index + 1).padStart(3, "0")}-${definition.slug}`,
   name: definition.name,
   category: definition.category,
+  catalogCategory: catalogCategory(definition, index),
   style: definition.style,
   thumbnailUrl: `/decor/${definition.folder}/${definition.slug}-thumb.webp`,
   assetUrl: `/decor/${definition.folder}/${definition.slug}.webp`,
@@ -86,10 +119,29 @@ export const decorObjects: DecorObject[] = definitions.map((definition, index) =
   height: 800,
   hasTransparentBackground: true,
   tags: definition.tags,
+  collectionIds: collectionsFor(definition),
+  approximateWidthCm,
+  approximateHeightCm,
+  approximateDepthCm,
   dominantColors: definition.colors,
   defaultScale: definition.scale ?? 0.3,
   recommendedRooms: definition.rooms,
   createdAt: "2026-07-12T00:00:00.000Z",
+  };
+});
+
+export const decorObjects: DecorObject[] = baseObjects.map((object) => ({
+  ...object,
+  variants: baseObjects
+    .filter((candidate) => candidate.id !== object.id && candidate.category === object.category)
+    .slice(0, 3)
+    .map((candidate) => ({
+      id: candidate.id,
+      name: candidate.dominantColors?.[0] ?? candidate.name,
+      assetUrl: candidate.assetUrl,
+      thumbnailUrl: candidate.thumbnailUrl,
+      dominantColors: candidate.dominantColors,
+    })),
 }));
 
 export const decorObjectsById = new Map(decorObjects.map((object) => [object.id, object]));

@@ -27,12 +27,14 @@ import {
   applyProposalSnapshot,
   clonePerspectiveGuide,
   clonePlacedDecorObjects,
+  cloneObjectGroups,
   clonePlacementSurfaces,
   createProposalSnapshot,
 } from "@/lib/proposals/proposalUtils";
 import type { DesignProposal } from "@/types/proposal";
 import { useDecorPlacement } from "@/components/decor-placement-context";
 import { useRoomLighting } from "@/components/room-lighting-context";
+import { useDecorObjects } from "@/components/use-decor-objects";
 
 export type ProjectSaveStatus = "unsaved" | "saving" | "saved" | "error";
 
@@ -102,6 +104,7 @@ export function ProjectProvider({
   const editor = useEditor();
   const placement = useDecorPlacement();
   const lighting = useRoomLighting();
+  const decor = useDecorObjects();
   const router = useRouter();
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [activeProjectName, setActiveProjectName] = useState<string | null>(
@@ -140,6 +143,9 @@ export function ProjectProvider({
           ...object,
           selected: false,
         })),
+        objectGroups: cloneObjectGroups(placement.objectGroups),
+        objectFolders: decor.folders,
+        favoriteObjectIds: decor.favorites,
         placementSurfaces: clonePlacementSurfaces(placement.placementSurfaces),
         perspectiveGuide: clonePerspectiveGuide(placement.perspectiveGuide),
         roomLightProfiles: lighting.profiles,
@@ -168,9 +174,12 @@ export function ProjectProvider({
       editor.zoom,
       placement.perspectiveGuide,
       placement.placedObjects,
+      placement.objectGroups,
       placement.placementSurfaces,
       lighting.activeProfileId,
       lighting.profiles,
+      decor.folders,
+      decor.favorites,
       proposals,
     ],
   );
@@ -212,11 +221,14 @@ export function ProjectProvider({
           project.placedObjects,
           project.placementSurfaces,
           project.perspectiveGuide,
+          project.objectGroups,
         );
         lighting.prepareProjectRestore(
           project.roomLightProfiles,
           project.activeRoomLightProfileId,
         );
+        decor.replaceFolders(project.objectFolders);
+        await decor.replaceFavorites(project.favoriteObjectIds);
         await editor.restoreProject(project);
         const pendingColor = await consumePendingEditorColor();
         if (pendingColor) {
@@ -251,7 +263,7 @@ export function ProjectProvider({
         );
       }
     },
-    [editor, lighting, placement],
+    [decor, editor, lighting, placement],
   );
 
   useEffect(() => {
@@ -338,6 +350,9 @@ export function ProjectProvider({
                 : editor.originalFile!,
             masks: editor.masks,
             placedObjects: clonePlacedDecorObjects(placement.placedObjects),
+            objectGroups: cloneObjectGroups(placement.objectGroups),
+            objectFolders: decor.folders.map((folder) => ({ ...folder, objectIds: [...folder.objectIds] })),
+            favoriteObjectIds: [...decor.favorites],
             placementSurfaces: clonePlacementSurfaces(
               placement.placementSurfaces,
             ),
@@ -389,9 +404,12 @@ export function ProjectProvider({
       editor,
       placement.perspectiveGuide,
       placement.placedObjects,
+      placement.objectGroups,
       placement.placementSurfaces,
       lighting.activeProfileId,
       lighting.profiles,
+      decor.folders,
+      decor.favorites,
       proposals,
     ],
   );
@@ -446,6 +464,8 @@ export function ProjectProvider({
     editor.resetImage();
     placement.resetPlacedObjects();
     lighting.resetLighting();
+    decor.replaceFolders([]);
+    void decor.replaceFavorites([]);
     setActiveProjectId(null);
     activeProjectIdRef.current = null;
     setActiveProjectName(null);
@@ -456,7 +476,7 @@ export function ProjectProvider({
     setLastSavedAt(null);
     setIsDirty(false);
     setSaveStatus("saved");
-  }, [editor, lighting, placement]);
+  }, [decor, editor, lighting, placement]);
 
   const guardAction = useCallback(
     (action: () => void) => {
@@ -479,6 +499,7 @@ export function ProjectProvider({
         const objectsSnapshot = clonePlacedDecorObjects(
           placement.placedObjects,
         );
+        const groupsSnapshot = cloneObjectGroups(placement.objectGroups);
         const surfacesSnapshot = clonePlacementSurfaces(
           placement.placementSurfaces,
         );
@@ -501,6 +522,7 @@ export function ProjectProvider({
           thumbnail,
           masksSnapshot: snapshot,
           placedObjectsSnapshot: objectsSnapshot,
+          objectGroupsSnapshot: groupsSnapshot,
           placementSurfacesSnapshot: surfacesSnapshot,
           perspectiveGuideSnapshot: guideSnapshot,
           roomLightProfileSnapshot: lighting.activeProfile
@@ -525,6 +547,7 @@ export function ProjectProvider({
       editor,
       placement.perspectiveGuide,
       placement.placedObjects,
+      placement.objectGroups,
       placement.placementSurfaces,
       lighting.activeProfile,
       lighting.profiles,
@@ -633,6 +656,7 @@ export function ProjectProvider({
               placedObjectsSnapshot: clonePlacedDecorObjects(
                 source.placedObjectsSnapshot,
               ),
+              objectGroupsSnapshot: cloneObjectGroups(source.objectGroupsSnapshot),
               placementSurfacesSnapshot: clonePlacementSurfaces(
                 source.placementSurfacesSnapshot,
               ),
@@ -656,6 +680,7 @@ export function ProjectProvider({
           objects: clonePlacedDecorObjects(proposal.placedObjectsSnapshot),
           surfaces: clonePlacementSurfaces(proposal.placementSurfacesSnapshot),
           guide: clonePerspectiveGuide(proposal.perspectiveGuideSnapshot),
+          groups: cloneObjectGroups(proposal.objectGroupsSnapshot),
         });
         lighting.replaceLighting(
           proposal.roomLightProfileSnapshot ? [proposal.roomLightProfileSnapshot] : [],

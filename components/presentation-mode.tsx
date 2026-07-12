@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pause, Play, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useComparison } from "@/components/comparison-context";
 import { useEditor } from "@/components/editor-context";
@@ -22,6 +22,7 @@ export function PresentationMode() {
   const [index, setIndex] = useState(startIndex);
   const [view, setView] = useState<"original" | "edited" | "compare">("edited");
   const [position, setPosition] = useState(50);
+  const [autoPlay, setAutoPlay] = useState(false);
   const proposal = project.proposals[index];
   const colors = useMemo(
     () => (proposal ? getProposalColors(proposal) : []),
@@ -56,6 +57,11 @@ export function PresentationMode() {
     window.addEventListener("keydown", keydown);
     return () => window.removeEventListener("keydown", keydown);
   }, [comparison, project.proposals.length]);
+  useEffect(() => {
+    if (!autoPlay || project.proposals.length < 2) return;
+    const timer = window.setInterval(() => setIndex((current) => (current + 1) % project.proposals.length), 4500);
+    return () => window.clearInterval(timer);
+  }, [autoPlay, project.proposals.length]);
   if (!editor.image || !proposal)
     return (
       <div className="grid min-h-screen place-items-center bg-[#11151a] text-white">
@@ -99,6 +105,7 @@ export function PresentationMode() {
             Comparar
           </button>
           <FullscreenButton className="grid h-10 w-10 place-items-center rounded bg-white/10" />
+          <button onClick={() => setAutoPlay((current) => !current)} aria-label={autoPlay ? "Pausar presentación automática" : "Iniciar presentación automática"} className="grid h-10 w-10 place-items-center rounded bg-white/10">{autoPlay ? <Pause size={18} /> : <Play size={18} />}</button>
           <button
             onClick={() => comparison.setPresentationMode(false)}
             aria-label="Salir de presentación"
@@ -130,7 +137,7 @@ export function PresentationMode() {
           />
           {view !== "original" && proposal.thumbnail ? (
             <div
-              className="absolute inset-0"
+              className="absolute inset-0 transition-opacity duration-500"
               style={
                 view === "compare"
                   ? { clipPath: `inset(0 ${100 - position}% 0 0)` }

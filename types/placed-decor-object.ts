@@ -72,6 +72,9 @@ export type PlacedDecorObject = {
     autoDirection: boolean;
   };
   lightProfileId?: string;
+  groupId?: string;
+  tags: string[];
+  relativeScale: "small" | "medium" | "large";
   createdAt: string;
   updatedAt: string;
 };
