@@ -1,18 +1,7 @@
 import type { Metadata } from "next";
-import { Manrope, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { getSiteUrl } from "@/lib/site-url";
 import { DecorObjectsProvider } from "@/components/decor-objects-context";
-
-const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   metadataBase: getSiteUrl(),
@@ -44,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${manrope.variable} ${geistMono.variable}`}>
+    <html lang="es">
       <body><DecorObjectsProvider>{children}</DecorObjectsProvider></body>
     </html>
   );

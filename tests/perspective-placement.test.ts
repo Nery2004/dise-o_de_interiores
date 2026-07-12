@@ -28,6 +28,7 @@ import {
 import { validateImportedProject } from "@/lib/projects/projectValidation";
 import type { PlacedDecorObject } from "@/types/placed-decor-object";
 import type { PlacementSurface } from "@/types/perspective";
+import { lightingDefaults } from "@/lib/lighting/lightProfile";
 
 const now = "2026-07-12T00:00:00.000Z";
 
@@ -86,6 +87,7 @@ function placed(changes: Partial<PlacedDecorObject> = {}): PlacedDecorObject {
     autoScaleByDepth: true,
     baseContactOffset: 0,
     zOrderMode: "depth",
+    ...lightingDefaults(asset.category, "floor"),
     createdAt: now,
     updatedAt: now,
     ...changes,
@@ -270,7 +272,7 @@ test("un proyecto v4 conserva objetos al migrar y añade perspectiva segura", ()
     proposals: [],
   };
   const migrated = validateImportedProject(project);
-  assert.equal(migrated.version, 5);
+  assert.equal(migrated.version, 6);
   assert.equal(migrated.placedObjects.length, 1);
   assert.equal(migrated.placedObjects[0].perspectiveMode, "none");
   assert.equal(migrated.placedObjects[0].zOrderMode, "manual");

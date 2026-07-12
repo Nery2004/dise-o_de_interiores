@@ -45,6 +45,7 @@ export function clonePlacedDecorObjects(objects: PlacedDecorObject[]) {
           bottomLeft: { ...object.perspectivePoints.bottomLeft },
         }
       : undefined,
+    shadowSettings: object.shadowSettings ? { ...object.shadowSettings } : undefined,
   }));
 }
 export function clonePlacementSurfaces(surfaces: PlacementSurface[]) {

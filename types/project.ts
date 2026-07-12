@@ -2,8 +2,9 @@ import type { BlendMode, WallMask } from "@/types/editor";
 import type { DesignProposal } from "@/types/proposal";
 import type { PlacedDecorObject } from "@/types/placed-decor-object";
 import type { PerspectiveGuide, PlacementSurface } from "@/types/perspective";
+import type { RoomLightProfile } from "@/types/lighting";
 
-export const CURRENT_PROJECT_VERSION = 5;
+export const CURRENT_PROJECT_VERSION = 6;
 
 export type ProjectImage = {
   name: string;
@@ -28,6 +29,8 @@ export type InteriorProject = {
   placedObjects: PlacedDecorObject[];
   placementSurfaces: PlacementSurface[];
   perspectiveGuide: PerspectiveGuide | null;
+  roomLightProfiles: RoomLightProfile[];
+  activeRoomLightProfileId?: string;
   activeColor: string | null;
   selectedMaskId: string | null;
   globalBlendMode: BlendMode;

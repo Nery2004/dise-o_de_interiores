@@ -7,6 +7,8 @@ import {
   categoryForPlacedObject,
   defaultPlacementForCategory,
 } from "@/lib/perspective/objectAnchoring";
+import { withLightingDefaults } from "@/lib/lighting/lightProfile";
+import type { RoomLightProfile } from "@/types/lighting";
 
 const blendModes: BlendMode[] = [
   "paint-simulation",
@@ -29,12 +31,15 @@ export function migrateProject(project: InteriorProject) {
       placedObjects: [],
       placementSurfaces: [],
       perspectiveGuide: null,
+      roomLightProfiles: [],
+      activeRoomLightProfileId: undefined,
       proposals: proposals.map((proposal) => ({
         ...proposal,
         masksSnapshot: proposal.masksSnapshot.map(withDefaultPaintSettings),
         placedObjectsSnapshot: [],
         placementSurfacesSnapshot: [],
         perspectiveGuideSnapshot: null,
+        roomLightProfileSnapshot: undefined,
       })),
     } as InteriorProject;
   }
@@ -49,6 +54,8 @@ export function migrateProject(project: InteriorProject) {
       placedObjects: (project.placedObjects ?? []).map(withPerspectiveDefaults),
       placementSurfaces: legacy.placementSurfaces ?? [],
       perspectiveGuide: legacy.perspectiveGuide ?? null,
+      roomLightProfiles: [],
+      activeRoomLightProfileId: undefined,
       proposals: (project.proposals ?? []).map((proposal) => ({
         ...proposal,
         placedObjectsSnapshot: (proposal.placedObjectsSnapshot ?? []).map(
@@ -56,6 +63,25 @@ export function migrateProject(project: InteriorProject) {
         ),
         placementSurfacesSnapshot: proposal.placementSurfacesSnapshot ?? [],
         perspectiveGuideSnapshot: proposal.perspectiveGuideSnapshot ?? null,
+        roomLightProfileSnapshot: undefined,
+      })),
+    } as InteriorProject;
+  }
+  if (project.version === 5) {
+    return {
+      ...project,
+      version: CURRENT_PROJECT_VERSION,
+      placedObjects: (project.placedObjects ?? []).map((object) =>
+        withLightingDefaults(object, categoryForPlacedObject(object)),
+      ),
+      roomLightProfiles: [],
+      activeRoomLightProfileId: undefined,
+      proposals: (project.proposals ?? []).map((proposal) => ({
+        ...proposal,
+        placedObjectsSnapshot: (proposal.placedObjectsSnapshot ?? []).map((object) =>
+          withLightingDefaults(object, categoryForPlacedObject(object)),
+        ),
+        roomLightProfileSnapshot: undefined,
       })),
     } as InteriorProject;
   }
@@ -71,6 +97,14 @@ export function migrateProject(project: InteriorProject) {
           project.originalImage.height,
         ),
     )
+  )
+    throw new Error("CORRUPT_PROJECT");
+  if (
+    !Array.isArray(project.roomLightProfiles) ||
+    project.roomLightProfiles.some((profile) => !validRoomLightProfile(profile)) ||
+    (project.activeRoomLightProfileId !== undefined &&
+      !project.roomLightProfiles.some((profile) => profile.id === project.activeRoomLightProfileId)) ||
+    project.placedObjects.some((object) => object.lightProfileId !== undefined && !project.roomLightProfiles.some((profile) => profile.id === object.lightProfileId))
   )
     throw new Error("CORRUPT_PROJECT");
   if (
@@ -107,7 +141,7 @@ export function migrateProject(project: InteriorProject) {
 
 function withPerspectiveDefaults(object: PlacedDecorObject): PlacedDecorObject {
   const defaults = defaultPlacementForCategory(categoryForPlacedObject(object));
-  return {
+  return withLightingDefaults({
     ...object,
     surfaceType: defaults.surfaceType,
     anchor: "center",
@@ -118,7 +152,28 @@ function withPerspectiveDefaults(object: PlacedDecorObject): PlacedDecorObject {
     autoScaleByDepth: false,
     baseContactOffset: 0,
     zOrderMode: "manual",
-  };
+  }, categoryForPlacedObject(object));
+}
+
+function validRoomLightProfile(value: unknown): value is RoomLightProfile {
+  if (!value || typeof value !== "object") return false;
+  const profile = value as RoomLightProfile;
+  return (
+    typeof profile.id === "string" &&
+    typeof profile.name === "string" && profile.name.length > 0 && profile.name.length <= 80 &&
+    ["auto", "manual"].includes(profile.mode) &&
+    Number.isFinite(profile.direction?.x) && Number.isFinite(profile.direction?.y) &&
+    Math.abs(Math.hypot(profile.direction.x, profile.direction.y) - 1) < 0.02 &&
+    Number.isFinite(profile.elevation) && profile.elevation >= 0 && profile.elevation <= 90 &&
+    Number.isFinite(profile.intensity) && profile.intensity >= 0 && profile.intensity <= 100 &&
+    Number.isFinite(profile.temperature) && Math.abs(profile.temperature) <= 100 &&
+    Number.isFinite(profile.ambientBrightness) && Math.abs(profile.ambientBrightness) <= 100 &&
+    Number.isFinite(profile.ambientContrast) && Math.abs(profile.ambientContrast) <= 100 &&
+    Number.isFinite(profile.shadowStrength) && profile.shadowStrength >= 0 && profile.shadowStrength <= 100 &&
+    Number.isFinite(profile.shadowSoftness) && profile.shadowSoftness >= 0 && profile.shadowSoftness <= 100 &&
+    ["window", "ceiling-light", "lamp", "mixed", "unknown"].includes(profile.sourceType) &&
+    typeof profile.createdAt === "string" && typeof profile.updatedAt === "string"
+  );
 }
 
 function validPlacedObject(
@@ -140,6 +195,17 @@ function validPlacedObject(
     object.rotation,
     object.opacity,
     object.zIndex,
+    object.brightness,
+    object.contrast,
+    object.saturation,
+    object.temperature,
+    object.tint,
+    object.exposure,
+    object.highlights,
+    object.shadows,
+    object.sharpness,
+    object.depthBlur,
+    object.grain,
   ];
   const validPoints =
     !object.perspectivePoints ||
@@ -198,9 +264,31 @@ function validPlacedObject(
     Number.isFinite(object.baseContactOffset) &&
     Math.abs(object.baseContactOffset) <= height &&
     ["manual", "depth"].includes(object.zOrderMode) &&
+    ["auto", "manual", "none"].includes(object.lightingMode) &&
+    [object.adaptDepthBlur, object.adaptTexture].every((item) => typeof item === "boolean") &&
+    (object.lightingLocked === undefined || typeof object.lightingLocked === "boolean") &&
+    [object.brightness, object.contrast, object.saturation, object.temperature, object.tint, object.exposure, object.highlights, object.shadows, object.sharpness].every((item) => Math.abs(item) <= 100) &&
+    object.depthBlur >= 0 && object.depthBlur <= 8 &&
+    object.grain >= 0 && object.grain <= 20 &&
+    (!object.shadowSettings || validShadowSettings(object.shadowSettings)) &&
     validPoints &&
     typeof object.createdAt === "string" &&
     typeof object.updatedAt === "string"
+  );
+}
+
+function validShadowSettings(settings: NonNullable<PlacedDecorObject["shadowSettings"]>) {
+  return (
+    typeof settings.enabled === "boolean" &&
+    ["contact", "projected", "both"].includes(settings.type) &&
+    /^#[0-9a-f]{6}$/i.test(settings.color) &&
+    typeof settings.autoDirection === "boolean" &&
+    [settings.opacity, settings.contactOpacity].every((value) => Number.isFinite(value) && value >= 0 && value <= 1) &&
+    [settings.blur, settings.contactBlur].every((value) => Number.isFinite(value) && value >= 0 && value <= 50) &&
+    Number.isFinite(settings.softness) && settings.softness >= 0 && settings.softness <= 100 &&
+    [settings.offsetX, settings.offsetY, settings.rotation].every(Number.isFinite) &&
+    [settings.scaleX, settings.scaleY].every((value) => Number.isFinite(value) && value > 0 && value <= 3) &&
+    [settings.contactWidth, settings.contactHeight].every((value) => Number.isFinite(value) && value > 0 && value <= 2)
   );
 }
 
@@ -468,13 +556,14 @@ function validProposal(value: unknown, width: number, height: number) {
       validPlacementSurface(surface, width, height),
     ) &&
     validPerspectiveGuide(proposal.perspectiveGuideSnapshot, width, height)
+    && (!proposal.roomLightProfileSnapshot || validRoomLightProfile(proposal.roomLightProfileSnapshot))
   );
 }
 
 export function validateImportedProject(value: unknown): InteriorProject {
   if (!value || typeof value !== "object") throw new Error("INVALID_PROJECT");
   const project = value as InteriorProject;
-  if (![1, 2, 3, 4, CURRENT_PROJECT_VERSION].includes(project.version))
+  if (![1, 2, 3, 4, 5, CURRENT_PROJECT_VERSION].includes(project.version))
     throw new Error("INCOMPATIBLE_VERSION");
   if (
     typeof project.name !== "string" ||
@@ -522,7 +611,9 @@ export function validateImportedProject(value: unknown): InteriorProject {
               project.originalImage.width,
               project.originalImage.height,
             )
-          : !validPlacedObject(
+          : project.version === 5
+            ? !validPlacedObject(withLightingDefaults(object, categoryForPlacedObject(object)), project.originalImage.width, project.originalImage.height)
+            : !validPlacedObject(
               object,
               project.originalImage.width,
               project.originalImage.height,
@@ -550,6 +641,15 @@ export function validateImportedProject(value: unknown): InteriorProject {
   )
     throw new Error("INVALID_PROJECT");
   if (
+    project.version >= 6 &&
+    (!Array.isArray(project.roomLightProfiles) ||
+      project.roomLightProfiles.length > 50 ||
+      project.roomLightProfiles.some((profile) => !validRoomLightProfile(profile)) ||
+      (project.activeRoomLightProfileId !== undefined &&
+        !project.roomLightProfiles.some((profile) => profile.id === project.activeRoomLightProfileId)))
+  )
+    throw new Error("INVALID_PROJECT");
+  if (
     project.version >= 2 &&
     (!Array.isArray(project.proposals) ||
       project.proposals.length > 200 ||
@@ -569,6 +669,11 @@ export function validateImportedProject(value: unknown): InteriorProject {
             )
           : project.version < 4
             ? false
+            : project.version === 5
+              ? !validProposal({
+                  ...proposal,
+                  placedObjectsSnapshot: (proposal.placedObjectsSnapshot ?? []).map((object) => withLightingDefaults(object, categoryForPlacedObject(object))),
+                }, project.originalImage.width, project.originalImage.height)
             : !validProposal(
                 proposal,
                 project.originalImage.width,

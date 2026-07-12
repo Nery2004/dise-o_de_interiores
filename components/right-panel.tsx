@@ -14,6 +14,7 @@ import { EditorObjectsPanel } from "@/components/decor/editor-objects-panel";
 import { PendingDecorObjectNotice } from "@/components/decor/pending-decor-object-notice";
 import { ObjectInspectorPanel } from "@/components/decor/object-inspector-panel";
 import { useDecorPlacement } from "@/components/decor-placement-context";
+import { RoomLightingPanel } from "@/components/lighting/room-lighting-panel";
 
 function EmptyValue() {
   return <span className="text-[#a0a7b1]">-</span>;
@@ -51,6 +52,7 @@ export function RightPanel() {
 
   return (
     <aside className="max-h-[calc(100vh-8.5rem)] overflow-auto rounded-lg border border-[#dde1e7] bg-white p-4 shadow-sm">
+      {image ? <RoomLightingPanel /> : null}
       {["objects", "define-surface", "horizon"].includes(activeTool) ? (
         <div className="mb-5">
           <EditorObjectsPanel />

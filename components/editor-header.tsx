@@ -8,6 +8,7 @@ import { maskHasExportableColor } from "@/lib/mask-geometry";
 import { cn } from "@/lib/utils";
 import { useProject } from "@/components/project-context";
 import { useDecorPlacement } from "@/components/decor-placement-context";
+import { useRoomLighting } from "@/components/room-lighting-context";
 
 function HeaderButton({
   children,
@@ -37,6 +38,7 @@ function HeaderButton({
 export function EditorHeader() {
   const project = useProject();
   const placement = useDecorPlacement();
+  const lighting = useRoomLighting();
   const {
     globalBlendMode,
     canRedo,
@@ -68,6 +70,8 @@ export function EditorHeader() {
         image,
         masks,
         placedObjects: placement.placedObjects,
+        placementSurfaces: placement.placementSurfaces,
+        roomLightProfiles: lighting.profiles,
       });
 
       downloadBlob(blob, "interior-color-studio-export.png");
@@ -119,11 +123,11 @@ export function EditorHeader() {
           <Save size={16} />
           {project.isSaving ? "Guardando..." : "Guardar proyecto"}
         </HeaderButton>
-        <HeaderButton disabled={!canUndo && !placement.canUndo} onClick={placement.canUndo ? placement.undo : undo}>
+        <HeaderButton disabled={!canUndo && !placement.canUndo && !lighting.canUndo} onClick={placement.canUndo ? placement.undo : lighting.canUndo ? lighting.undo : undo}>
           <Undo2 size={16} />
           Deshacer
         </HeaderButton>
-        <HeaderButton disabled={!canRedo && !placement.canRedo} onClick={placement.canRedo ? placement.redo : redo}>
+        <HeaderButton disabled={!canRedo && !placement.canRedo && !lighting.canRedo} onClick={placement.canRedo ? placement.redo : lighting.canRedo ? lighting.redo : redo}>
           <Redo2 size={16} />
           Rehacer
         </HeaderButton>

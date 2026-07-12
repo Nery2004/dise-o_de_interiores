@@ -15,6 +15,10 @@ import type {
   ObjectResizeHandle,
   PlacedDecorObject,
 } from "@/types/placed-decor-object";
+import { useRoomLighting } from "@/components/room-lighting-context";
+import { createContactShadow } from "@/lib/lighting/contactShadow";
+import { createProjectedShadow } from "@/lib/lighting/projectedShadow";
+import { useDecorPlacement } from "@/components/decor-placement-context";
 
 const failedAssets = new Set<string>();
 
@@ -43,7 +47,16 @@ export const PlacedDecorObjectView = memo(function PlacedDecorObjectView({
     event: ReactPointerEvent<HTMLButtonElement>,
   ) => void;
 }) {
+  const lighting = useRoomLighting();
+  const placement = useDecorPlacement();
   const [failed, setFailed] = useState(false);
+  const profile = lighting.profiles.find((item) => item.id === object.lightProfileId) ?? lighting.activeProfile;
+  const surface = placement.placementSurfaces.find((item) => item.id === object.surfaceId);
+  const contact = createContactShadow(object, surface, profile);
+  const projected = createProjectedShadow(object, surface, profile);
+  const projectedColor = projected
+    ? `${projected.color}${Math.round(projected.opacity * 255).toString(16).padStart(2, "0")}`
+    : undefined;
   if (!object.visible) return null;
   if (object.perspectiveMode !== "none" && object.perspectivePoints) {
     const bounds = polygonBounds(
@@ -103,11 +116,30 @@ export const PlacedDecorObjectView = memo(function PlacedDecorObjectView({
         willChange: "transform,left,top,width,height",
       }}
     >
+      {contact ? (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-full -z-10 rounded-[50%]"
+          style={{
+            width: contact.width,
+            height: contact.height,
+            backgroundColor: contact.color,
+            opacity: contact.opacity * object.opacity,
+            filter: `blur(${contact.blur}px)`,
+            transform: `translate(-50%,-50%) rotate(${contact.rotation - object.rotation}deg)`,
+          }}
+        />
+      ) : null}
       <div
         className="absolute inset-0"
         style={{
           opacity: object.opacity,
           transform: `scale(${object.flipX ? -1 : 1},${object.flipY ? -1 : 1})`,
+          filter: projected
+            ? `drop-shadow(${projected.offsetX}px ${projected.offsetY}px ${projected.blur}px ${projectedColor}) brightness(${Math.max(0.2, 1 + object.brightness / 100)}) contrast(${Math.max(0.2, 1 + object.contrast / 100)}) saturate(${Math.max(0, 1 + object.saturation / 100)}) blur(${object.depthBlur}px)`
+            : object.lightingMode === "none"
+              ? undefined
+              : `brightness(${Math.max(0.2, 1 + object.brightness / 100)}) contrast(${Math.max(0.2, 1 + object.contrast / 100)}) saturate(${Math.max(0, 1 + object.saturation / 100)}) blur(${object.depthBlur}px)`,
         }}
       >
         {failed ? (

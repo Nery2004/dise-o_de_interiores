@@ -48,6 +48,7 @@ import type {
   PlacementSurface,
   PlacementSurfaceType,
 } from "@/types/perspective";
+import { lightingDefaults } from "@/lib/lighting/lightProfile";
 
 type PlacementScene = {
   objects: PlacedDecorObject[];
@@ -162,6 +163,7 @@ function cloneScene(scene: PlacementScene): PlacementScene {
             bottomLeft: { ...object.perspectivePoints.bottomLeft },
           }
         : undefined,
+      shadowSettings: object.shadowSettings ? { ...object.shadowSettings } : undefined,
     })),
     surfaces: scene.surfaces.map((surface) => ({
       ...surface,
@@ -505,6 +507,7 @@ export function DecorPlacementProvider({ children }: { children: ReactNode }) {
             autoScaleByDepth: defaults.autoScaleByDepth && Boolean(surface),
             baseContactOffset: 0,
             zOrderMode: surface ? "depth" : "manual",
+            ...lightingDefaults(object.category, surface?.type ?? defaults.surfaceType),
             createdAt: now,
             updatedAt: now,
           },

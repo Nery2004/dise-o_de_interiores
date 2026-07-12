@@ -7,9 +7,11 @@ import type {
   PlacementSurfaceType,
   ZOrderMode,
 } from "@/types/perspective";
+import { useRoomLighting } from "@/components/room-lighting-context";
 
 export function ObjectPerspectiveProperties() {
   const placement = useDecorPlacement();
+  const lighting = useRoomLighting();
   const object = placement.placedObjects.find(
     (item) => item.id === placement.selectedObjectId,
   );
@@ -38,6 +40,8 @@ export function ObjectPerspectiveProperties() {
                 surfaceId: surface?.id,
                 surfaceType: surface?.type ?? "free",
               });
+              if (object.lightingMode === "auto" && !object.lightingLocked)
+                void lighting.adaptObject({ ...object, surfaceId: surface?.id, surfaceType: surface?.type ?? "free" });
             }}
             className="mt-1 h-9 w-full rounded border bg-white px-2 text-xs"
           >
@@ -117,7 +121,11 @@ export function ObjectPerspectiveProperties() {
               false,
             )
           }
-          onPointerUp={placement.commitHistoryTransaction}
+          onPointerUp={(event) => {
+            placement.commitHistoryTransaction();
+            if (object.lightingMode === "auto" && !object.lightingLocked)
+              void lighting.adaptObject({ ...object, depth: Number(event.currentTarget.value) / 100 });
+          }}
           className="mt-1 w-full accent-[#7c3aed]"
         />
       </label>

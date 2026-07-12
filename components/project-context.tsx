@@ -32,6 +32,7 @@ import {
 } from "@/lib/proposals/proposalUtils";
 import type { DesignProposal } from "@/types/proposal";
 import { useDecorPlacement } from "@/components/decor-placement-context";
+import { useRoomLighting } from "@/components/room-lighting-context";
 
 export type ProjectSaveStatus = "unsaved" | "saving" | "saved" | "error";
 
@@ -100,6 +101,7 @@ export function ProjectProvider({
 }) {
   const editor = useEditor();
   const placement = useDecorPlacement();
+  const lighting = useRoomLighting();
   const router = useRouter();
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [activeProjectName, setActiveProjectName] = useState<string | null>(
@@ -140,6 +142,8 @@ export function ProjectProvider({
         })),
         placementSurfaces: clonePlacementSurfaces(placement.placementSurfaces),
         perspectiveGuide: clonePerspectiveGuide(placement.perspectiveGuide),
+        roomLightProfiles: lighting.profiles,
+        activeRoomLightProfileId: lighting.activeProfileId,
         settings: [
           editor.zoom,
           editor.beforeAfterEnabled,
@@ -165,6 +169,8 @@ export function ProjectProvider({
       placement.perspectiveGuide,
       placement.placedObjects,
       placement.placementSurfaces,
+      lighting.activeProfileId,
+      lighting.profiles,
       proposals,
     ],
   );
@@ -207,6 +213,10 @@ export function ProjectProvider({
           project.placementSurfaces,
           project.perspectiveGuide,
         );
+        lighting.prepareProjectRestore(
+          project.roomLightProfiles,
+          project.activeRoomLightProfileId,
+        );
         await editor.restoreProject(project);
         const pendingColor = await consumePendingEditorColor();
         if (pendingColor) {
@@ -241,7 +251,7 @@ export function ProjectProvider({
         );
       }
     },
-    [editor, placement],
+    [editor, lighting, placement],
   );
 
   useEffect(() => {
@@ -288,7 +298,9 @@ export function ProjectProvider({
             existing?.globalBlendMode === editor.globalBlendMode &&
             JSON.stringify(existing?.masks) === JSON.stringify(editor.masks) &&
             JSON.stringify(existing?.placedObjects) ===
-              JSON.stringify(clonePlacedDecorObjects(placement.placedObjects));
+              JSON.stringify(clonePlacedDecorObjects(placement.placedObjects)) &&
+            JSON.stringify(existing?.roomLightProfiles ?? []) === JSON.stringify(lighting.profiles) &&
+            JSON.stringify(existing?.placementSurfaces ?? []) === JSON.stringify(clonePlacementSurfaces(placement.placementSurfaces));
           const thumbnail =
             visualUnchanged && existing?.thumbnail
               ? existing.thumbnail
@@ -297,6 +309,8 @@ export function ProjectProvider({
                   editor.masks,
                   editor.globalBlendMode,
                   placement.placedObjects,
+                  lighting.profiles,
+                  placement.placementSurfaces,
                 );
           const id = existing?.id ?? crypto.randomUUID();
           const project: InteriorProject = {
@@ -328,6 +342,8 @@ export function ProjectProvider({
               placement.placementSurfaces,
             ),
             perspectiveGuide: clonePerspectiveGuide(placement.perspectiveGuide),
+            roomLightProfiles: lighting.profiles.map((profile) => ({ ...profile, direction: { ...profile.direction } })),
+            activeRoomLightProfileId: lighting.activeProfileId,
             activeColor: editor.activeColor,
             selectedMaskId: editor.selectedMaskId,
             globalBlendMode: editor.globalBlendMode,
@@ -374,6 +390,8 @@ export function ProjectProvider({
       placement.perspectiveGuide,
       placement.placedObjects,
       placement.placementSurfaces,
+      lighting.activeProfileId,
+      lighting.profiles,
       proposals,
     ],
   );
@@ -427,6 +445,7 @@ export function ProjectProvider({
     skipDirtyRef.current = true;
     editor.resetImage();
     placement.resetPlacedObjects();
+    lighting.resetLighting();
     setActiveProjectId(null);
     activeProjectIdRef.current = null;
     setActiveProjectName(null);
@@ -437,7 +456,7 @@ export function ProjectProvider({
     setLastSavedAt(null);
     setIsDirty(false);
     setSaveStatus("saved");
-  }, [editor, placement]);
+  }, [editor, lighting, placement]);
 
   const guardAction = useCallback(
     (action: () => void) => {
@@ -469,6 +488,8 @@ export function ProjectProvider({
           snapshot,
           editor.globalBlendMode,
           objectsSnapshot,
+          lighting.profiles,
+          surfacesSnapshot,
         );
         const proposal: DesignProposal = {
           id: crypto.randomUUID(),
@@ -482,6 +503,9 @@ export function ProjectProvider({
           placedObjectsSnapshot: objectsSnapshot,
           placementSurfacesSnapshot: surfacesSnapshot,
           perspectiveGuideSnapshot: guideSnapshot,
+          roomLightProfileSnapshot: lighting.activeProfile
+            ? { ...lighting.activeProfile, direction: { ...lighting.activeProfile.direction } }
+            : undefined,
           activeColor: editor.activeColor,
         };
         setProposals((current) => [...current, proposal]);
@@ -502,6 +526,8 @@ export function ProjectProvider({
       placement.perspectiveGuide,
       placement.placedObjects,
       placement.placementSurfaces,
+      lighting.activeProfile,
+      lighting.profiles,
     ],
   );
 
@@ -613,6 +639,9 @@ export function ProjectProvider({
               perspectiveGuideSnapshot: clonePerspectiveGuide(
                 source.perspectiveGuideSnapshot,
               ),
+              roomLightProfileSnapshot: source.roomLightProfileSnapshot
+                ? { ...source.roomLightProfileSnapshot, direction: { ...source.roomLightProfileSnapshot.direction } }
+                : undefined,
             },
           ];
         }),
@@ -628,6 +657,10 @@ export function ProjectProvider({
           surfaces: clonePlacementSurfaces(proposal.placementSurfacesSnapshot),
           guide: clonePerspectiveGuide(proposal.perspectiveGuideSnapshot),
         });
+        lighting.replaceLighting(
+          proposal.roomLightProfileSnapshot ? [proposal.roomLightProfileSnapshot] : [],
+          proposal.roomLightProfileSnapshot?.id,
+        );
         editor.setActiveColor(proposal.activeColor ?? null);
         setActiveProposalId(id);
         return true;
@@ -665,6 +698,7 @@ export function ProjectProvider({
       isSaving,
       lastSavedAt,
       loadProject,
+      lighting,
       placement,
       proposals,
       resetProject,

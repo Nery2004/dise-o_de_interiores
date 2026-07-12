@@ -19,6 +19,7 @@ import {
 import { loadDecorAsset } from "@/lib/decor/loadDecorAsset";
 import type { PlacedDecorObject } from "@/types/placed-decor-object";
 import type { InteriorProject } from "@/types/project";
+import { lightingDefaults } from "@/lib/lighting/lightProfile";
 
 function placed(changes: Partial<PlacedDecorObject> = {}): PlacedDecorObject {
   return {
@@ -51,6 +52,7 @@ function placed(changes: Partial<PlacedDecorObject> = {}): PlacedDecorObject {
     autoScaleByDepth: false,
     baseContactOffset: 0,
     zOrderMode: "manual",
+    ...lightingDefaults("sillones", "free"),
     createdAt: "2026-07-12T00:00:00.000Z",
     updatedAt: "2026-07-12T00:00:00.000Z",
     ...changes,
@@ -206,7 +208,7 @@ test("proyectos v3 migran objetos vacíos y v4 valida objetos colocados", () => 
     ],
   } as unknown as InteriorProject;
   const migrated = migrateProject(legacy);
-  assert.equal(migrated.version, 5);
+  assert.equal(migrated.version, 6);
   assert.deepEqual(migrated.placedObjects, []);
   assert.deepEqual(migrated.proposals[0].placedObjectsSnapshot, []);
   const current = { ...migrated, placedObjects: [placed({ x: 200, y: 150 })] };

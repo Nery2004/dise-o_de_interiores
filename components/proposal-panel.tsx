@@ -53,6 +53,8 @@ export function ProposalPanel() {
         masks: proposal.masksSnapshot,
         globalBlendMode: editor.globalBlendMode,
         placedObjects: proposal.placedObjectsSnapshot,
+        placementSurfaces: proposal.placementSurfacesSnapshot,
+        roomLightProfiles: proposal.roomLightProfileSnapshot ? [proposal.roomLightProfileSnapshot] : [],
       });
       downloadBlob(
         blob,

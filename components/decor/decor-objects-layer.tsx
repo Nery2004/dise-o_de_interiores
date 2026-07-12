@@ -26,6 +26,7 @@ import {
 } from "@/lib/perspective/surfaceGeometry";
 import { validatePerspectivePoints } from "@/lib/perspective/perspectiveValidation";
 import { toast } from "sonner";
+import { useRoomLighting } from "@/components/room-lighting-context";
 
 type ActiveInteraction = {
   kind: "moving" | "resizing" | "rotating" | "perspective";
@@ -45,6 +46,7 @@ export function DecorObjectsLayer({
 }) {
   const editor = useEditor();
   const placement = useDecorPlacement();
+  const lighting = useRoomLighting();
   const layerRef = useRef<HTMLDivElement>(null);
   const interactionRef = useRef<ActiveInteraction | null>(null);
   const [previewObject, setPreviewObject] = useState<PlacedDecorObject | null>(
@@ -102,9 +104,11 @@ export function DecorObjectsLayer({
         !validatePerspectivePoints(previewObject.perspectivePoints)
       )
         toast.error("La transformación debe conservar un cuadrilátero válido.");
-      else if (active.kind === "moving")
+      else if (active.kind === "moving") {
         placement.finalizeObjectPlacement(active.object.id, previewObject);
-      else placement.updatePlacedObject(active.object.id, previewObject);
+        if (previewObject.lightingMode === "auto" && !previewObject.lightingLocked)
+          window.setTimeout(() => void lighting.adaptObject(previewObject), 180);
+      } else placement.updatePlacedObject(active.object.id, previewObject);
     }
     interactionRef.current = null;
     setPreviewObject(null);

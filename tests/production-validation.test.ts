@@ -33,6 +33,7 @@ const baseProject = {
   placedObjects: [],
   placementSurfaces: [],
   perspectiveGuide: null,
+  roomLightProfiles: [],
   activeColor: null,
   selectedMaskId: null,
   globalBlendMode: "multiply",
@@ -76,8 +77,8 @@ test("valida uploads y límites de dimensiones", () => {
   assert.equal(validateImageDimensions(5_001, 5_000), false);
 });
 
-test("valida importación y migra proyectos anteriores a v5", () => {
-  assert.equal(validateImportedProject(baseProject).version, 5);
+test("valida importación y migra proyectos anteriores a v6", () => {
+  assert.equal(validateImportedProject(baseProject).version, 6);
   const legacy = {
     ...baseProject,
     version: 1,
@@ -99,7 +100,7 @@ test("valida importación y migra proyectos anteriores a v5", () => {
     ],
   } as unknown as InteriorProject;
   const migrated = migrateProject(legacy);
-  assert.equal(migrated.version, 5);
+  assert.equal(migrated.version, 6);
   assert.equal(migrated.masks[0].whiteBaseSettings?.mode, "auto");
   assert.equal(migrated.masks[0].whiteBaseSettings?.shadowPreservation, 90);
   assert.equal(migrated.masks[0].whiteBaseSettings?.texturePreservation, 90);

@@ -12,6 +12,8 @@ import { PlacedObjectsList } from "@/components/decor/placed-objects-list";
 import { useComparison } from "@/components/comparison-context";
 import { SurfacePanel } from "@/components/perspective/surface-panel";
 import { ObjectPerspectiveProperties } from "@/components/perspective/object-perspective-properties";
+import { ObjectLightingPanel } from "@/components/decor/object-lighting-panel";
+import { useDecorPlacement } from "@/components/decor-placement-context";
 import { decorObjects } from "@/data/decorObjects";
 import { matchesDecorSearch } from "@/lib/decor/filterDecorObjects";
 import {
@@ -54,6 +56,8 @@ export function EditorObjectsPanel() {
   const project = useProject();
   const editor = useEditor();
   const comparison = useComparison();
+  const placement = useDecorPlacement();
+  const selectedObject = placement.placedObjects.find((item) => item.id === placement.selectedObjectId);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<DecorObjectCategory | "">("");
   const favoriteSet = useMemo(
@@ -244,6 +248,7 @@ export function EditorObjectsPanel() {
       </div>
       <SurfacePanel />
       <ObjectPropertiesPanel />
+      {selectedObject ? <ObjectLightingPanel object={selectedObject} /> : null}
       <ObjectPerspectiveProperties />
       <PlacedObjectsList />
       <button

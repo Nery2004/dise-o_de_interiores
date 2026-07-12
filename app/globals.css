@@ -12,6 +12,8 @@
   --terracotta: #b9745d;
   --cream: #fbf8f1;
   --graphite: #202621;
+  --font-manrope: "Avenir Next", Avenir, "Segoe UI", Arial, Helvetica, sans-serif;
+  --font-geist-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
 @theme inline {

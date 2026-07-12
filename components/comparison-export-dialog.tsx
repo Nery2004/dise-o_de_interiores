@@ -11,6 +11,7 @@ import {
 } from "@/lib/comparison/comparisonRenderer";
 import { normalizeExportFilename } from "@/lib/proposals/proposalUtils";
 import { useDecorPlacement } from "@/components/decor-placement-context";
+import { useRoomLighting } from "@/components/room-lighting-context";
 export function ComparisonExportDialog({
   open,
   onClose,
@@ -22,6 +23,7 @@ export function ComparisonExportDialog({
   const project = useProject();
   const comparison = useComparison();
   const placement = useDecorPlacement();
+  const lighting = useRoomLighting();
   const [format, setFormat] = useState<"side" | "split" | "grid">("side");
   if (!open) return null;
   async function run() {
@@ -41,6 +43,8 @@ export function ComparisonExportDialog({
               masks: editor.masks,
               blendMode: editor.globalBlendMode,
               placedObjects: placement.placedObjects,
+              placementSurfaces: placement.placementSurfaces,
+              roomLightProfiles: lighting.profiles,
               split: format === "split",
               includeInfo: comparison.includeExportInfo,
               title: project.activeProjectName ?? undefined,

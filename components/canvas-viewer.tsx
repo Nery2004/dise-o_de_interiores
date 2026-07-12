@@ -26,6 +26,7 @@ import {
   type ComparisonDirection,
 } from "@/lib/canvas/canvasTransformUtils";
 import type { ImageDimensions, LoadedImage } from "@/types/editor";
+import { LightDirectionOverlay } from "@/components/lighting/light-direction-overlay";
 
 const SIDE_BY_SIDE_GAP = 24;
 
@@ -202,6 +203,7 @@ function TransformedCanvas({ image }: { image: LoadedImage }) {
       <MaskOverlay dimensions={image.dimensions} />
       <DecorObjectsLayer dimensions={image.dimensions} canvasScale={transform.scale} />
       <SurfaceOverlay dimensions={image.dimensions} canvasScale={transform.scale} />
+      <LightDirectionOverlay dimensions={image.dimensions} />
       <BrushRefinementOverlay dimensions={image.dimensions} />
     </>
   );

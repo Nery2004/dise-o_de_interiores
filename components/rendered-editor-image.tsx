@@ -8,6 +8,7 @@ import { useDecorPlacement } from "@/components/decor-placement-context";
 import { renderPlacedDecorObjects } from "@/lib/decor/renderPlacedDecorObjects";
 import type { PlacedDecorObject } from "@/types/placed-decor-object";
 import { toast } from "sonner";
+import { useRoomLighting } from "@/components/room-lighting-context";
 
 let reportedDecorRenderFailure = false;
 
@@ -22,6 +23,7 @@ export function RenderedEditorImage({
 }) {
   const editor = useEditor();
   const placement = useDecorPlacement();
+  const lighting = useRoomLighting();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export function RenderedEditorImage({
       }).then(async () => {
         if (cancelled) return;
         const renderedContext = rendered.getContext("2d");
-        const failures = renderedContext ? await renderPlacedDecorObjects(renderedContext, placedObjects ?? placement.placedObjects) : [];
+        const failures = renderedContext ? await renderPlacedDecorObjects(renderedContext, placedObjects ?? placement.placedObjects, { profiles: lighting.profiles, surfaces: placement.placementSurfaces, quality: "high" }) : [];
         if (failures.length && !reportedDecorRenderFailure) { reportedDecorRenderFailure = true; toast.error("No se pudo cargar este objeto."); }
         if (cancelled) return;
         canvas.width = rendered.width;
@@ -52,7 +54,7 @@ export function RenderedEditorImage({
       cancelled = true;
       cancelAnimationFrame(frame);
     };
-  }, [editor.globalBlendMode, editor.image, editor.masks, masks, placedObjects, placement.placedObjects]);
+  }, [editor.globalBlendMode, editor.image, editor.masks, lighting.profiles, masks, placedObjects, placement.placedObjects, placement.placementSurfaces]);
 
   return <canvas ref={canvasRef} className={`block h-full w-full ${className}`} />;
 }
