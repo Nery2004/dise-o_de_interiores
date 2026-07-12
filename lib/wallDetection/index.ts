@@ -1,4 +1,4 @@
-import { aiWallDetectionProvider } from "@/lib/wallDetection/aiProvider";
+import { aiWallDetectionProvider, refineDetectedWall } from "@/lib/wallDetection/aiProvider";
 import type {
   WallDetectionMode,
   WallDetectionResponse,
@@ -24,6 +24,22 @@ export async function detectWalls({
   debug,
 }: DetectWallsOptions): Promise<WallDetectionResponse> {
   return aiWallDetectionProvider.detectWalls(imageFile, imageDimensions, { provider, signal, maskSmoothness, polygonTolerance, debug });
+}
+
+export async function refineWall({
+  imageFile,
+  wall,
+  signal,
+  polygonTolerance,
+  debug,
+}: {
+  imageFile: File;
+  wall: import("@/lib/wallDetection/types").WallDetectionResult;
+  signal?: AbortSignal;
+  polygonTolerance?: number;
+  debug?: boolean;
+}) {
+  return refineDetectedWall(imageFile, wall, { signal, polygonTolerance, debug });
 }
 
 export type {

@@ -9,6 +9,23 @@ export type WallDetectionResult = {
   confidence?: number;
   qualityScore?: number;
   points: WallDetectionPoint[];
+  exclusionPolygons?: WallDetectionPoint[][];
+  refinement?: WallRefinementSummary;
+};
+
+export type WallMaskIssue = {
+  type: "ceiling-invasion" | "floor-invasion" | "window-invasion" | "curtain-invasion" | "sofa-invasion" | "picture-invasion" | "too-small" | "too-large" | "fragmented";
+  severity: "low" | "medium" | "high";
+  confidence: number;
+};
+
+export type WallRefinementSummary = {
+  appliedStages: string[];
+  refinementCount: number;
+  pointCount: number;
+  retryCount: number;
+  issues: WallMaskIssue[];
+  stageTimings: Partial<Record<string, number>>;
 };
 
 export type WallDetectionMetrics = {
@@ -17,6 +34,7 @@ export type WallDetectionMetrics = {
   wallCount: number;
   averageQualityScore: number;
   cacheHit: boolean;
+  refinementCount: number;
 };
 
 export type WallDetectionDebugRegion = {
@@ -29,6 +47,17 @@ export type WallDetectionDebugRegion = {
   refined: WallDetectionPoint[];
   confidence: number;
   qualityScore: number;
+  qualityBreakdown: Record<string, number>;
+  issues: WallMaskIssue[];
+  stageTimings: Partial<Record<string, number>>;
+  appliedStages: string[];
+  retryCount: number;
+  stageMasksRle: {
+    original: number[];
+    cleaned: number[];
+    corrected: number[];
+    final: number[];
+  };
 };
 
 export type WallDetectionDebug = { regions: WallDetectionDebugRegion[] };
@@ -38,6 +67,15 @@ export type WallDetectionOptions = {
   provider?: WallDetectionMode;
   maskSmoothness?: number;
   polygonTolerance?: number;
+  refinement?: Partial<{
+    edgeTolerance: number;
+    cornerSnapDistance: number;
+    noiseThreshold: number;
+    holeThreshold: number;
+    polygonTolerance: number;
+    featherStrength: number;
+    qualityThreshold: number;
+  }>;
   debug?: boolean;
 };
 

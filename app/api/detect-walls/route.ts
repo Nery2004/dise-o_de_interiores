@@ -11,6 +11,9 @@ import { wallDetectionCache } from "@/lib/server/wall-detection/WallDetectionCac
 import { SegmentationPipeline } from "@/lib/wallDetection/pipeline/SegmentationPipeline";
 import { encodeBinaryMaskRle } from "@/lib/wallDetection/pipeline/debugEncoding";
 import type { WallDetectionMode, WallDetectionResult } from "@/lib/wallDetection/types";
+import { processingDimensions } from "@/lib/wallDetection/pipeline/SegmentationPipeline";
+import { rasterizePolygon } from "@/lib/wallDetection/pipeline/MaskOperations";
+import type { SegmentationProviderOutput } from "@/lib/wallDetection/pipeline/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,7 +38,18 @@ function clientIp(request: Request) { return request.headers.get("x-forwarded-fo
 function isWallDetectionResult(value: unknown, width: number, height: number): value is WallDetectionResult {
   if (!value || typeof value !== "object") return false;
   const wall = value as Partial<WallDetectionResult>;
-  return typeof wall.id === "string" && typeof wall.name === "string" && Array.isArray(wall.points) && wall.points.length >= 3 && wall.points.length <= 10_000 && wall.points.every((point) => point && typeof point === "object" && Number.isFinite((point as { x?: unknown }).x) && Number.isFinite((point as { y?: unknown }).y) && Number((point as { x: number }).x) >= 0 && Number((point as { x: number }).x) <= width && Number((point as { y: number }).y) >= 0 && Number((point as { y: number }).y) <= height) && (wall.confidence === undefined || (typeof wall.confidence === "number" && wall.confidence >= 0 && wall.confidence <= 1)) && (wall.qualityScore === undefined || (typeof wall.qualityScore === "number" && wall.qualityScore >= 0 && wall.qualityScore <= 1));
+  const validPoint = (point: unknown) => point && typeof point === "object" && Number.isFinite((point as { x?: unknown }).x) && Number.isFinite((point as { y?: unknown }).y) && Number((point as { x: number }).x) >= 0 && Number((point as { x: number }).x) <= width && Number((point as { y: number }).y) >= 0 && Number((point as { y: number }).y) <= height;
+  return typeof wall.id === "string" && typeof wall.name === "string" && Array.isArray(wall.points) && wall.points.length >= 3 && wall.points.length <= 10_000 && wall.points.every(validPoint) && (wall.exclusionPolygons === undefined || (Array.isArray(wall.exclusionPolygons) && wall.exclusionPolygons.every((polygon) => Array.isArray(polygon) && polygon.length >= 3 && polygon.every(validPoint)))) && (wall.confidence === undefined || (typeof wall.confidence === "number" && wall.confidence >= 0 && wall.confidence <= 1)) && (wall.qualityScore === undefined || (typeof wall.qualityScore === "number" && wall.qualityScore >= 0 && wall.qualityScore <= 100));
+}
+
+function parseLocalWall(value: FormDataEntryValue | null, width: number, height: number) {
+  if (typeof value !== "string") return null;
+  try {
+    const parsed = JSON.parse(value) as Partial<WallDetectionResult>;
+    if (!parsed.id || !parsed.name || !Array.isArray(parsed.points) || parsed.points.length < 3) return null;
+    if (!parsed.points.every((point) => Number.isFinite(point?.x) && Number.isFinite(point?.y) && point.x >= 0 && point.y >= 0 && point.x <= width && point.y <= height)) return null;
+    return parsed as Pick<WallDetectionResult, "id" | "name" | "points" | "confidence">;
+  } catch { return null; }
 }
 
 export function GET() { return errorResponse("METHOD_NOT_ALLOWED", "Método no permitido.", 405, { Allow: "POST" }); }
@@ -77,9 +91,19 @@ export async function POST(request: Request) {
     const maskSmoothness = numericOption(formData.get("maskSmoothness"), 0.45, 0, 1);
     const polygonTolerance = numericOption(formData.get("polygonTolerance"), 1.8, 0.25, 8);
     const debug = process.env.NODE_ENV !== "production" && formData.get("debug") === "true";
-    const provider = getWallAIProvider(requestedProvider);
+    const localWall = formData.get("action") === "refine" ? parseLocalWall(formData.get("wall"), dimensions.width!, dimensions.height!) : null;
+    if (formData.get("action") === "refine" && !localWall) return errorResponse("INVALID_PROVIDER_RESPONSE", "La pared seleccionada no es válida.", 400);
+    const processing = processingDimensions(dimensions.width!, dimensions.height!);
+    const provider = localWall ? {
+      name: "custom" as const,
+      version: "local-refinement-v1",
+      async segmentWalls(): Promise<SegmentationProviderOutput> {
+        const points = localWall.points.map((point) => ({ x: point.x * processing.width / dimensions.width!, y: point.y * processing.height / dimensions.height! }));
+        return { modelVersion: this.version, regions: [{ id: localWall.id, name: localWall.name, confidence: localWall.confidence ?? 0.7, mask: rasterizePolygon(processing.width, processing.height, points) }] };
+      },
+    } : getWallAIProvider(requestedProvider);
     const hash = new ImageHasher().hash(buffer);
-    const cacheKey = `${hash}:${provider.name}:${provider.version}:${maskSmoothness}:${polygonTolerance}:${debug}`;
+    const cacheKey = `${hash}:${provider.name}:${provider.version}:${maskSmoothness}:${polygonTolerance}:${debug}:${localWall ? JSON.stringify(localWall.points) : "all"}`;
     const cached = wallDetectionCache.get(cacheKey);
     if (cached) return NextResponse.json({ success: true, ...cached, metrics: cached.metrics ? { ...cached.metrics, cacheHit: true } : undefined }, { headers: { "X-RateLimit-Remaining": String(rateLimit.remaining), "Cache-Control": "no-store" } });
     const timeoutMs = getServerEnv().wallAITimeoutMs;
@@ -91,8 +115,8 @@ export async function POST(request: Request) {
     const response = {
       walls,
       provider: provider.name,
-      metrics: { providerVersion: result.providerVersion, processingTimeMs: result.processingTimeMs, wallCount: walls.length, averageQualityScore: result.averageQualityScore, cacheHit: false },
-      debug: debug && result.debugRegions ? { regions: result.debugRegions.map((region) => ({ id: region.id, width: region.mask.width, height: region.mask.height, binaryMaskRle: encodeBinaryMaskRle(region.mask), contour: region.contour, polygon: region.polygon, refined: region.refined, confidence: region.confidence, qualityScore: region.qualityScore })) } : undefined,
+      metrics: { providerVersion: result.providerVersion, processingTimeMs: result.processingTimeMs, wallCount: walls.length, averageQualityScore: result.averageQualityScore, cacheHit: false, refinementCount: walls.reduce((sum, wall) => sum + (wall.refinement?.refinementCount ?? 0), 0) },
+      debug: debug && result.debugRegions ? { regions: result.debugRegions.map((region) => ({ id: region.id, width: region.mask.width, height: region.mask.height, binaryMaskRle: encodeBinaryMaskRle(region.mask), contour: region.contour, polygon: region.polygon, refined: region.refined, confidence: region.confidence, qualityScore: region.qualityScore, qualityBreakdown: region.qualityBreakdown, issues: region.issues, stageTimings: region.stageTimings, appliedStages: region.appliedStages, retryCount: region.retryCount, stageMasksRle: { original: encodeBinaryMaskRle(region.trace.original), cleaned: encodeBinaryMaskRle(region.trace.cleaned), corrected: encodeBinaryMaskRle(region.trace.corrected), final: encodeBinaryMaskRle(region.trace.final) } })) } : undefined,
     };
     wallDetectionCache.set(cacheKey, response);
     serverLogger.info("Wall detection completed", { provider: provider.name, version: result.providerVersion, width: dimensions.width, height: dimensions.height, walls: walls.length, processingTimeMs: result.processingTimeMs });

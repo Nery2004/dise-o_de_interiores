@@ -44,6 +44,7 @@ function isWallDetectionResult(value: unknown): value is WallDetectionResult {
         typeof (point as { x?: unknown }).x === "number" &&
         typeof (point as { y?: unknown }).y === "number",
     ) &&
+    (wall.exclusionPolygons === undefined || (Array.isArray(wall.exclusionPolygons) && wall.exclusionPolygons.every((polygon) => Array.isArray(polygon) && polygon.length >= 3 && polygon.every((point) => point && typeof point.x === "number" && typeof point.y === "number")))) &&
     (wall.confidence === undefined || typeof wall.confidence === "number") &&
     (wall.qualityScore === undefined || typeof wall.qualityScore === "number")
   );
@@ -108,3 +109,25 @@ export const aiWallDetectionProvider: WallDetectionProvider = {
     }
   },
 };
+
+export async function refineDetectedWall(
+  imageFile: File,
+  wall: WallDetectionResult,
+  options: { signal?: AbortSignal; polygonTolerance?: number; debug?: boolean } = {},
+) {
+  const formData = new FormData();
+  formData.append("image", imageFile);
+  formData.append("provider", "custom");
+  formData.append("action", "refine");
+  formData.append("wall", JSON.stringify(wall));
+  formData.append("polygonTolerance", String(options.polygonTolerance ?? 1.8));
+  if (options.debug) formData.append("debug", "true");
+  try {
+    const response = await fetch("/api/detect-walls", { method: "POST", body: formData, signal: options.signal });
+    return parseDetectWallsResponse(response);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    if (error instanceof TypeError) throw new Error("Error de red al refinar la pared.");
+    throw error;
+  }
+}
