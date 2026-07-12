@@ -26,6 +26,8 @@ import type {
 import type { InteriorProject } from "@/types/project";
 import { addRecentColor } from "@/lib/colors/colorPreferences";
 import { validateImageUploadMetadata } from "@/lib/images/imageValidation";
+import { withDefaultPaintSettings } from "@/lib/paint/paintSettings";
+import { getStoredPaintPreferences } from "@/lib/paint/paintPreferences";
 
 type EditorContextValue = EditorState & {
   canUndo: boolean;
@@ -88,7 +90,7 @@ const initialState: EditorState = {
   activeColor: null,
   maskPreviewEnabled: true,
   beforeAfterEnabled: false,
-  globalBlendMode: "multiply",
+  globalBlendMode: "paint-simulation",
   isDrawingMask: false,
   manualPoints: [],
   cursorPreviewPoint: null,
@@ -123,7 +125,7 @@ function cloneMasks(masks: WallMask[]) {
 
 function prepareMask(mask: WallMask): WallMask {
   return {
-    ...mask,
+    ...withDefaultPaintSettings(mask),
     points: clonePoints(mask.points),
     originalPoints: clonePoints(mask.originalPoints ?? mask.points),
     refinement: mask.refinement ? {
@@ -327,7 +329,17 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       { ...prepareMask(mask), selected: true },
     ], { selectedMaskId: mask.id })),
     updateMask: (id, data) => setState((current) => {
-      const shouldRecord = ["points", "opacity", "color", "blendMode"].some((key) => key in data);
+      const shouldRecord = [
+        "points",
+        "opacity",
+        "color",
+        "blendMode",
+        "paintMode",
+        "primerCoverage",
+        "paintIntensity",
+        "edgeFeather",
+        "renderQuality",
+      ].some((key) => key in data);
       const masks = current.masks.map((mask) => mask.id === id
         ? { ...mask, ...data, updatedAt: new Date().toISOString() }
         : mask);
@@ -516,15 +528,23 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       if (activeColor) void addRecentColor(activeColor);
     },
     setGlobalBlendMode: (globalBlendMode) => setState((current) => ({ ...current, globalBlendMode })),
-    applyColorToSelectedMask: (color) => setState((current) => {
-      if (!current.selectedMaskId) {
-        toast.error("Selecciona una pared antes de aplicar color.");
-        return current;
-      }
-      return withMaskHistory(current, current.masks.map((mask) => mask.id === current.selectedMaskId
-        ? { ...mask, color, blendMode: mask.blendMode ?? current.globalBlendMode, updatedAt: new Date().toISOString() }
-        : mask), { activeColor: color });
-    }),
+    applyColorToSelectedMask: (color) => {
+      const preferences = getStoredPaintPreferences();
+      setState((current) => {
+        if (!current.selectedMaskId) {
+          toast.error("Selecciona una pared antes de aplicar color.");
+          return current;
+        }
+        return withMaskHistory(current, current.masks.map((mask) => mask.id === current.selectedMaskId
+          ? {
+              ...mask,
+              color,
+              ...preferences,
+              updatedAt: new Date().toISOString(),
+            }
+          : mask), { activeColor: color });
+      });
+    },
     removeColorFromMask: (id) => setState((current) => withMaskHistory(current, current.masks.map((mask) => {
       if (mask.id !== id) return mask;
       const next = { ...mask, updatedAt: new Date().toISOString() };

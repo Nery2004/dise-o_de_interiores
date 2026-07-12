@@ -1,11 +1,17 @@
 "use client";
 
-import { type PointerEvent, useCallback, useEffect, useRef, useState } from "react";
+import { type CSSProperties, type PointerEvent, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useEditor } from "@/components/editor-context";
 import { clientPointToImage, shouldAddBrushPoint } from "@/lib/geometry/brushGeometry";
 import { createCanvas, paintAlphaCanvas, renderMaskAlpha, renderStrokeSegment } from "@/lib/masks/maskCompositor";
-import type { BrushStroke, ImageDimensions, ImagePoint } from "@/types/editor";
+import type { BlendMode, BrushStroke, ImageDimensions, ImagePoint } from "@/types/editor";
+
+function getBrushGuideBlendMode(
+  blendMode: BlendMode,
+): CSSProperties["mixBlendMode"] {
+  return blendMode === "paint-simulation" ? "color" : blendMode;
+}
 
 export function BrushRefinementOverlay({ dimensions }: { dimensions: ImageDimensions }) {
   const editor = useEditor();
@@ -118,7 +124,7 @@ export function BrushRefinementOverlay({ dimensions }: { dimensions: ImageDimens
       <canvas
         ref={canvasRef}
         className="absolute inset-0 h-full w-full touch-none"
-        style={{ cursor: "none", opacity: !selectedMask.visible ? 0 : editor.maskOnlyPreview ? 1 : selectedMask.color ? selectedMask.opacity : 0.22, mixBlendMode: editor.maskOnlyPreview ? "normal" : selectedMask.color ? selectedMask.blendMode ?? editor.globalBlendMode : "normal" }}
+        style={{ cursor: "none", opacity: !selectedMask.visible ? 0 : editor.maskOnlyPreview ? 1 : selectedMask.color ? selectedMask.opacity : 0.22, mixBlendMode: editor.maskOnlyPreview ? "normal" : selectedMask.color ? getBrushGuideBlendMode(selectedMask.blendMode ?? editor.globalBlendMode) : "normal" }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={finishStroke}

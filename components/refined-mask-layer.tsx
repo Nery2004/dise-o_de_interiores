@@ -7,7 +7,6 @@ import type { ImageDimensions, WallMask } from "@/types/editor";
 
 function RefinedMaskCanvas({ dimensions, mask }: { dimensions: ImageDimensions; mask: WallMask }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { globalBlendMode } = useEditor();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -19,7 +18,7 @@ function RefinedMaskCanvas({ dimensions, mask }: { dimensions: ImageDimensions; 
     paintAlphaCanvas(context, alpha, mask.color ?? "#7aa7d9");
   }, [dimensions, mask]);
 
-  return <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 h-full w-full" style={{ opacity: mask.color ? mask.opacity : 0.22, mixBlendMode: mask.color ? mask.blendMode ?? globalBlendMode : "normal" }} />;
+  return <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 h-full w-full opacity-20" />;
 }
 
 export function RefinedMaskLayer({ dimensions }: { dimensions: ImageDimensions }) {
@@ -30,6 +29,6 @@ export function RefinedMaskLayer({ dimensions }: { dimensions: ImageDimensions }
   return masks.filter((mask) => {
     const count = (mask.refinement?.addStrokes.length ?? 0) + (mask.refinement?.removeStrokes.length ?? 0);
     const isHandledByBrush = isBrushTool && mask.id === selectedMaskId;
-    return mask.visible && count > 0 && !isHandledByBrush && (Boolean(mask.color) || maskPreviewEnabled);
+    return mask.visible && !mask.color && count > 0 && !isHandledByBrush && maskPreviewEnabled;
   }).map((mask) => <RefinedMaskCanvas key={mask.id} dimensions={dimensions} mask={mask} />);
 }

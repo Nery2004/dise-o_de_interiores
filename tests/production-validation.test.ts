@@ -30,6 +30,35 @@ test("valida importación y migra proyectos v1 a v2", () => {
   assert.throws(() => validateImportedProject({ ...baseProject, originalImage: { ...baseProject.originalImage, width: -1 } }));
 });
 
+test("valida los ajustes de simulación de pintura por máscara", () => {
+  const paintedMask = {
+    id: "wall-1",
+    name: "Pared principal",
+    type: "manual" as const,
+    visible: true,
+    selected: true,
+    color: "#A8B5A2",
+    opacity: 0.45,
+    blendMode: "paint-simulation" as const,
+    paintMode: "white-base" as const,
+    primerCoverage: 100,
+    paintIntensity: 150,
+    edgeFeather: 8,
+    renderQuality: "ultra" as const,
+    points: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 80 }],
+    createdAt: "2026-01-01T00:00:00.000Z",
+  };
+  assert.doesNotThrow(() =>
+    validateImportedProject({ ...baseProject, masks: [paintedMask] }),
+  );
+  assert.throws(() =>
+    validateImportedProject({
+      ...baseProject,
+      masks: [{ ...paintedMask, paintIntensity: 250 }],
+    }),
+  );
+});
+
 test("normaliza nombres de exportación", () => {
   assert.equal(normalizeExportFilename("Opción Cálida / Cliente"), "opcion-calida-cliente");
 });

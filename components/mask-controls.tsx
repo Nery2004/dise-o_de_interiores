@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 import { useEditor } from "@/components/editor-context";
-import { blendModeOptions } from "@/lib/editor-data";
 import { normalizeHexColor } from "@/lib/utils";
-import type { BlendMode, WallMask } from "@/types/editor";
+import type { WallMask } from "@/types/editor";
 
 type MaskControlFormProps = {
-  globalBlendMode: BlendMode;
   removeColorFromMask: (id: string) => void;
   selectedMask: WallMask;
   setActiveColor: (color: string | null) => void;
@@ -15,7 +13,6 @@ type MaskControlFormProps = {
 };
 
 function MaskControlForm({
-  globalBlendMode,
   removeColorFromMask,
   selectedMask,
   setActiveColor,
@@ -37,26 +34,6 @@ function MaskControlForm({
             updateMask(selectedMask.id, { name: event.target.value })
           }
           className="mt-2 h-10 w-full rounded-md border border-[#dfe3e8] bg-white px-3 text-sm text-[#202124] outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/15"
-        />
-      </label>
-
-      <label className="block">
-        <span className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.16em] text-[#7a8290]">
-          Opacity
-          <span>{Math.round(selectedMask.opacity * 100)}%</span>
-        </span>
-        <input
-          type="range"
-          min="0.05"
-          max="0.85"
-          step="0.01"
-          value={selectedMask.opacity}
-          onChange={(event) =>
-            updateMask(selectedMask.id, {
-              opacity: Number(event.target.value),
-            })
-          }
-          className="mt-3 w-full accent-[#1f2421]"
         />
       </label>
 
@@ -103,27 +80,6 @@ function MaskControlForm({
         </div>
       </div>
 
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[#7a8290]">
-          Modo de mezcla
-        </span>
-        <select
-          value={selectedMask.blendMode ?? globalBlendMode}
-          onChange={(event) =>
-            updateMask(selectedMask.id, {
-              blendMode: event.target.value as BlendMode,
-            })
-          }
-          className="mt-2 h-10 w-full rounded-md border border-[#dfe3e8] bg-white px-3 text-sm text-[#202124] outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/15"
-        >
-          {blendModeOptions.map((mode) => (
-            <option key={mode.value} value={mode.value}>
-              {mode.label}
-            </option>
-          ))}
-        </select>
-      </label>
-
       <button
         type="button"
         onClick={() => removeColorFromMask(selectedMask.id)}
@@ -137,7 +93,6 @@ function MaskControlForm({
 
 export function MaskControls() {
   const {
-    globalBlendMode,
     masks,
     removeColorFromMask,
     selectedMaskId,
@@ -157,7 +112,6 @@ export function MaskControls() {
   return (
     <MaskControlForm
       key={`${selectedMask.id}-${selectedMask.color ?? "none"}`}
-      globalBlendMode={globalBlendMode}
       removeColorFromMask={removeColorFromMask}
       selectedMask={selectedMask}
       setActiveColor={setActiveColor}

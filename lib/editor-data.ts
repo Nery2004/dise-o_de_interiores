@@ -92,8 +92,11 @@ export const interiorColorPalette = [
 ] as const;
 
 export const blendModeOptions: Array<{ label: string; value: BlendMode }> = [
+  { label: "Paint Simulation (recomendado)", value: "paint-simulation" },
   { label: "Normal", value: "normal" },
   { label: "Multiply", value: "multiply" },
   { label: "Color", value: "color" },
   { label: "Overlay", value: "overlay" },
+  { label: "Soft Light", value: "soft-light" },
+  { label: "Hard Light", value: "hard-light" },
 ];

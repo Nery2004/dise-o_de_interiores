@@ -1,12 +1,13 @@
 "use client";
 
-import type { CSSProperties, MouseEvent } from "react";
+import type { MouseEvent } from "react";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { ManualMaskDrawer } from "@/components/manual-mask-drawer";
 import { EditableMaskOverlay } from "@/components/editable-mask-overlay";
 import { useEditor } from "@/components/editor-context";
 import { pointsToSvgString } from "@/lib/mask-geometry";
+import { getStoredPaintPreferences } from "@/lib/paint/paintPreferences";
 import type { ImageDimensions, ImagePoint } from "@/types/editor";
 
 type MaskOverlayProps = {
@@ -48,7 +49,6 @@ export function MaskOverlay({ dimensions }: MaskOverlayProps) {
     cancelManualMask,
     cursorPreviewPoint,
     finishManualMask,
-    globalBlendMode,
     isDrawingMask,
     maskPreviewEnabled,
     manualPoints,
@@ -146,27 +146,17 @@ export function MaskOverlay({ dimensions }: MaskOverlayProps) {
           const isBrushTarget = isBrushTool && mask.id === selectedMaskId;
           const hasRefinement = (mask.refinement?.addStrokes.length ?? 0) + (mask.refinement?.removeStrokes.length ?? 0) > 0;
           const hasColor = Boolean(mask.color);
-          const showPaintFill = hasColor && !beforeAfterEnabled;
           const showPreviewFill =
             !hasColor && maskPreviewEnabled && !beforeAfterEnabled;
           const showOutline = maskPreviewEnabled;
-          const fillColor = hasRefinement || isBrushTarget ? "transparent" : showPaintFill
-            ? mask.color
-            : showPreviewFill
+          const fillColor = hasRefinement || isBrushTarget ? "transparent" : showPreviewFill
               ? "#7aa7d9"
               : "transparent";
           const strokeColor = isSelected ? "#2563eb" : "#f8fafc";
           const strokeWidth = isSelected ? 4 : 2;
-          const fillOpacity = hasRefinement || isBrushTarget ? 0 : showPaintFill
-            ? mask.opacity
-            : showPreviewFill
+          const fillOpacity = hasRefinement || isBrushTarget ? 0 : showPreviewFill
               ? 0.22
               : 0;
-          const style: CSSProperties = showPaintFill
-            ? {
-                mixBlendMode: mask.blendMode ?? globalBlendMode,
-              }
-            : {};
           const handleClick = (event: MouseEvent<SVGElement>) => {
             if (activeTool !== "select" && activeTool !== "paint-wall" && activeTool !== "edit-mask") {
               return;
@@ -183,7 +173,7 @@ export function MaskOverlay({ dimensions }: MaskOverlayProps) {
 
               updateMask(mask.id, {
                 color: activeColor,
-                blendMode: mask.blendMode ?? globalBlendMode,
+                ...getStoredPaintPreferences(),
               });
             }
           };
@@ -194,7 +184,6 @@ export function MaskOverlay({ dimensions }: MaskOverlayProps) {
             strokeDasharray: hasColor || isSelected ? "0" : "10 8",
             strokeOpacity: showOutline ? 0.95 : 0,
             strokeWidth,
-            style,
             vectorEffect: "non-scaling-stroke" as const,
             onClick: handleClick,
             className:

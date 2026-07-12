@@ -36,7 +36,18 @@ export type EditorStatus =
   | "exporting"
   | "error";
 
-export type BlendMode = "normal" | "multiply" | "color" | "overlay";
+export type BlendMode =
+  | "paint-simulation"
+  | "normal"
+  | "multiply"
+  | "color"
+  | "overlay"
+  | "soft-light"
+  | "hard-light";
+
+export type PaintMode = "direct" | "white-base";
+
+export type RenderQuality = "draft" | "high" | "ultra";
 
 export type ImageDimensions = {
   width: number;
@@ -84,6 +95,11 @@ export type WallMask = {
   color?: string;
   opacity: number;
   blendMode?: BlendMode;
+  paintMode?: PaintMode;
+  primerCoverage?: number;
+  paintIntensity?: number;
+  edgeFeather?: number;
+  renderQuality?: RenderQuality;
   path?: string;
   points?: ImagePoint[];
   originalPoints?: ImagePoint[];

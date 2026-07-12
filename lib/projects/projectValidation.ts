@@ -1,7 +1,15 @@
 import type { BlendMode, WallMask } from "@/types/editor";
 import { CURRENT_PROJECT_VERSION, type InteriorProject } from "@/types/project";
 
-const blendModes: BlendMode[] = ["normal", "multiply", "color", "overlay"];
+const blendModes: BlendMode[] = [
+  "paint-simulation",
+  "normal",
+  "multiply",
+  "color",
+  "overlay",
+  "soft-light",
+  "hard-light",
+];
 const hexPattern = /^#[0-9a-f]{6}$/i;
 
 export function migrateProject(project: InteriorProject) {
@@ -19,6 +27,11 @@ function validMask(value: unknown, width: number, height: number): value is Wall
   if (typeof mask.opacity !== "number" || mask.opacity < 0 || mask.opacity > 1) return false;
   if (mask.color && !hexPattern.test(mask.color)) return false;
   if (mask.blendMode && !blendModes.includes(mask.blendMode)) return false;
+  if (mask.paintMode && !["direct", "white-base"].includes(mask.paintMode)) return false;
+  if (mask.renderQuality && !["draft", "high", "ultra"].includes(mask.renderQuality)) return false;
+  if (mask.primerCoverage !== undefined && (!Number.isFinite(mask.primerCoverage) || mask.primerCoverage < 0 || mask.primerCoverage > 100)) return false;
+  if (mask.paintIntensity !== undefined && (!Number.isFinite(mask.paintIntensity) || mask.paintIntensity < 0 || mask.paintIntensity > 200)) return false;
+  if (mask.edgeFeather !== undefined && (!Number.isFinite(mask.edgeFeather) || mask.edgeFeather < 0 || mask.edgeFeather > 40)) return false;
   if (mask.points && (!Array.isArray(mask.points) || mask.points.length > 10_000 || mask.points.some((point) => !Number.isFinite(point.x) || !Number.isFinite(point.y) || point.x < -width || point.x > width * 2 || point.y < -height || point.y > height * 2))) return false;
   if (mask.refinement && (!Array.isArray(mask.refinement.addStrokes) || !Array.isArray(mask.refinement.removeStrokes))) return false;
   const strokes = mask.refinement ? [...mask.refinement.addStrokes, ...mask.refinement.removeStrokes] : [];

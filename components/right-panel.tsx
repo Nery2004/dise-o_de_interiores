@@ -9,6 +9,7 @@ import { WallDetectionPanel } from "@/components/wall-detection-panel";
 import { formatFileSize } from "@/lib/utils";
 import { BrushControls } from "@/components/brush-controls";
 import { ProposalPanel } from "@/components/proposal-panel";
+import { PaintSimulationControls } from "@/components/paint-simulation-controls";
 
 function EmptyValue() {
   return <span className="text-[#a0a7b1]">-</span>;
@@ -88,6 +89,8 @@ export function RightPanel() {
       </section>
 
       <ColorPalette />
+
+      <PaintSimulationControls />
 
       <ProposalPanel />
 

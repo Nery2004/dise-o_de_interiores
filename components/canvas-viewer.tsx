@@ -12,6 +12,7 @@ import { useComparison } from "@/components/comparison-context";
 import { useEditor } from "@/components/editor-context";
 import { ImageUploader } from "@/components/image-uploader";
 import { MaskOverlay } from "@/components/mask-overlay";
+import { PaintRenderer } from "@/components/paint-renderer";
 import { ProposalComparisonGrid } from "@/components/proposal-comparison-grid";
 import { RefinedMaskLayer } from "@/components/refined-mask-layer";
 import { RenderedEditorImage } from "@/components/rendered-editor-image";
@@ -194,6 +195,7 @@ function TransformedCanvas({ image }: { image: LoadedImage }) {
 
   const editedLayers = (
     <>
+      <PaintRenderer />
       <RefinedMaskLayer dimensions={image.dimensions} />
       <MaskOverlay dimensions={image.dimensions} />
       <BrushRefinementOverlay dimensions={image.dimensions} />

@@ -3,31 +3,32 @@
 import { useEffect, useRef } from "react";
 import { useEditor } from "@/components/editor-context";
 import { renderPaintScene } from "@/lib/paint/CanvasRenderer";
-import type { WallMask } from "@/types/editor";
 
-export function RenderedEditorImage({
-  masks,
-  className = "",
-}: {
-  masks?: WallMask[];
-  className?: string;
-}) {
-  const editor = useEditor();
+export function PaintRenderer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const editor = useEditor();
 
   useEffect(() => {
-    if (!editor.image) return;
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (
+      !canvas ||
+      !editor.image ||
+      editor.beforeAfterEnabled ||
+      editor.maskOnlyPreview
+    ) {
+      canvas?.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
     let cancelled = false;
     const frame = requestAnimationFrame(() => {
+      if (cancelled) return;
       const rendered = document.createElement("canvas");
       void renderPaintScene({
         canvas: rendered,
         globalBlendMode: editor.globalBlendMode,
         image: editor.image!,
-        includeOriginal: true,
-        masks: masks ?? editor.masks,
+        includeOriginal: false,
+        masks: editor.masks,
       }).then(() => {
         if (cancelled) return;
         canvas.width = rendered.width;
@@ -39,7 +40,18 @@ export function RenderedEditorImage({
       cancelled = true;
       cancelAnimationFrame(frame);
     };
-  }, [editor.globalBlendMode, editor.image, editor.masks, masks]);
+  }, [
+    editor.beforeAfterEnabled,
+    editor.globalBlendMode,
+    editor.image,
+    editor.maskOnlyPreview,
+    editor.masks,
+  ]);
 
-  return <canvas ref={canvasRef} className={`block h-full w-full ${className}`} />;
+  return (
+    <canvas
+      ref={canvasRef}
+      className="pointer-events-none absolute inset-0 block h-full w-full"
+    />
+  );
 }
