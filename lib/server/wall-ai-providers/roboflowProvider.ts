@@ -6,7 +6,8 @@ import { getServerEnv } from "@/lib/env/serverEnv";
 
 export const roboflowServerWallAIProvider: ServerWallAIProvider = {
   name: "roboflow",
-  async detectWalls() {
+  version: "not-configured",
+  async segmentWalls() {
     if (!getServerEnv().roboflowApiKey) {
       throw new WallAIProviderConfigurationError(
         "Roboflow no está configurado.",

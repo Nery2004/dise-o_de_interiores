@@ -6,7 +6,8 @@ import { getServerEnv } from "@/lib/env/serverEnv";
 
 export const replicateServerWallAIProvider: ServerWallAIProvider = {
   name: "replicate",
-  async detectWalls() {
+  version: "not-configured",
+  async segmentWalls() {
     if (!getServerEnv().replicateApiToken) {
       throw new WallAIProviderConfigurationError(
         "Replicate no está configurado.",

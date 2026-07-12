@@ -10,6 +10,8 @@ type DetectWallsApiResponse = {
   walls?: unknown;
   provider?: unknown;
   error?: { code?: unknown; message?: unknown };
+  metrics?: unknown;
+  debug?: unknown;
 };
 
 const apiProviderNames = new Set<WallAIProviderName>([
@@ -17,6 +19,11 @@ const apiProviderNames = new Set<WallAIProviderName>([
   "replicate",
   "huggingface",
   "roboflow",
+  "sam2",
+  "florence-2",
+  "grounding-dino",
+  "yolo-segmentation",
+  "custom",
 ]);
 
 function isWallDetectionResult(value: unknown): value is WallDetectionResult {
@@ -37,7 +44,8 @@ function isWallDetectionResult(value: unknown): value is WallDetectionResult {
         typeof (point as { x?: unknown }).x === "number" &&
         typeof (point as { y?: unknown }).y === "number",
     ) &&
-    (wall.confidence === undefined || typeof wall.confidence === "number")
+    (wall.confidence === undefined || typeof wall.confidence === "number") &&
+    (wall.qualityScore === undefined || typeof wall.qualityScore === "number")
   );
 }
 
@@ -68,22 +76,30 @@ async function parseDetectWallsResponse(response: Response) {
   return {
     walls: payload.walls,
     provider,
+    metrics: payload.metrics as WallDetectionApiResponse["metrics"],
+    debug: payload.debug as WallDetectionApiResponse["debug"],
   } satisfies WallDetectionApiResponse;
 }
 
 export const aiWallDetectionProvider: WallDetectionProvider = {
-  async detectWalls(imageFile) {
+  async detectWalls(imageFile, _imageDimensions, options) {
     const formData = new FormData();
     formData.append("image", imageFile);
+    formData.append("provider", options?.provider ?? "ai");
+    formData.append("maskSmoothness", String(options?.maskSmoothness ?? 0.45));
+    formData.append("polygonTolerance", String(options?.polygonTolerance ?? 1.8));
+    if (options?.debug) formData.append("debug", "true");
 
     try {
       const response = await fetch("/api/detect-walls", {
         method: "POST",
         body: formData,
+        signal: options?.signal,
       });
 
       return parseDetectWallsResponse(response);
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") throw error;
       if (error instanceof TypeError) {
         throw new Error("Error de red al detectar paredes.");
       }

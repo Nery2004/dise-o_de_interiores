@@ -1,5 +1,4 @@
 import { aiWallDetectionProvider } from "@/lib/wallDetection/aiProvider";
-import { mockWallDetectionProvider } from "@/lib/wallDetection/mockProvider";
 import type {
   WallDetectionMode,
   WallDetectionResponse,
@@ -9,17 +8,22 @@ type DetectWallsOptions = {
   imageFile: File;
   imageDimensions: { width: number; height: number };
   provider: WallDetectionMode;
+  signal?: AbortSignal;
+  maskSmoothness?: number;
+  polygonTolerance?: number;
+  debug?: boolean;
 };
 
 export async function detectWalls({
   imageDimensions,
   imageFile,
   provider,
+  signal,
+  maskSmoothness,
+  polygonTolerance,
+  debug,
 }: DetectWallsOptions): Promise<WallDetectionResponse> {
-  const wallDetectionProvider =
-    provider === "ai" ? aiWallDetectionProvider : mockWallDetectionProvider;
-
-  return wallDetectionProvider.detectWalls(imageFile, imageDimensions);
+  return aiWallDetectionProvider.detectWalls(imageFile, imageDimensions, { provider, signal, maskSmoothness, polygonTolerance, debug });
 }
 
 export type {

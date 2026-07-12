@@ -1,57 +1,38 @@
-import type { WallDetectionResult } from "@/lib/wallDetection/types";
 import type { ServerWallAIProvider } from "@/lib/server/wall-ai-providers/types";
+import type { BinaryMask } from "@/lib/wallDetection/pipeline/types";
 
 function createWallId(name: string) {
   return `${name}-${globalThis.crypto?.randomUUID?.() ?? Date.now()}`;
 }
 
-function createMockWallResults({
-  height,
-  width,
-}: {
-  width: number;
-  height: number;
-}): WallDetectionResult[] {
-  return [
-    {
-      id: createWallId("wall-left"),
-      name: "Pared izquierda",
-      confidence: 0.9,
-      points: [
-        { x: width * 0.04, y: height * 0.16 },
-        { x: width * 0.35, y: height * 0.08 },
-        { x: width * 0.39, y: height * 0.76 },
-        { x: width * 0.07, y: height * 0.88 },
-      ],
-    },
-    {
-      id: createWallId("wall-back"),
-      name: "Pared fondo",
-      confidence: 0.92,
-      points: [
-        { x: width * 0.34, y: height * 0.08 },
-        { x: width * 0.7, y: height * 0.1 },
-        { x: width * 0.68, y: height * 0.73 },
-        { x: width * 0.39, y: height * 0.76 },
-      ],
-    },
-    {
-      id: createWallId("wall-right"),
-      name: "Pared derecha",
-      confidence: 0.87,
-      points: [
-        { x: width * 0.7, y: height * 0.1 },
-        { x: width * 0.96, y: height * 0.2 },
-        { x: width * 0.91, y: height * 0.87 },
-        { x: width * 0.68, y: height * 0.73 },
-      ],
-    },
-  ];
+function rasterizePolygon(width: number, height: number, points: Array<{ x: number; y: number }>): BinaryMask {
+  const data = new Uint8Array(width * height);
+  for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) {
+    let inside = false;
+    for (let index = 0, previous = points.length - 1; index < points.length; previous = index++) {
+      const a = points[index]; const b = points[previous];
+      if ((a.y > y) !== (b.y > y) && x < ((b.x - a.x) * (y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
+    }
+    if (inside) data[y * width + x] = 1;
+  }
+  return { width, height, data };
 }
 
 export const mockServerWallAIProvider: ServerWallAIProvider = {
   name: "mock",
-  async detectWalls({ dimensions }) {
-    return createMockWallResults(dimensions);
+  version: "synthetic-raster-v2",
+  async segmentWalls({ processingDimensions: { width, height } }) {
+    const definitions = [
+      ["Pared izquierda", 0.9, [[0.04, 0.16], [0.35, 0.08], [0.39, 0.76], [0.07, 0.88]]],
+      ["Pared fondo", 0.92, [[0.34, 0.08], [0.7, 0.1], [0.68, 0.73], [0.39, 0.76]]],
+      ["Pared derecha", 0.87, [[0.7, 0.1], [0.96, 0.2], [0.91, 0.87], [0.68, 0.73]]],
+    ] as const;
+    return {
+      modelVersion: this.version,
+      regions: definitions.map(([name, confidence, points]) => ({
+        id: createWallId("wall"), name, confidence,
+        mask: rasterizePolygon(width, height, points.map(([x, y]) => ({ x: x * width, y: y * height }))),
+      })),
+    };
   },
 };

@@ -1,19 +1,7 @@
-import type {
-  WallAIProviderName,
-  WallDetectionResult,
-} from "@/lib/wallDetection/types";
+import type { WallSegmentationProvider } from "@/lib/server/wall-detection/WallSegmentationProvider";
 
-export type ServerWallAIProviderInput = {
-  imageBuffer: Buffer;
-  mimeType: string;
-  dimensions: { width: number; height: number };
-  signal: AbortSignal;
-};
-
-export type ServerWallAIProvider = {
-  name: WallAIProviderName;
-  detectWalls(input: ServerWallAIProviderInput): Promise<WallDetectionResult[]>;
-};
+export type ServerWallAIProvider = WallSegmentationProvider;
+export type { SegmentationProviderInput as ServerWallAIProviderInput } from "@/lib/wallDetection/pipeline/types";
 
 export class WallAIProviderConfigurationError extends Error {
   constructor(message: string) {

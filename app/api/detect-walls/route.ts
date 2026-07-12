@@ -6,7 +6,11 @@ import { serverLogger } from "@/lib/server/logger";
 import { ProviderTimeoutError, runWithProviderTimeout } from "@/lib/server/providerTimeout";
 import { wallDetectionRateLimiter } from "@/lib/server/rateLimit";
 import { getWallAIProvider, WallAIProviderConfigurationError } from "@/lib/server/wall-ai-providers";
-import type { WallDetectionResult } from "@/lib/wallDetection/types";
+import { ImageHasher } from "@/lib/server/wall-detection/ImageHasher";
+import { wallDetectionCache } from "@/lib/server/wall-detection/WallDetectionCache";
+import { SegmentationPipeline } from "@/lib/wallDetection/pipeline/SegmentationPipeline";
+import { encodeBinaryMaskRle } from "@/lib/wallDetection/pipeline/debugEncoding";
+import type { WallDetectionMode, WallDetectionResult } from "@/lib/wallDetection/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,7 +18,13 @@ export const maxDuration = 30;
 
 const MAX_MULTIPART_REQUEST_BYTES = 11 * 1024 * 1024;
 
-type ApiErrorCode = "METHOD_NOT_ALLOWED" | "RATE_LIMITED" | "INVALID_CONTENT_TYPE" | "MISSING_IMAGE" | "INVALID_IMAGE" | "IMAGE_TOO_LARGE" | "IMAGE_DIMENSIONS_EXCEEDED" | "PROVIDER_NOT_CONFIGURED" | "PROVIDER_TIMEOUT" | "INVALID_PROVIDER_RESPONSE" | "INTERNAL_ERROR";
+type ApiErrorCode = "METHOD_NOT_ALLOWED" | "RATE_LIMITED" | "INVALID_CONTENT_TYPE" | "MISSING_IMAGE" | "INVALID_IMAGE" | "IMAGE_TOO_LARGE" | "IMAGE_DIMENSIONS_EXCEEDED" | "PROVIDER_NOT_CONFIGURED" | "PROVIDER_TIMEOUT" | "INVALID_PROVIDER_RESPONSE" | "CANCELLED" | "INTERNAL_ERROR";
+
+const selectableProviders = new Set<WallDetectionMode>(["mock", "ai", "sam2", "florence-2", "grounding-dino", "roboflow", "yolo-segmentation", "custom"]);
+const numericOption = (value: FormDataEntryValue | null, fallback: number, minimum: number, maximum: number) => {
+  const parsed = typeof value === "string" ? Number(value) : Number.NaN;
+  return Number.isFinite(parsed) ? Math.max(minimum, Math.min(maximum, parsed)) : fallback;
+};
 
 function errorResponse(code: ApiErrorCode, message: string, status: number, headers?: HeadersInit) {
   return NextResponse.json({ success: false, error: { code, message } }, { status, headers });
@@ -25,7 +35,7 @@ function clientIp(request: Request) { return request.headers.get("x-forwarded-fo
 function isWallDetectionResult(value: unknown, width: number, height: number): value is WallDetectionResult {
   if (!value || typeof value !== "object") return false;
   const wall = value as Partial<WallDetectionResult>;
-  return typeof wall.id === "string" && typeof wall.name === "string" && Array.isArray(wall.points) && wall.points.length >= 3 && wall.points.length <= 10_000 && wall.points.every((point) => point && typeof point === "object" && Number.isFinite((point as { x?: unknown }).x) && Number.isFinite((point as { y?: unknown }).y) && Number((point as { x: number }).x) >= 0 && Number((point as { x: number }).x) <= width && Number((point as { y: number }).y) >= 0 && Number((point as { y: number }).y) <= height) && (wall.confidence === undefined || (typeof wall.confidence === "number" && wall.confidence >= 0 && wall.confidence <= 1));
+  return typeof wall.id === "string" && typeof wall.name === "string" && Array.isArray(wall.points) && wall.points.length >= 3 && wall.points.length <= 10_000 && wall.points.every((point) => point && typeof point === "object" && Number.isFinite((point as { x?: unknown }).x) && Number.isFinite((point as { y?: unknown }).y) && Number((point as { x: number }).x) >= 0 && Number((point as { x: number }).x) <= width && Number((point as { y: number }).y) >= 0 && Number((point as { y: number }).y) <= height) && (wall.confidence === undefined || (typeof wall.confidence === "number" && wall.confidence >= 0 && wall.confidence <= 1)) && (wall.qualityScore === undefined || (typeof wall.qualityScore === "number" && wall.qualityScore >= 0 && wall.qualityScore <= 1));
 }
 
 export function GET() { return errorResponse("METHOD_NOT_ALLOWED", "Método no permitido.", 405, { Allow: "POST" }); }
@@ -62,16 +72,35 @@ export async function POST(request: Request) {
     const detectedMime = dimensions.type === "jpg" ? "image/jpeg" : dimensions.type === "png" ? "image/png" : dimensions.type === "webp" ? "image/webp" : null;
     if (!detectedMime || detectedMime !== image.type) return errorResponse("INVALID_IMAGE", "El contenido del archivo no coincide con un formato de imagen permitido.", 400);
 
-    const provider = getWallAIProvider();
+    const requestedProviderValue = formData.get("provider");
+    const requestedProvider = typeof requestedProviderValue === "string" && selectableProviders.has(requestedProviderValue as WallDetectionMode) ? requestedProviderValue as WallDetectionMode : "ai";
+    const maskSmoothness = numericOption(formData.get("maskSmoothness"), 0.45, 0, 1);
+    const polygonTolerance = numericOption(formData.get("polygonTolerance"), 1.8, 0.25, 8);
+    const debug = process.env.NODE_ENV !== "production" && formData.get("debug") === "true";
+    const provider = getWallAIProvider(requestedProvider);
+    const hash = new ImageHasher().hash(buffer);
+    const cacheKey = `${hash}:${provider.name}:${provider.version}:${maskSmoothness}:${polygonTolerance}:${debug}`;
+    const cached = wallDetectionCache.get(cacheKey);
+    if (cached) return NextResponse.json({ success: true, ...cached, metrics: cached.metrics ? { ...cached.metrics, cacheHit: true } : undefined }, { headers: { "X-RateLimit-Remaining": String(rateLimit.remaining), "Cache-Control": "no-store" } });
     const timeoutMs = getServerEnv().wallAITimeoutMs;
-    const walls = await runWithProviderTimeout(timeoutMs, (signal) => provider.detectWalls({ imageBuffer: buffer, mimeType: image.type, dimensions: { width: dimensions.width!, height: dimensions.height! }, signal }));
+    const pipeline = new SegmentationPipeline();
+    const result = await runWithProviderTimeout(timeoutMs, (signal) => pipeline.run(provider, { imageBuffer: buffer, mimeType: image.type, dimensions: { width: dimensions.width!, height: dimensions.height! }, signal }, { maskSmoothness, polygonTolerance, debug }), request.signal);
+    const walls = result.walls;
     if (!Array.isArray(walls) || !walls.every((wall) => isWallDetectionResult(wall, dimensions.width!, dimensions.height!))) return errorResponse("INVALID_PROVIDER_RESPONSE", "El proveedor devolvió una respuesta inválida.", 502);
 
-    serverLogger.info("Wall detection completed", { provider: provider.name, width: dimensions.width, height: dimensions.height, walls: walls.length });
-    return NextResponse.json({ success: true, walls, provider: provider.name }, { headers: { "X-RateLimit-Remaining": String(rateLimit.remaining), "Cache-Control": "no-store" } });
+    const response = {
+      walls,
+      provider: provider.name,
+      metrics: { providerVersion: result.providerVersion, processingTimeMs: result.processingTimeMs, wallCount: walls.length, averageQualityScore: result.averageQualityScore, cacheHit: false },
+      debug: debug && result.debugRegions ? { regions: result.debugRegions.map((region) => ({ id: region.id, width: region.mask.width, height: region.mask.height, binaryMaskRle: encodeBinaryMaskRle(region.mask), contour: region.contour, polygon: region.polygon, refined: region.refined, confidence: region.confidence, qualityScore: region.qualityScore })) } : undefined,
+    };
+    wallDetectionCache.set(cacheKey, response);
+    serverLogger.info("Wall detection completed", { provider: provider.name, version: result.providerVersion, width: dimensions.width, height: dimensions.height, walls: walls.length, processingTimeMs: result.processingTimeMs });
+    return NextResponse.json({ success: true, ...response }, { headers: { "X-RateLimit-Remaining": String(rateLimit.remaining), "Cache-Control": "no-store" } });
   } catch (error) {
     if (error instanceof WallAIProviderConfigurationError) return errorResponse("PROVIDER_NOT_CONFIGURED", error.message, 503);
     if (error instanceof ProviderTimeoutError) return errorResponse("PROVIDER_TIMEOUT", error.message, 504);
+    if (error instanceof DOMException && error.name === "AbortError") return errorResponse("CANCELLED", "La detección fue cancelada.", 499);
     serverLogger.error("Wall detection failed", {
       errorName: error instanceof Error ? error.name : "UnknownError",
     });

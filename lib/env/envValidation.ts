@@ -1,6 +1,6 @@
 import type { WallAIProviderName } from "@/lib/wallDetection/types";
 
-const providers = new Set<WallAIProviderName>(["mock", "replicate", "huggingface", "roboflow"]);
+const providers = new Set<WallAIProviderName>(["mock", "replicate", "huggingface", "roboflow", "sam2", "florence-2", "grounding-dino", "yolo-segmentation", "custom"]);
 
 export function parseWallAIProvider(value: string | undefined): WallAIProviderName {
   const provider = value?.trim() || "mock";

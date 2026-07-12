@@ -122,6 +122,7 @@ export type WallMask = {
   name: string;
   type: "auto" | "manual";
   confidence?: number;
+  qualityScore?: number;
   visible: boolean;
   selected: boolean;
   color?: string;
