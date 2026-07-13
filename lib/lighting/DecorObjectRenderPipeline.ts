@@ -6,6 +6,7 @@ import { LruCache } from "@/lib/cache/LruCache";
 
 const MAX_CACHE_ENTRIES = 48;
 const MAX_CACHE_BYTES = 96 * 1024 * 1024;
+export const DECOR_RENDER_PIPELINE_VERSION = "1.0.0";
 const cache = new LruCache<string, Promise<HTMLCanvasElement>>({ maxEntries: MAX_CACHE_ENTRIES, maxEstimatedBytes: MAX_CACHE_BYTES });
 
 export function getDecorObjectRenderCacheStats() {
@@ -15,6 +16,7 @@ export function getDecorObjectRenderCacheStats() {
 
 export function objectRenderCacheKey(object: PlacedDecorObject, quality: RenderQuality) {
   return JSON.stringify([
+    DECOR_RENDER_PIPELINE_VERSION,
     object.assetUrl, Math.round(object.width), Math.round(object.height), object.flipX, object.flipY,
     object.brightness, object.contrast, object.saturation, object.temperature, object.tint,
     object.exposure, object.highlights, object.shadows, object.sharpness, object.depthBlur,

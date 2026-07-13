@@ -23,7 +23,7 @@ const sections = [
   ],
   [
     "Procesamiento de imágenes",
-    "En modo mock, la detección funciona con datos de desarrollo y las imágenes no deben enviarse a un proveedor de IA. Si se configura un proveedor externo, la fotografía podría procesarse temporalmente de acuerdo con el funcionamiento de ese proveedor.",
+    "En modo mock, la imagen se envía al backend de esta aplicación para producir un resultado de prueba y no se reenvía a un proveedor externo. Los proveedores externos están deshabilitados en este release candidate. Si se habilitan y configuran en una versión futura, la fotografía podría procesarse temporalmente de acuerdo con las condiciones de ese proveedor.",
   ],
   [
     "Proveedores externos configurables",
@@ -32,6 +32,14 @@ const sections = [
   [
     "Eliminar información local",
     "Puedes eliminar proyectos individuales desde Mis proyectos. Al borrarlos se elimina la copia guardada por esta aplicación en IndexedDB para ese navegador y dispositivo.",
+  ],
+  [
+    "Cookies, analítica y logs",
+    "Esta versión no integra autenticación, publicidad ni analítica y no necesita cookies propias. El servidor puede registrar metadatos técnicos de una solicitud —estado, dimensiones, proveedor y tiempo—, pero no debe registrar la imagen, Base64 ni tokens.",
+  ],
+  [
+    "Servicios de terceros",
+    "Además del hosting en Vercel, Supabase solo participa si se configura para paletas. Los objetos e imágenes del proyecto permanecen locales salvo el procesamiento de detección descrito arriba. Antes de activar un proveedor externo se debe actualizar esta información con su retención y términos reales.",
   ],
   [
     "Limitaciones",

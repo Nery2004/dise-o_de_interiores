@@ -1,0 +1,26 @@
+name: Solicitud de mejora
+description: Propón una mejora para evaluar después de estabilizar el release candidate.
+title: "[Mejora]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: Durante el RC se priorizan estabilidad, precisión y experiencia antes de funciones grandes.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema o necesidad
+      description: Describe el resultado que necesitas, no solo una solución.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Propuesta
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impacto y alternativas
+      description: ¿A quién ayuda y qué alternativa existe hoy?

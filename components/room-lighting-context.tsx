@@ -12,6 +12,7 @@ import { analyzeRoomLighting } from "@/lib/lighting/roomLightAnalyzer";
 import type { RoomLightProfile } from "@/types/lighting";
 import type { PlacedDecorObject } from "@/types/placed-decor-object";
 import { disposeLightingWorker } from "@/lib/lighting/lightingWorkerClient";
+import { FeatureFlags } from "@/config/featureFlags";
 
 type PreparedLighting = { profiles: RoomLightProfile[]; activeId?: string };
 type RoomLightingContextValue = {
@@ -88,7 +89,7 @@ export function RoomLightingProvider({ children }: { children: ReactNode }) {
   }, [editor.image?.url]);
 
   const applyProfile = useCallback(async (profile: RoomLightProfile, objects: PlacedDecorObject[]) => {
-    if (!editor.image) return;
+    if (!FeatureFlags.automaticLighting || !editor.image) return;
     const imageData = await loadRoomImageData(editor.image);
     placement.beginHistoryTransaction();
     for (const object of objects) {
@@ -100,6 +101,10 @@ export function RoomLightingProvider({ children }: { children: ReactNode }) {
   }, [editor.image, placement]);
 
   const analyzeLighting = useCallback(async () => {
+    if (!FeatureFlags.automaticLighting) {
+      toast.info("La iluminación automática está deshabilitada en esta versión candidata.");
+      return;
+    }
     if (!editor.image || analyzing) return;
     setAnalyzing(true);
     try {
@@ -151,7 +156,7 @@ export function RoomLightingProvider({ children }: { children: ReactNode }) {
     updateProfile,
     analyzeLighting,
     adaptObject: async (object) => {
-      if (!editor.image) return;
+      if (!FeatureFlags.automaticLighting || !editor.image) return;
       try {
         const imageData = await loadRoomImageData(editor.image);
         const profile = profiles.find((item) => item.id === activeProfileId);
@@ -162,6 +167,10 @@ export function RoomLightingProvider({ children }: { children: ReactNode }) {
       }
     },
     applyToAllObjects: async () => {
+      if (!FeatureFlags.automaticLighting) {
+        toast.info("La iluminación automática está deshabilitada en esta versión candidata.");
+        return;
+      }
       const profile = profiles.find((item) => item.id === activeProfileId);
       if (!profile) return;
       try {

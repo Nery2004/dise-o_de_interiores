@@ -8,6 +8,7 @@ import { detectWalls, refineWall, type WallDetectionMode } from "@/lib/wallDetec
 import type { WallDetectionDebugRegion, WallDetectionMetrics, WallDetectionResult } from "@/lib/wallDetection/types";
 import type { BrushStroke, ImageDimensions, WallMask } from "@/types/editor";
 import { optimizeDetectedWallsInWorker } from "@/lib/wallDetection/refinementWorkerClient";
+import { FeatureFlags } from "@/config/featureFlags";
 
 function exclusionStrokes(polygons: WallDetectionResult["exclusionPolygons"]): BrushStroke[] {
   const createdAt = new Date().toISOString();
@@ -208,9 +209,15 @@ export function WallDetectionPanel() {
           disabled={isDetecting || isRefining}
           className="mt-2 h-10 w-full rounded-md border border-[#dfe3e8] bg-white px-3 text-sm text-[#202124] outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/15"
         >
-          {providers.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          {providers.filter((option) => option.value === "mock" || FeatureFlags.externalWallAi).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
       </label>
+
+      {!FeatureFlags.externalWallAi ? (
+        <p className="rounded-md border border-[#dfe3e8] bg-white px-3 py-2 text-xs leading-5 text-[#5f6670]">
+          Los proveedores externos están deshabilitados en esta versión candidata. La detección mock y la edición manual permanecen disponibles.
+        </p>
+      ) : null}
 
       {provider !== "mock" ? (
         <p className="rounded-md border border-[#f1d2a8] bg-[#fff7ed] px-3 py-2 text-xs leading-5 text-[#8a5a1f]">

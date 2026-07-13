@@ -1,37 +1,30 @@
 # Interior Color Studio
 
-Aplicación web para cargar una fotografía de una habitación, seleccionar paredes, probar colores conservando la lectura de sombras y textura, comparar propuestas y exportar el resultado. La aplicación funciona sin autenticación y guarda proyectos localmente por defecto.
+Editor web para cargar una fotografía de una habitación, seleccionar paredes, simular colores conservando luz/textura, añadir objetos y exportar propuestas. La versión actual es **0.9.0-rc.1**; no es todavía 1.0.
 
-## Funcionalidades
+> Captura de producto: pendiente de confirmar o reemplazar los assets de demostración con material cuya licencia esté documentada. No se publica una URL demo porque no fue confirmada.
 
-- Detección mock y arquitectura configurable de proveedores de IA.
-- Máscaras automáticas y manuales, edición de vértices y refinamiento por pincel.
-- Biblioteca de colores, favoritos, armonías y paletas personalizadas.
-- Comparador antes/después y múltiples propuestas de diseño.
-- Proyectos completos en IndexedDB, importación y exportación JSON.
-- Exportación de imágenes en la resolución original.
-- Paletas opcionales mediante Supabase.
-- Landing, privacidad, sitemap, robots y Open Graph preparados para publicación.
+## Estado
+
+- Núcleo estable: landing, imagen/canvas, máscaras, pintura, Base Blanca, comparador, exportación, proyectos locales y objetos básicos.
+- Beta: propuestas, perspectiva, superficies, sombras, grupos/capas, presentación y experiencia móvil.
+- Experimental y apagado: iluminación automática.
+- Deshabilitado: providers externos de IA; únicamente mock/refinamiento local forman parte del RC.
+
+Consulta la [matriz completa](docs/feature-compatibility-matrix.md) y el [resumen de preparación](docs/release-readiness-summary.md).
 
 ## Stack
 
-- Next.js 16 con App Router y Route Handlers.
-- React 19 y TypeScript estricto.
-- Tailwind CSS 4.
-- IndexedDB mediante `idb`.
-- Supabase JS para paletas opcionales.
-- Canvas 2D y SVG para máscaras, refinamientos y exportación.
-- Node.js runtime para `/api/detect-walls` e `image-size` para validación.
+- Next.js 16 App Router, React 19 y TypeScript estricto.
+- Tailwind CSS 4, Canvas 2D/SVG y Web Workers.
+- IndexedDB mediante `idb` para proyectos locales.
+- Supabase opcional para paletas.
+- Route Handler Node para detección/validación de imágenes.
 
-## Requisitos
+## Requisitos e instalación
 
-- Node.js 22 LTS (`.nvmrc`).
-- npm y `package-lock.json` como único gestor de paquetes.
-- Navegador moderno con Canvas e IndexedDB para todas las funciones del editor.
-
-## Instalación local
-
-El repositorio ya está creado y conectado a GitHub. No es necesario ejecutar `git init`, configurar remotos ni renombrar ramas.
+- Node.js 22 (`.nvmrc`; rango `>=22 <23`).
+- npm y el `package-lock.json` incluido.
 
 ```bash
 nvm use
@@ -39,147 +32,112 @@ npm ci
 npm run dev
 ```
 
-La aplicación abre en `http://localhost:3000`. No se necesita `.env.local` para compilar o usar el modo mock. Si se desea configurar servicios opcionales, se puede crear localmente a partir de `.env.example`; nunca debe enviarse al repositorio.
+No se necesita `.env.local` para el modo mock. Copia `.env.example` solo si vas a configurar opciones; nunca confirmes ese archivo ni secretos.
 
-## Variables de entorno
+## Variables
 
-| Variable | Exposición | Obligatoria | Uso/fallback |
-| --- | --- | --- | --- |
-| `NEXT_PUBLIC_SITE_URL` | Pública | No | URL SEO. Usa `http://localhost:3000` si falta. Configurar después de obtener la URL definitiva. |
-| `NEXT_PUBLIC_SUPABASE_URL` | Pública | No | URL pública del proyecto de Supabase. |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Pública | No | Anon public key. La app deshabilita paletas cloud si falta. |
-| `WALL_AI_PROVIDER` | Privada | No | `mock`, `replicate`, `huggingface` o `roboflow`. Fallback: `mock`. |
-| `WALL_AI_TIMEOUT_MS` | Privada | No | Timeout entre 1 y 60 segundos. Fallback: `15000`. |
-| `REPLICATE_API_TOKEN` | Privada | Solo al usar Replicate | Token del servidor. |
-| `HUGGINGFACE_API_TOKEN` | Privada | Solo al usar Hugging Face | Token del servidor. |
-| `ROBOFLOW_API_KEY` | Privada | Solo al usar Roboflow | Token del servidor. |
+| Variable | Tipo | Obligatoria | Propósito |
+|---|---|---:|---|
+| `NEXT_PUBLIC_SITE_URL` | pública | producción | URL canónica para metadata/sitemap |
+| `NEXT_PUBLIC_SUPABASE_URL` | pública | no | URL de Supabase opcional |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | pública | no | anon key; nunca `service_role` |
+| `NEXT_PUBLIC_ENABLE_EXTERNAL_WALL_AI` | pública | no | default `false`; habilita UI/API externa |
+| `NEXT_PUBLIC_ENABLE_ADVANCED_PERSPECTIVE` | pública | no | default `true`; función Beta |
+| `NEXT_PUBLIC_ENABLE_AUTOMATIC_LIGHTING` | pública | no | default `false`; función experimental |
+| `WALL_AI_PROVIDER` | servidor | no | default `mock` |
+| `WALL_AI_TIMEOUT_MS` | servidor | no | 1000–60000; default 15000 |
+| `REPLICATE_API_TOKEN` | servidor | no | conector no habilitado en RC |
+| `HUGGINGFACE_API_TOKEN` | servidor | no | conector no habilitado en RC |
+| `ROBOFLOW_API_KEY` | servidor | no | conector no habilitado en RC |
 
-Las variables `NEXT_PUBLIC_*` pueden llegar al navegador. Las demás deben configurarse solo en el entorno del servidor/Vercel. Nunca uses una Supabase `service_role` key en frontend.
+Las variables públicas se congelan durante el build; modificarlas en Vercel exige un nuevo deployment. Configuración mínima segura:
 
-## Scripts
+```dotenv
+NEXT_PUBLIC_SITE_URL=https://DOMINIO-CONFIRMADO
+WALL_AI_PROVIDER=mock
+NEXT_PUBLIC_ENABLE_EXTERNAL_WALL_AI=false
+NEXT_PUBLIC_ENABLE_AUTOMATIC_LIGHTING=false
+```
+
+No inventes el dominio: usa el asignado realmente por Vercel.
+
+## Comandos
 
 ```bash
-npm run dev        # desarrollo
-npm run lint       # ESLint
-npm run typecheck  # TypeScript sin emitir archivos
-npm test           # pruebas ligeras sin servicios externos
-npm run build      # build estricto de producción
-npm run start      # ejecutar el build localmente
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm run start
+npm run benchmark:walls
+npm run benchmark:paint
+npm run benchmark:performance
+npm run benchmark:stress
+npm run analyze
 ```
 
-## Estructura principal
+No hay script E2E configurado. Las pruebas actuales son unitarias/integración más recorridos manuales/CDP documentados.
 
-```text
-app/                 rutas, API y metadata de Next.js
-components/          UI pública y editor
-config/              versión y navegación
-data/                catálogo y contenido estático
-lib/colors/          conversiones y preferencias
-lib/geometry/        geometría de máscaras y pinceles
-lib/projects/        persistencia, migración e importación
-lib/proposals/       snapshots, estadísticas y exportación
-lib/server/          providers, logging, timeout y rate limiting
-tests/               pruebas críticas
-supabase/            esquema SQL y RLS
-docs/                checklist operativo
-```
+## Arquitectura y estructura
 
-## Supabase para paletas
+- `app/`: rutas, API, metadata y límites de error.
+- `components/`: landing, editor, contexts y paneles.
+- `config/`: versión/canal y feature flags.
+- `data/`: colores, objetos y contenido.
+- `lib/`: pipelines, geometría, persistencia, server y cachés.
+- `types/`: contratos canónicos.
+- `workers/`: pintura, refinamiento e iluminación.
+- `tests/`: pruebas, baselines y fixtures propios declarados, incluido el proyecto portable final `tests/fixtures/release-candidate-project.json`.
+- `scripts/` y `reports/`: benchmarks y resultados reproducibles.
+- `supabase/`: esquema/políticas opcionales.
+- `docs/`: arquitectura, auditorías, release y operación.
 
-Supabase es opcional; sin configuración la aplicación sigue compilando y muestra un estado controlado.
+Detalle: [docs/architecture.md](docs/architecture.md).
 
-1. Crea un proyecto en Supabase.
-2. Abre **SQL Editor**.
-3. Ejecuta [`supabase/schema.sql`](supabase/schema.sql).
-4. Copia **Project URL**.
-5. Copia únicamente la **anon public key**.
-6. Configura `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` en local/Vercel.
+## Proyectos, privacidad y Supabase
 
-El esquema habilita RLS. Las políticas actuales permiten lectura e inserción pública sin login, apropiadas únicamente para el alcance MVP. Antes de una exposición amplia deben revisarse límites, abuso, actualización y eliminación. No uses `service_role` en el navegador.
+Las imágenes, máscaras, objetos y proyectos se guardan localmente en IndexedDB por defecto. Limpiar datos del navegador puede eliminarlos. Supabase solo participa en paletas cuando el par público está completo; las imágenes no se guardan allí.
 
-## Proveedores de IA
+El esquema actual permite lectura/inserción pública para el alcance MVP. Antes de habilitarlo a gran escala deben revisarse identidad, abuso y gobierno de datos. Consulta `/privacy` y [la revisión de privacidad](docs/release-readiness-summary.md#privacidad).
 
-`WALL_AI_PROVIDER=mock` es el modo seguro por defecto y no envía la imagen a un proveedor externo. Cuando el usuario elige IA real, la interfaz avisa que la imagen puede procesarse temporalmente.
+## IA
 
-Los adaptadores Replicate, Hugging Face y Roboflow validan que exista su token, pero todavía requieren seleccionar y conectar un endpoint/modelo definitivo. No se inventan modelos ni se ocultan fallos mediante fallback mock. El endpoint usa Node runtime, límite de 10 MB, máximo 25 MP/10 000 px por lado, timeout abortable y respuestas de error uniformes.
+El mock es determinista y no representa precisión de un modelo real. Replicate, Hugging Face y Roboflow solo validan configuración; no tienen modelo/endpoint definitivo. El RC bloquea esas solicitudes salvo que un build futuro habilite explícitamente el flag después de validarlas.
 
 ## Seguridad
 
-- No hay secretos hardcodeados ni claves `service_role`.
-- CSP permite `blob:` y `data:` en imágenes porque el editor usa object URLs, miniaturas y canvas.
-- `unsafe-inline` se mantiene para scripts/estilos requeridos por hidratación y estilos dinámicos de Next/React; `unsafe-eval` solo se permite en desarrollo.
-- El endpoint registra únicamente metadatos técnicos concisos, nunca buffers, Base64 o tokens.
-- El rate limit inicial es en memoria (10 solicitudes/minuto por IP). En serverless no es consistente entre instancias y no constituye una garantía; `DistributedRateLimiter` deja preparado el reemplazo por Upstash/Vercel KV.
-- La orientación EXIF depende de la decodificación del navegador. Debe probarse con fotografías de los dispositivos objetivo.
+- No hay secretos hardcodeados ni `service_role` en cliente.
+- Uploads limitados a JPEG/PNG/WebP, 10 MB y dimensiones seguras.
+- CSP, headers, timeout, cancelación, rate limit y respuestas uniformes.
+- El rate limit en memoria no es una garantía distribuida en serverless.
+- `npm audit` mantiene un advisory moderado transitivo de PostCSS sin fix compatible verificado; no se usa `--force`.
 
-## Pruebas
-
-Las pruebas no requieren Supabase ni APIs externas y cubren:
-
-- HEX, RGB y HSL.
-- Geometría y límites de máscaras.
-- Validación de uploads y dimensiones.
-- Validación/importación y migración de proyectos v1 → v2.
-- Normalización de nombres de exportación.
-- Selección de provider y timeout.
-
-## Diagnóstico de desarrollo
-
-`/dev/status` muestra versión, provider seleccionado y presencia de capacidades/variables sin revelar sus valores. En producción la ruta responde como 404.
+Vulnerabilidades privadas deben reportarse mediante el canal privado que defina el propietario; consulta [SECURITY.md](SECURITY.md).
 
 ## Despliegue en Vercel
 
-1. Inicia sesión o crea una cuenta en Vercel.
-2. Selecciona **Add New → Project** e importa el repositorio existente desde GitHub.
-3. Confirma que Vercel detecte **Next.js** y npm.
-4. Configura las variables necesarias para cada entorno.
-5. Despliega y revisa **Build Logs** y **Runtime Logs**.
-6. Verifica la URL `*.vercel.app` asignada.
-7. Configura `NEXT_PUBLIC_SITE_URL` con esa URL final, sin slash final.
-8. Vuelve a desplegar para regenerar metadata, sitemap y robots con la URL correcta.
+Vercel detecta Next.js automáticamente; no se necesita `vercel.json`. Una rama/PR genera Preview y el push/merge a la rama de producción configurada genera Production.
 
-Vercel separa **Development**, **Preview** y **Production**. Supabase y los providers pueden permanecer sin configurar en Preview si se usa `mock`. No se necesita `vercel.json`; la integración automática de Next.js es suficiente.
+1. Ejecuta las validaciones locales.
+2. Revisa el diff y abre un PR desde `feature/*` o `fix/*`.
+3. Aprueba [el checklist de Preview](docs/vercel-preview-checklist.md).
+4. Fusiona solo después de revisión.
+5. Ejecuta [el checklist de Production](docs/vercel-production-checklist.md).
 
-### Dominio personalizado
+No se ha confirmado una URL pública. Configura `NEXT_PUBLIC_SITE_URL` únicamente después de confirmar el dominio.
 
-El dominio `*.vercel.app` está incluido. Opcionalmente, abre **Project Settings → Domains**, agrega un dominio propio y sigue los registros DNS indicados. Vercel emite y renueva HTTPS automáticamente después de validar DNS.
+## Assets y licencia
 
-### Preview Deployments
+Los fixtures sintéticos de pintura/paredes están declarados como propios. La licencia/procedencia de los assets en `public/decor`, la habitación de landing y la imagen de estudio no está demostrada en el repositorio; no deben publicarse como catálogo premium ni en un lanzamiento comercial hasta resolver [docs/asset-licenses.md](docs/asset-licenses.md).
 
-Flujo sugerido para el repositorio existente:
+El repositorio no incluye `LICENSE`. El propietario debe elegirla antes de permitir uso o contribución pública; no se asignó una automáticamente.
 
-1. Crea una rama de trabajo.
-2. Realiza cambios y commits pequeños.
-3. Sube la rama al remoto ya configurado.
-4. Abre un pull request.
-5. Revisa el Preview Deployment generado por Vercel.
-6. Fusiona a `main` cuando CI y preview sean correctos.
-7. Revisa el deployment de Production.
+## Limitaciones y roadmap
 
-No ejecutes nuevamente `git init`, `git remote add` ni cambios destructivos de historial en este repositorio.
+- La simulación es una referencia: cámara, pantalla, iluminación, acabado y superficie alteran el color real.
+- IndexedDB depende del dispositivo y cuota.
+- Escenas grandes pueden exceder memoria de Canvas en móviles.
+- Compatibilidad oficial actual: Chrome 150 probado; otros navegadores son objetivos pendientes, no soporte confirmado.
+- No hay términos comerciales aprobados.
 
-## CI
-
-`.github/workflows/ci.yml` ejecuta `npm ci`, lint, typecheck, tests y build en push y pull request con Node 22. Usa `WALL_AI_PROVIDER=mock` y no requiere secretos.
-
-## Privacidad
-
-Los proyectos e imágenes se guardan localmente en IndexedDB por defecto. Las imágenes no se guardan en Supabase. Consulta `/privacy` para la explicación completa y revisa el texto antes de publicación final.
-
-## Limitaciones conocidas
-
-- La visualización del color varía por cámara, pantalla, iluminación, acabado y superficie.
-- La detección automática no es perfecta; el editor ofrece corrección manual.
-- Los providers externos aún no tienen un modelo definitivo conectado.
-- IndexedDB depende del navegador/dispositivo y puede eliminarse al limpiar sus datos.
-- El rate limit en memoria no se comparte entre instancias serverless.
-- `npm audit` reporta actualmente un advisory moderado transitivo en el PostCSS incluido por Next.js 16.2.10. No hay vulnerabilidades altas/críticas y npm no ofrece una actualización compatible; no se fuerza un downgrade o major inseguro. Revisar al actualizar Next.js.
-
-## Próximos pasos
-
-- Elegir y validar un modelo real de segmentación de paredes.
-- Sustituir el rate limit en memoria si el endpoint se expone ampliamente.
-- Endurecer políticas de paletas o agregar identidad cuando el producto lo requiera.
-- Validar UX y política de privacidad con usuarios/dispositivos objetivo.
-
-Consulta [`docs/production-checklist.md`](docs/production-checklist.md) antes del despliegue final.
+Roadmap breve: corregir bugs reales del RC, licenciar assets, validar navegadores/móvil, completar round-trip avanzado y evaluar un provider solo con dataset/privacidad definidos. Consulta [docs/v1-release-criteria.md](docs/v1-release-criteria.md).

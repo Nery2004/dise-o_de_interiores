@@ -24,6 +24,7 @@ import {
   type DecorObject,
   type PremiumDecorCategory,
 } from "@/types/decor-object";
+import { FeatureFlags } from "@/config/featureFlags";
 
 function MiniObject({
   object,
@@ -248,10 +249,10 @@ export function EditorObjectsPanel() {
           </button>
         ))}
       </div>
-      <SurfacePanel />
+      {FeatureFlags.advancedPerspective ? <SurfacePanel /> : null}
       <ObjectPropertiesPanel />
       {selectedObject ? <ObjectLightingPanel object={selectedObject} /> : null}
-      <ObjectPerspectiveProperties />
+      {FeatureFlags.advancedPerspective ? <ObjectPerspectiveProperties /> : null}
       <ProfessionalObjectInspector />
       <LayerManager />
       <ObjectStatisticsPanel />

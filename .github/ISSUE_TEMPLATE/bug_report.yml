@@ -1,0 +1,53 @@
+name: Reporte de bug
+description: Reporta un fallo reproducible sin incluir información sensible.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Descripción
+      description: ¿Qué ocurrió?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducir
+      placeholder: "1. Abrir…\n2. Cargar…\n3. Pulsar…"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Resultado esperado
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Resultado actual
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión o commit
+      placeholder: 0.9.0-rc.1
+  - type: input
+    id: browser
+    attributes:
+      label: Navegador y versión
+  - type: input
+    id: device
+    attributes:
+      label: Dispositivo y sistema
+  - type: input
+    id: url
+    attributes:
+      label: URL del deployment
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Captura o evidencia saneada
+      description: No incluyas imágenes personales, tokens ni datos privados.

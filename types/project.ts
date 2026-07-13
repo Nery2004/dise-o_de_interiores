@@ -6,7 +6,9 @@ import type { RoomLightProfile } from "@/types/lighting";
 import type { ObjectGroup } from "@/types/object-group";
 import type { DecorObjectFolder } from "@/types/decor-object";
 
-export const CURRENT_PROJECT_VERSION = 7;
+export const PROJECT_SCHEMA_VERSION = 7;
+export const LATEST_PROJECT_VERSION = PROJECT_SCHEMA_VERSION;
+export const CURRENT_PROJECT_VERSION = LATEST_PROJECT_VERSION;
 
 export type ProjectImage = {
   name: string;

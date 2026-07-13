@@ -17,6 +17,7 @@ import {
 } from "@/lib/performance/performanceMonitor";
 import { renderProfiler } from "@/lib/performance/RenderProfiler";
 import { getRefinementWorkerPoolStatus } from "@/lib/wallDetection/refinementWorkerClient";
+import { FeatureFlags } from "@/config/featureFlags";
 
 export function DevEditorDiagnostics() {
   const editor = useEditor();
@@ -48,7 +49,7 @@ export function DevEditorDiagnostics() {
     objectInteractionMode: placement.objectInteractionMode,
   });
   useEffect(() => {
-    if (process.env.NODE_ENV !== "development") return;
+    if (!FeatureFlags.developerTools || process.env.NODE_ENV !== "development") return;
     sessionStorage.setItem(
       "interior-color-studio:dev-diagnostics",
       JSON.stringify({
@@ -66,7 +67,7 @@ export function DevEditorDiagnostics() {
       }),
     );
   }, [cacheBytes, editor.masks.length, editor.zoom, interaction, paintWorker, performance.lastExportMs, performance.lastRenderMs, placement.placedObjects.length, refinementWorker, renderCounts, worker.active]);
-  if (process.env.NODE_ENV !== "development") return null;
+  if (!FeatureFlags.developerTools || process.env.NODE_ENV !== "development") return null;
   const duration = (value: number | null) =>
     value === null ? "—" : `${value.toFixed(1)} ms`;
 

@@ -3,6 +3,7 @@
 import { useRoomLighting } from "@/components/room-lighting-context";
 import { LightingSlider } from "@/components/decor/lighting-slider";
 import type { RoomLightProfile } from "@/types/lighting";
+import { FeatureFlags } from "@/config/featureFlags";
 
 const controls: Array<[string, keyof Pick<RoomLightProfile, "elevation" | "intensity" | "temperature" | "ambientBrightness" | "ambientContrast" | "shadowStrength" | "shadowSoftness">, number, number]> = [
   ["Altura de la luz", "elevation", 0, 90], ["Intensidad", "intensity", 0, 100],
@@ -14,6 +15,14 @@ const controls: Array<[string, keyof Pick<RoomLightProfile, "elevation" | "inten
 export function RoomLightingPanel() {
   const lighting = useRoomLighting();
   const profile = lighting.activeProfile;
+  if (!FeatureFlags.automaticLighting) {
+    return (
+      <section className="mb-5 rounded-md border border-[#dfe3e8] bg-[#fafbfc] p-4">
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#69717d]">Iluminación automática</p>
+        <p className="mt-2 text-xs leading-5 text-[#69717d]">Experimental y deshabilitada por defecto en esta versión candidata.</p>
+      </section>
+    );
+  }
   return (
     <section className="mb-5 rounded-md border border-[#dfe3e8] bg-[#fafbfc] p-4">
       <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#69717d]">Iluminación de la habitación</p>

@@ -10,12 +10,14 @@ import { ImageHasher } from "@/lib/server/wall-detection/ImageHasher";
 import { wallDetectionCache } from "@/lib/server/wall-detection/WallDetectionCache";
 import { SegmentationPipeline } from "@/lib/wallDetection/pipeline/SegmentationPipeline";
 import { encodeBinaryMaskRle } from "@/lib/wallDetection/pipeline/debugEncoding";
-import type { WallDetectionMode, WallDetectionResult } from "@/lib/wallDetection/types";
+import type { WallDetectionResult } from "@/lib/wallDetection/types";
 import { processingDimensions } from "@/lib/wallDetection/pipeline/SegmentationPipeline";
 import { findComponents, rasterizePolygon } from "@/lib/wallDetection/pipeline/MaskOperations";
 import type { SegmentationProviderOutput } from "@/lib/wallDetection/pipeline/types";
 import { createWallDetectionCacheKey } from "@/lib/server/wall-detection/WallDetectionCacheKey";
 import { WALL_DETECTION_PIPELINE_VERSION } from "@/lib/wallDetection/pipeline/version";
+import { FeatureFlags } from "@/config/featureFlags";
+import { resolveRequestedDetectionMode } from "@/lib/wallDetection/providerSelection";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,9 +25,8 @@ export const maxDuration = 30;
 
 const MAX_MULTIPART_REQUEST_BYTES = 11 * 1024 * 1024;
 
-type ApiErrorCode = "METHOD_NOT_ALLOWED" | "RATE_LIMITED" | "INVALID_CONTENT_TYPE" | "MISSING_IMAGE" | "INVALID_IMAGE" | "IMAGE_TOO_LARGE" | "IMAGE_DIMENSIONS_EXCEEDED" | "PROVIDER_NOT_CONFIGURED" | "PROVIDER_TIMEOUT" | "INVALID_PROVIDER_RESPONSE" | "CANCELLED" | "INTERNAL_ERROR";
+type ApiErrorCode = "METHOD_NOT_ALLOWED" | "RATE_LIMITED" | "INVALID_CONTENT_TYPE" | "MISSING_IMAGE" | "INVALID_IMAGE" | "IMAGE_TOO_LARGE" | "IMAGE_DIMENSIONS_EXCEEDED" | "INVALID_PROVIDER" | "PROVIDER_NOT_CONFIGURED" | "PROVIDER_TIMEOUT" | "INVALID_PROVIDER_RESPONSE" | "CANCELLED" | "INTERNAL_ERROR";
 
-const selectableProviders = new Set<WallDetectionMode>(["mock", "ai", "sam2", "florence-2", "grounding-dino", "roboflow", "yolo-segmentation", "custom"]);
 const numericOption = (value: FormDataEntryValue | null, fallback: number, minimum: number, maximum: number) => {
   const parsed = typeof value === "string" ? Number(value) : Number.NaN;
   return Number.isFinite(parsed) ? Math.max(minimum, Math.min(maximum, parsed)) : fallback;
@@ -89,12 +90,14 @@ export async function POST(request: Request) {
     if (!detectedMime || detectedMime !== image.type) return errorResponse("INVALID_IMAGE", "El contenido del archivo no coincide con un formato de imagen permitido.", 400);
 
     const requestedProviderValue = formData.get("provider");
-    const requestedProvider = typeof requestedProviderValue === "string" && selectableProviders.has(requestedProviderValue as WallDetectionMode) ? requestedProviderValue as WallDetectionMode : "ai";
+    const requestedProvider = resolveRequestedDetectionMode(requestedProviderValue, FeatureFlags.externalWallAi);
+    if (!requestedProvider) return errorResponse("INVALID_PROVIDER", "El proveedor solicitado no es válido.", 400);
     const maskSmoothness = numericOption(formData.get("maskSmoothness"), 0.45, 0, 1);
     const polygonTolerance = numericOption(formData.get("polygonTolerance"), 1.8, 0.25, 8);
     const debug = process.env.NODE_ENV !== "production" && formData.get("debug") === "true";
     const localWall = formData.get("action") === "refine" ? parseLocalWall(formData.get("wall"), dimensions.width!, dimensions.height!) : null;
     if (formData.get("action") === "refine" && !localWall) return errorResponse("INVALID_PROVIDER_RESPONSE", "La pared seleccionada no es válida.", 400);
+    if (!localWall && requestedProvider !== "mock" && !FeatureFlags.externalWallAi) return errorResponse("PROVIDER_NOT_CONFIGURED", "Los proveedores externos están deshabilitados en esta versión.", 503);
     const processing = processingDimensions(dimensions.width!, dimensions.height!);
     const provider = localWall ? {
       name: "custom" as const,
