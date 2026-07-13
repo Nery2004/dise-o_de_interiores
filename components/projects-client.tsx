@@ -60,7 +60,7 @@ export function ProjectsClient() {
 
       <div className="mt-8 flex flex-wrap gap-3 rounded-lg border border-[#ded6c9] bg-white/70 p-3">
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nombre..." className="h-10 min-w-64 flex-1 rounded-md border border-[#dfe3e8] px-3 text-sm outline-none focus:border-[#2563eb]" />
-        <select value={sort} onChange={(event) => setSort(event.target.value as SortMode)} className="h-10 rounded-md border border-[#dfe3e8] bg-white px-3 text-sm"><option value="updated">Modificados recientemente</option><option value="created">Creados recientemente</option><option value="name-asc">Nombre A-Z</option><option value="name-desc">Nombre Z-A</option></select>
+        <select aria-label="Ordenar proyectos" value={sort} onChange={(event) => setSort(event.target.value as SortMode)} className="h-10 rounded-md border border-[#dfe3e8] bg-white px-3 text-sm"><option value="updated">Modificados recientemente</option><option value="created">Creados recientemente</option><option value="name-asc">Nombre A-Z</option><option value="name-desc">Nombre Z-A</option></select>
       </div>
 
       {visibleProjects.length === 0 ? <div className="mt-8 rounded-xl border border-dashed border-[#cfc7ba] bg-white/55 px-6 py-16 text-center text-[#687169]">No hay proyectos que coincidan con la búsqueda.</div> : <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{visibleProjects.map((project) => <article key={project.id} className="overflow-hidden rounded-xl border border-[#ded6c9] bg-white shadow-sm">

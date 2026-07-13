@@ -6,7 +6,7 @@ export default function GlobalError({ reset }: { reset: () => void }) {
   return (
     <main className="grid min-h-screen place-items-center bg-[var(--cream)] px-5 text-center">
       <div>
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--terracotta)]">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--terracotta-text)]">
           Algo no salió como esperábamos
         </p>
         <h1 className="mt-4 text-4xl font-semibold text-[var(--graphite)]">

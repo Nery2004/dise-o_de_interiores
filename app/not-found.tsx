@@ -8,7 +8,7 @@ export default function NotFound() {
       <PublicHeader />
       <main className="grid min-h-[65vh] place-items-center bg-[var(--cream)] px-5 py-20 text-center">
         <div>
-          <p className="font-mono text-sm font-bold text-[var(--terracotta)]">
+          <p className="font-mono text-sm font-bold text-[var(--terracotta-text)]">
             404
           </p>
           <h1 className="mt-4 text-4xl font-semibold text-[var(--graphite)]">

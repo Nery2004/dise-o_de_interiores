@@ -34,7 +34,7 @@ export function HowItWorks() {
                   <span className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--sage-dark)] text-white">
                     <Icon size={20} />
                   </span>
-                  <span className="font-mono text-sm font-bold text-[var(--terracotta)]">
+                  <span className="font-mono text-sm font-bold text-[var(--terracotta-text)]">
                     0{index + 1}
                   </span>
                 </div>

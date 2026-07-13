@@ -1,6 +1,6 @@
 import { imageSize } from "image-size";
 import { NextResponse } from "next/server";
-import { getServerEnv } from "@/lib/env/serverEnv";
+import { parseProviderTimeout } from "@/lib/env/envValidation";
 import { validateImageDimensions, validateImageUploadMetadata } from "@/lib/images/imageValidation";
 import { serverLogger } from "@/lib/server/logger";
 import { ProviderTimeoutError, runWithProviderTimeout } from "@/lib/server/providerTimeout";
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
     });
     const cached = wallDetectionCache.get(cacheKey);
     if (cached) return NextResponse.json({ success: true, ...cached, metrics: cached.metrics ? { ...cached.metrics, cacheHit: true } : undefined }, { headers: { "X-RateLimit-Remaining": String(rateLimit.remaining), "Cache-Control": "no-store" } });
-    const timeoutMs = getServerEnv().wallAITimeoutMs;
+    const timeoutMs = parseProviderTimeout(process.env.WALL_AI_TIMEOUT_MS);
     const pipeline = new SegmentationPipeline();
     const result = await runWithProviderTimeout(timeoutMs, (signal) => pipeline.run(provider, { imageBuffer: buffer, mimeType: image.type, dimensions: { width: dimensions.width!, height: dimensions.height! }, signal }, { maskSmoothness, polygonTolerance, debug }), request.signal);
     const walls = result.walls;

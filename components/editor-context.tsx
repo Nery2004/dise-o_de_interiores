@@ -634,7 +634,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   return (
     <EditorContext.Provider value={value}>
       {children}
-      <input ref={fileInputRef} className="sr-only" type="file" accept="image/*" onChange={(event) => {
+      <input ref={fileInputRef} className="sr-only" type="file" accept="image/*" aria-label="Abrir imagen de la habitación" onChange={(event) => {
         const file = event.target.files?.[0];
         if (file) void uploadImage(file);
       }} />

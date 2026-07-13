@@ -14,6 +14,11 @@ import {
 } from "@/lib/projects/projectValidation";
 import { normalizeExportFilename } from "@/lib/proposals/proposalUtils";
 import type { InteriorProject } from "@/types/project";
+import {
+  optionalPublicHttpUrl,
+  safeSiteUrl,
+} from "@/lib/env/publicEnv";
+import { importProjectFile } from "@/lib/projects/projectImportExport";
 
 const baseProject = {
   id: "project-1",
@@ -115,6 +120,35 @@ test("valida importación y migra proyectos anteriores a v7", () => {
       originalImage: { ...baseProject.originalImage, width: -1 },
     }),
   );
+  assert.throws(() =>
+    validateImportedProject({
+      ...baseProject,
+      originalImage: {
+        ...baseProject.originalImage,
+        type: "image/svg+xml",
+        dataUrl: "data:image/svg+xml;base64,PHN2Zy8+",
+      },
+    }),
+  );
+  assert.throws(() =>
+    validateImportedProject({
+      ...baseProject,
+      originalImage: {
+        ...baseProject.originalImage,
+        type: "image/png",
+        dataUrl: "data:image/jpeg;base64,AA==",
+      },
+    }),
+  );
+  assert.throws(() =>
+    validateImportedProject({
+      ...baseProject,
+      originalImage: {
+        ...baseProject.originalImage,
+        dataUrl: "data:image/png;base64,abc",
+      },
+    }),
+  );
 });
 
 test("valida los ajustes de simulación de pintura por máscara", () => {
@@ -163,4 +197,44 @@ test("selecciona proveedores válidos y timeouts seguros", () => {
   assert.throws(() => parseWallAIProvider("unknown"));
   assert.equal(parseProviderTimeout("20000"), 20_000);
   assert.equal(parseProviderTimeout("999999"), 15_000);
+});
+
+test("rechaza URLs públicas malformadas sin romper la configuración opcional", () => {
+  assert.equal(optionalPublicHttpUrl(undefined), null);
+  assert.equal(optionalPublicHttpUrl("not-a-url"), null);
+  assert.equal(optionalPublicHttpUrl("javascript:alert(1)"), null);
+  assert.equal(
+    optionalPublicHttpUrl("https://example.supabase.co/"),
+    "https://example.supabase.co",
+  );
+  assert.equal(safeSiteUrl("invalid"), "http://localhost:3000");
+});
+
+test("importa un proyecto portable y rechaza JSON corrupto o versión futura", async () => {
+  const imported = await importProjectFile(
+    new File(
+      [JSON.stringify(baseProject)],
+      "sala.interior-project.json",
+      { type: "application/json" },
+    ),
+  );
+  assert.equal(imported.version, 7);
+  assert.equal(imported.originalImageBlob.type, "image/png");
+  assert.equal(imported.originalImage.dataUrl, undefined);
+  await assert.rejects(() =>
+    importProjectFile(
+      new File(["{"], "corrupto.interior-project.json", {
+        type: "application/json",
+      }),
+    ),
+  );
+  await assert.rejects(() =>
+    importProjectFile(
+      new File(
+        [JSON.stringify({ ...baseProject, version: 99 })],
+        "futuro.interior-project.json",
+        { type: "application/json" },
+      ),
+    ),
+  );
 });

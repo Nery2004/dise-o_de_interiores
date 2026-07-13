@@ -13,7 +13,7 @@ export function AudienceSection() {
         <div className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--line)] sm:grid-cols-2 lg:grid-cols-3">
           {audiences.map(([title, description], index) => (
             <article key={title} className="landing-reveal bg-white p-6">
-              <span className="font-mono text-xs font-bold text-[var(--terracotta)]">
+              <span className="font-mono text-xs font-bold text-[var(--terracotta-text)]">
                 0{index + 1}
               </span>
               <h3 className="mt-4 font-bold text-[var(--graphite)]">{title}</h3>

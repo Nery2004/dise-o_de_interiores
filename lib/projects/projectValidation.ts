@@ -11,6 +11,7 @@ import { withLightingDefaults } from "@/lib/lighting/lightProfile";
 import type { RoomLightProfile } from "@/types/lighting";
 import type { ObjectGroup } from "@/types/object-group";
 import { sanitizeProjectReferences } from "@/lib/projects/projectReferenceIntegrity";
+import { MAX_IMAGE_UPLOAD_BYTES, validateImageDimensions } from "@/lib/images/imageValidation";
 
 const blendModes: BlendMode[] = [
   "paint-simulation",
@@ -22,6 +23,16 @@ const blendModes: BlendMode[] = [
   "hard-light",
 ];
 const hexPattern = /^#[0-9a-f]{6}$/i;
+const portableImageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+function validPortableImageDataUrl(type: string, value: string | undefined) {
+  if (!portableImageTypes.has(type) || !value) return false;
+  const prefix = `data:${type};base64,`;
+  if (!value.startsWith(prefix)) return false;
+  const payload = value.slice(prefix.length);
+  const maximumEncodedBytes = Math.ceil(MAX_IMAGE_UPLOAD_BYTES / 3) * 4;
+  return payload.length > 0 && payload.length % 4 === 0 && payload.length <= maximumEncodedBytes && /^[a-z0-9+/]*={0,2}$/i.test(payload);
+}
 
 function migrateProjectOneVersion(project: InteriorProject): InteriorProject {
   if (project.version === 1) return { ...project, version: 2, proposals: [] };
@@ -601,12 +612,12 @@ export function validateImportedProject(value: unknown): InteriorProject {
     typeof project.originalImage !== "object" ||
     typeof project.originalImage.name !== "string" ||
     typeof project.originalImage.type !== "string" ||
-    !project.originalImage.type.startsWith("image/") ||
     !Number.isFinite(project.originalImage.width) ||
     !Number.isFinite(project.originalImage.height) ||
     project.originalImage.width <= 0 ||
     project.originalImage.height <= 0 ||
-    !project.originalImage.dataUrl?.startsWith("data:image/")
+    !validateImageDimensions(project.originalImage.width, project.originalImage.height) ||
+    !validPortableImageDataUrl(project.originalImage.type, project.originalImage.dataUrl)
   )
     throw new Error("INVALID_PROJECT");
   if (

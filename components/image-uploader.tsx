@@ -41,7 +41,7 @@ export function ImageUploader() {
         isDragActive && "border-[#1f2421] bg-[#f8faf7]",
       )}
     >
-      <input {...getInputProps()} />
+      <input {...getInputProps({ "aria-label": "Seleccionar imagen de la habitación" })} />
       <span className="grid h-16 w-16 place-items-center rounded-full bg-[#edf1f4] text-[#404852]">
         <ImageUp size={28} strokeWidth={1.8} />
       </span>

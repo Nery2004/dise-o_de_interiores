@@ -10,6 +10,7 @@
   --sage: #8fa087;
   --sage-dark: #50634f;
   --terracotta: #b9745d;
+  --terracotta-text: #995540;
   --cream: #fbf8f1;
   --graphite: #202621;
   --font-manrope: "Avenir Next", Avenir, "Segoe UI", Arial, Helvetica, sans-serif;
@@ -29,13 +30,25 @@ body {
   font-family: var(--font-manrope), Arial, Helvetica, sans-serif;
 }
 
+@layer utilities {
+  .text-\[\#7a8290\],
+  .text-\[\#7b8490\],
+  .text-\[\#89919d\] { color: #5f6875; }
+
+  .text-\[\#697469\],
+  .text-\[\#667469\],
+  .text-\[\#7a827b\],
+  .text-\[\#687169\],
+  .text-\[\#697169\] { color: #59675c; }
+}
+
 html { scroll-behavior: smooth; }
 
 :focus-visible { outline: 2px solid var(--sage-dark); outline-offset: 3px; }
 
 @keyframes landing-reveal {
-  from { opacity: 0; transform: translateY(18px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { transform: translateY(18px); }
+  to { transform: translateY(0); }
 }
 
 .landing-reveal {
