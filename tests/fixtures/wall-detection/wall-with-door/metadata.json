@@ -1,0 +1,26 @@
+{
+  "id": "wall-with-door",
+  "description": "Pared frontal con puerta",
+  "difficulty": "medium",
+  "expectedWalls": 1,
+  "excludeRegions": [
+    "door"
+  ],
+  "tags": [
+    "door",
+    "opening"
+  ],
+  "notes": "Fixture geométrico sintético; no sustituye fotografías reales etiquetadas.",
+  "synthetic": true,
+  "width": 96,
+  "height": 64,
+  "expectedMasks": [
+    "expected-wall-1.png"
+  ],
+  "recordedPredictions": [
+    "recorded-raw-wall-1.png"
+  ],
+  "exclusionMasks": {
+    "door": "exclude-door.png"
+  }
+}

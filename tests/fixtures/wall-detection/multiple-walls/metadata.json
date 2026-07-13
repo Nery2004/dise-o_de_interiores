@@ -1,0 +1,26 @@
+{
+  "id": "multiple-walls",
+  "description": "Habitación con tres paredes visibles",
+  "difficulty": "hard",
+  "expectedWalls": 3,
+  "excludeRegions": [],
+  "tags": [
+    "multi-wall",
+    "perspective"
+  ],
+  "notes": "Fixture geométrico sintético; no sustituye fotografías reales etiquetadas.",
+  "synthetic": true,
+  "width": 96,
+  "height": 64,
+  "expectedMasks": [
+    "expected-wall-1.png",
+    "expected-wall-2.png",
+    "expected-wall-3.png"
+  ],
+  "recordedPredictions": [
+    "recorded-raw-wall-1.png",
+    "recorded-raw-wall-2.png",
+    "recorded-raw-wall-3.png"
+  ],
+  "exclusionMasks": {}
+}

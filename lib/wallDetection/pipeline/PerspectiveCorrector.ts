@@ -1,9 +1,23 @@
 import { cloneMask } from "@/lib/wallDetection/pipeline/MaskOperations";
 import type { ArchitectureLine, BinaryMask } from "@/lib/wallDetection/pipeline/types";
 
+export function hasReliablePerspectiveStructure(lines: ArchitectureLine[], exclusions: BinaryMask[] = []) {
+  const vertical = lines.filter((line) => line.kind === "vertical");
+  const denseStructure = vertical.length >= 4 && vertical.filter((line) => line.support >= 0.12).length >= 2;
+  const strongPair = vertical.filter((line) => line.support >= 0.18).length >= 2;
+  const lowExclusion = exclusions.some((exclusion) => {
+    const startY = Math.floor(exclusion.height * 0.82);
+    for (let y = startY; y < exclusion.height; y += 1)
+      for (let x = 0; x < exclusion.width; x += 1)
+        if (exclusion.data[y * exclusion.width + x]) return true;
+    return false;
+  });
+  return denseStructure || (strongPair && lowExclusion);
+}
+
 export class PerspectiveCorrector {
-  correct(mask: BinaryMask, lines: ArchitectureLine[], tolerance: number, maximumDisplacement: number): BinaryMask {
-    if (!lines.length) return cloneMask(mask);
+  correct(mask: BinaryMask, lines: ArchitectureLine[], tolerance: number, maximumDisplacement: number, exclusions: BinaryMask[] = []): BinaryMask {
+    if (!hasReliablePerspectiveStructure(lines, exclusions)) return cloneMask(mask);
     const output = cloneMask(mask);
     const limit = Math.max(1, Math.min(tolerance, maximumDisplacement));
     const strongLines = lines.filter((line) => line.support >= 0.06);

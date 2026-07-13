@@ -1,0 +1,22 @@
+{
+  "id": "strong-light",
+  "description": "Pared con iluminación lateral fuerte",
+  "difficulty": "hard",
+  "expectedWalls": 1,
+  "excludeRegions": [],
+  "tags": [
+    "strong-light",
+    "gradient"
+  ],
+  "notes": "Fixture geométrico sintético; no sustituye fotografías reales etiquetadas.",
+  "synthetic": true,
+  "width": 96,
+  "height": 64,
+  "expectedMasks": [
+    "expected-wall-1.png"
+  ],
+  "recordedPredictions": [
+    "recorded-raw-wall-1.png"
+  ],
+  "exclusionMasks": {}
+}

@@ -59,18 +59,20 @@ export class WallRefinementPipeline {
     let current = applyExclusions(original, context.exclusions);
     const timings: Partial<Record<RefinementStageName, number>> = {};
     const applied: RefinementStageName[] = [];
+    const stageMasks: Partial<Record<RefinementStageName, BinaryMask>> = {};
     const runMaskStage = (name: RefinementStageName, enabled: boolean, operation: (source: BinaryMask) => BinaryMask) => {
       if (!enabled) return;
       const started = performance.now();
       current = applyExclusions(operation(current), context.exclusions);
       timings[name] = Math.round((performance.now() - started) * 10) / 10;
       applied.push(name);
+      stageMasks[name] = cloneMask(current);
     };
 
-    runMaskStage("edgeAlignment", settings.stages.edgeAlignment && Boolean(context.edgeMap), (source) =>
+    runMaskStage("edgeAlignment", settings.stages.edgeAlignment && Boolean(context.edgeMap) && context.exclusions.length > 0, (source) =>
       this.edgeAligner.align(source, context.edgeMap, settings.edgeTolerance, settings.maxBoundaryDisplacement));
     runMaskStage("perspectiveCorrection", settings.stages.perspectiveCorrection && context.lines.length > 0, (source) =>
-      this.perspective.correct(source, context.lines, settings.edgeTolerance, settings.maxBoundaryDisplacement));
+      this.perspective.correct(source, context.lines, settings.edgeTolerance, settings.maxBoundaryDisplacement, context.exclusions));
     runMaskStage("gapFilling", settings.stages.gapFilling, (source) => this.gaps.fill(source));
     runMaskStage("holeRemoval", settings.stages.holeRemoval, (source) => this.holes.remove(source, settings.holeThreshold, context.exclusions));
     runMaskStage("noiseRemoval", settings.stages.noiseRemoval, (source) => this.noise.clean(source, settings.noiseThreshold));
@@ -85,12 +87,20 @@ export class WallRefinementPipeline {
       polygon = this.corners.snap(polygon, context.lines, mask.width, mask.height, settings.cornerSnapDistance);
       timings.cornerSnap = Math.round((performance.now() - started) * 10) / 10;
       applied.push("cornerSnap");
+      stageMasks.cornerSnap = applyExclusions(
+        rasterizePolygon(mask.width, mask.height, polygon),
+        context.exclusions,
+      );
     }
     if (settings.stages.polygonOptimization && polygon.length >= 3) {
       const started = performance.now();
       polygon = this.polygons.optimize(polygon, settings.polygonTolerance);
       timings.polygonOptimization = Math.round((performance.now() - started) * 10) / 10;
       applied.push("polygonOptimization");
+      stageMasks.polygonOptimization = applyExclusions(
+        rasterizePolygon(mask.width, mask.height, polygon),
+        context.exclusions,
+      );
     }
     const finalMask = polygon.length >= 3 ? applyExclusions(rasterizePolygon(mask.width, mask.height, polygon), context.exclusions) : cloneMask(current);
     const issues = this.validator.analyze(finalMask, polygon, original, context.exclusions);
@@ -104,7 +114,7 @@ export class WallRefinementPipeline {
       issues,
       stageTimings: timings,
       appliedStages: applied,
-      trace: { original, cleaned, corrected, final: finalMask },
+      trace: { original, cleaned, corrected, final: finalMask, stageMasks },
       retryCount,
     };
   }

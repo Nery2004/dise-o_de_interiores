@@ -1,0 +1,26 @@
+{
+  "id": "wall-with-window",
+  "description": "Pared frontal con ventana central",
+  "difficulty": "medium",
+  "expectedWalls": 1,
+  "excludeRegions": [
+    "window"
+  ],
+  "tags": [
+    "window",
+    "opening"
+  ],
+  "notes": "Fixture geométrico sintético; no sustituye fotografías reales etiquetadas.",
+  "synthetic": true,
+  "width": 96,
+  "height": 64,
+  "expectedMasks": [
+    "expected-wall-1.png"
+  ],
+  "recordedPredictions": [
+    "recorded-raw-wall-1.png"
+  ],
+  "exclusionMasks": {
+    "window": "exclude-window.png"
+  }
+}

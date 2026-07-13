@@ -1,0 +1,22 @@
+{
+  "id": "side-wall",
+  "description": "Pared lateral en perspectiva",
+  "difficulty": "medium",
+  "expectedWalls": 1,
+  "excludeRegions": [],
+  "tags": [
+    "side-wall",
+    "perspective"
+  ],
+  "notes": "Fixture geométrico sintético; no sustituye fotografías reales etiquetadas.",
+  "synthetic": true,
+  "width": 96,
+  "height": 64,
+  "expectedMasks": [
+    "expected-wall-1.png"
+  ],
+  "recordedPredictions": [
+    "recorded-raw-wall-1.png"
+  ],
+  "exclusionMasks": {}
+}

@@ -1,0 +1,1 @@
+export const WALL_DETECTION_PIPELINE_VERSION = "2.1.6";

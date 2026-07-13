@@ -1,0 +1,28 @@
+{
+  "id": "wall-with-columns",
+  "description": "Dos paños de pared separados por columnas",
+  "difficulty": "hard",
+  "expectedWalls": 2,
+  "excludeRegions": [
+    "furniture"
+  ],
+  "tags": [
+    "columns",
+    "multi-wall"
+  ],
+  "notes": "Fixture geométrico sintético; no sustituye fotografías reales etiquetadas.",
+  "synthetic": true,
+  "width": 96,
+  "height": 64,
+  "expectedMasks": [
+    "expected-wall-1.png",
+    "expected-wall-2.png"
+  ],
+  "recordedPredictions": [
+    "recorded-raw-wall-1.png",
+    "recorded-raw-wall-2.png"
+  ],
+  "exclusionMasks": {
+    "furniture": "exclude-furniture.png"
+  }
+}

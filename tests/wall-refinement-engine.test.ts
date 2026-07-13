@@ -6,6 +6,7 @@ import { NoiseCleaner } from "@/lib/wallDetection/pipeline/NoiseCleaner";
 import { countMaskPixels } from "@/lib/wallDetection/pipeline/MaskOperations";
 import { resolveRefinementSettings } from "@/lib/wallDetection/pipeline/RefinementSettings";
 import { WallRefinementPipeline } from "@/lib/wallDetection/pipeline/WallRefinementPipeline";
+import { hasReliablePerspectiveStructure } from "@/lib/wallDetection/pipeline/PerspectiveCorrector";
 import { SegmentationPipeline } from "@/lib/wallDetection/pipeline/SegmentationPipeline";
 import type { BinaryMask, EdgeMap } from "@/lib/wallDetection/pipeline/types";
 
@@ -30,6 +31,16 @@ test("Edge Alignment respeta el desplazamiento máximo configurable", () => {
   const moved = new EdgeAligner().align(source, nearbyEdges, 8, 2);
   assert.equal(moved.data[6 * 24 + 5], 0);
   assert.equal(moved.data[6 * 24 + 7], 1);
+});
+
+test("perspectiva solo se activa con estructura vertical suficiente y consistente", () => {
+  const line = (support: number) => ({ a: 1, b: 0, c: 0, angle: 0, support, kind: "vertical" as const });
+  assert.equal(hasReliablePerspectiveStructure([line(0.3), line(0.25), line(0.1)]), false);
+  assert.equal(hasReliablePerspectiveStructure([line(0.3), line(0.25), line(0.1), line(0.08)]), true);
+  assert.equal(hasReliablePerspectiveStructure([line(0.11), line(0.1), line(0.09), line(0.08)]), false);
+  const lowOpening = mask(20, 20, (_x, y) => y >= 17);
+  assert.equal(hasReliablePerspectiveStructure([line(0.22), line(0.19)], [lowOpening]), true);
+  assert.equal(hasReliablePerspectiveStructure([line(0.22), line(0.19)]), false);
 });
 
 test("rellena huecos pequeños, conserva ventanas y no cierra huecos grandes", () => {
@@ -83,6 +94,16 @@ test("cada etapa puede desactivarse de forma independiente", () => {
   } });
   const result = new WallRefinementPipeline().run(source, { edgeMap: null, lines: [], exclusions: [], providerConfidence: 0.9 }, settings);
   assert.deepEqual(result.appliedStages, []);
+});
+
+test("el trace conserva una máscara medible después de cada etapa aplicada", () => {
+  const source = mask(40, 30, (x, y) => x > 4 && x < 35 && y > 3 && y < 26);
+  const result = new WallRefinementPipeline().run(source, { edgeMap: null, lines: [], exclusions: [], providerConfidence: 0.9 }, resolveRefinementSettings());
+  for (const stage of result.appliedStages) {
+    const stageMask = result.trace.stageMasks[stage];
+    assert.ok(stageMask, `falta snapshot para ${stage}`);
+    assert.equal(stageMask?.data.length, source.data.length);
+  }
 });
 
 test("transporta exclusiones de ventanas hasta la máscara editable", async () => {

@@ -12,8 +12,10 @@ import { SegmentationPipeline } from "@/lib/wallDetection/pipeline/SegmentationP
 import { encodeBinaryMaskRle } from "@/lib/wallDetection/pipeline/debugEncoding";
 import type { WallDetectionMode, WallDetectionResult } from "@/lib/wallDetection/types";
 import { processingDimensions } from "@/lib/wallDetection/pipeline/SegmentationPipeline";
-import { rasterizePolygon } from "@/lib/wallDetection/pipeline/MaskOperations";
+import { findComponents, rasterizePolygon } from "@/lib/wallDetection/pipeline/MaskOperations";
 import type { SegmentationProviderOutput } from "@/lib/wallDetection/pipeline/types";
+import { createWallDetectionCacheKey } from "@/lib/server/wall-detection/WallDetectionCacheKey";
+import { WALL_DETECTION_PIPELINE_VERSION } from "@/lib/wallDetection/pipeline/version";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -103,7 +105,13 @@ export async function POST(request: Request) {
       },
     } : getWallAIProvider(requestedProvider);
     const hash = new ImageHasher().hash(buffer);
-    const cacheKey = `${hash}:${provider.name}:${provider.version}:${maskSmoothness}:${polygonTolerance}:${debug}:${localWall ? JSON.stringify(localWall.points) : "all"}`;
+    const cacheKey = createWallDetectionCacheKey({
+      imageHash: hash,
+      provider: provider.name,
+      providerVersion: provider.version,
+      configuration: { debug, maskSmoothness, polygonTolerance },
+      refinementTarget: localWall?.points ?? null,
+    });
     const cached = wallDetectionCache.get(cacheKey);
     if (cached) return NextResponse.json({ success: true, ...cached, metrics: cached.metrics ? { ...cached.metrics, cacheHit: true } : undefined }, { headers: { "X-RateLimit-Remaining": String(rateLimit.remaining), "Cache-Control": "no-store" } });
     const timeoutMs = getServerEnv().wallAITimeoutMs;
@@ -115,8 +123,8 @@ export async function POST(request: Request) {
     const response = {
       walls,
       provider: provider.name,
-      metrics: { providerVersion: result.providerVersion, processingTimeMs: result.processingTimeMs, wallCount: walls.length, averageQualityScore: result.averageQualityScore, cacheHit: false, refinementCount: walls.reduce((sum, wall) => sum + (wall.refinement?.refinementCount ?? 0), 0) },
-      debug: debug && result.debugRegions ? { regions: result.debugRegions.map((region) => ({ id: region.id, width: region.mask.width, height: region.mask.height, binaryMaskRle: encodeBinaryMaskRle(region.mask), contour: region.contour, polygon: region.polygon, refined: region.refined, confidence: region.confidence, qualityScore: region.qualityScore, qualityBreakdown: region.qualityBreakdown, issues: region.issues, stageTimings: region.stageTimings, appliedStages: region.appliedStages, retryCount: region.retryCount, stageMasksRle: { original: encodeBinaryMaskRle(region.trace.original), cleaned: encodeBinaryMaskRle(region.trace.cleaned), corrected: encodeBinaryMaskRle(region.trace.corrected), final: encodeBinaryMaskRle(region.trace.final) } })) } : undefined,
+      metrics: { pipelineVersion: WALL_DETECTION_PIPELINE_VERSION, providerVersion: result.providerVersion, processingTimeMs: result.processingTimeMs, wallCount: walls.length, averageQualityScore: result.averageQualityScore, cacheHit: false, refinementCount: walls.reduce((sum, wall) => sum + (wall.refinement?.refinementCount ?? 0), 0) },
+      debug: debug && result.debugRegions ? { pipelineVersion: WALL_DETECTION_PIPELINE_VERSION, parameters: { maskSmoothness, polygonTolerance, binaryInput: true as const }, regions: result.debugRegions.map((region) => ({ id: region.id, width: region.mask.width, height: region.mask.height, binaryMaskRle: encodeBinaryMaskRle(region.mask), contour: region.contour, polygon: region.polygon, refined: region.refined, confidence: region.confidence, qualityScore: region.qualityScore, qualityBreakdown: region.qualityBreakdown, issues: region.issues, stageTimings: region.stageTimings, appliedStages: region.appliedStages, retryCount: region.retryCount, componentCount: findComponents(region.mask).length, stageMasksRle: { original: encodeBinaryMaskRle(region.trace.original), cleaned: encodeBinaryMaskRle(region.trace.cleaned), corrected: encodeBinaryMaskRle(region.trace.corrected), final: encodeBinaryMaskRle(region.trace.final), stages: Object.fromEntries(Object.entries(region.trace.stageMasks).map(([stage, mask]) => [stage, encodeBinaryMaskRle(mask)])) } })) } : undefined,
     };
     wallDetectionCache.set(cacheKey, response);
     serverLogger.info("Wall detection completed", { provider: provider.name, version: result.providerVersion, width: dimensions.width, height: dimensions.height, walls: walls.length, processingTimeMs: result.processingTimeMs });

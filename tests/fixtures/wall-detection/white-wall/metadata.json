@@ -1,0 +1,22 @@
+{
+  "id": "white-wall",
+  "description": "Pared blanca con iluminación uniforme",
+  "difficulty": "easy",
+  "expectedWalls": 1,
+  "excludeRegions": [],
+  "tags": [
+    "white",
+    "low-texture"
+  ],
+  "notes": "Fixture geométrico sintético; no sustituye fotografías reales etiquetadas.",
+  "synthetic": true,
+  "width": 96,
+  "height": 64,
+  "expectedMasks": [
+    "expected-wall-1.png"
+  ],
+  "recordedPredictions": [
+    "recorded-raw-wall-1.png"
+  ],
+  "exclusionMasks": {}
+}

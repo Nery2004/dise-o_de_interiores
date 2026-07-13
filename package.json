@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts",
+    "benchmark:walls": "tsx scripts/benchmark-wall-detection.ts",
+    "benchmark:walls:check": "tsx scripts/benchmark-wall-detection.ts --check"
   },
   "engines": {
     "node": ">=22 <23"

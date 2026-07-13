@@ -1,0 +1,26 @@
+{
+  "id": "wall-with-pictures",
+  "description": "Pared con dos cuadros",
+  "difficulty": "medium",
+  "expectedWalls": 1,
+  "excludeRegions": [
+    "picture"
+  ],
+  "tags": [
+    "picture",
+    "wall-decoration"
+  ],
+  "notes": "Fixture geométrico sintético; no sustituye fotografías reales etiquetadas.",
+  "synthetic": true,
+  "width": 96,
+  "height": 64,
+  "expectedMasks": [
+    "expected-wall-1.png"
+  ],
+  "recordedPredictions": [
+    "recorded-raw-wall-1.png"
+  ],
+  "exclusionMasks": {
+    "picture": "exclude-picture.png"
+  }
+}

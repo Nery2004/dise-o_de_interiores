@@ -1,0 +1,26 @@
+{
+  "id": "wall-with-curtain",
+  "description": "Pared con cortina delante de una ventana",
+  "difficulty": "hard",
+  "expectedWalls": 1,
+  "excludeRegions": [
+    "curtain"
+  ],
+  "tags": [
+    "curtain",
+    "occlusion"
+  ],
+  "notes": "Fixture geométrico sintético; no sustituye fotografías reales etiquetadas.",
+  "synthetic": true,
+  "width": 96,
+  "height": 64,
+  "expectedMasks": [
+    "expected-wall-1.png"
+  ],
+  "recordedPredictions": [
+    "recorded-raw-wall-1.png"
+  ],
+  "exclusionMasks": {
+    "curtain": "exclude-curtain.png"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "wall-with-sofa",
+  "description": "Pared parcialmente ocluida por sofá",
+  "difficulty": "medium",
+  "expectedWalls": 1,
+  "excludeRegions": [
+    "sofa"
+  ],
+  "tags": [
+    "sofa",
+    "furniture",
+    "occlusion"
+  ],
+  "notes": "Fixture geométrico sintético; no sustituye fotografías reales etiquetadas.",
+  "synthetic": true,
+  "width": 96,
+  "height": 64,
+  "expectedMasks": [
+    "expected-wall-1.png"
+  ],
+  "recordedPredictions": [
+    "recorded-raw-wall-1.png"
+  ],
+  "exclusionMasks": {
+    "sofa": "exclude-sofa.png"
+  }
+}

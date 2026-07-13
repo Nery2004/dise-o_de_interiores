@@ -1,0 +1,29 @@
+{
+  "id": "partially-occluded-wall",
+  "description": "Pared parcialmente tapada por varios muebles",
+  "difficulty": "hard",
+  "expectedWalls": 1,
+  "excludeRegions": [
+    "furniture",
+    "sofa"
+  ],
+  "tags": [
+    "occlusion",
+    "furniture",
+    "partial"
+  ],
+  "notes": "Fixture geométrico sintético; no sustituye fotografías reales etiquetadas.",
+  "synthetic": true,
+  "width": 96,
+  "height": 64,
+  "expectedMasks": [
+    "expected-wall-1.png"
+  ],
+  "recordedPredictions": [
+    "recorded-raw-wall-1.png"
+  ],
+  "exclusionMasks": {
+    "furniture": "exclude-furniture.png",
+    "sofa": "exclude-sofa.png"
+  }
+}

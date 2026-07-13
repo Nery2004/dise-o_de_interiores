@@ -1,0 +1,26 @@
+{
+  "id": "wall-with-television",
+  "description": "Pared con televisión central",
+  "difficulty": "medium",
+  "expectedWalls": 1,
+  "excludeRegions": [
+    "television"
+  ],
+  "tags": [
+    "television",
+    "object"
+  ],
+  "notes": "Fixture geométrico sintético; no sustituye fotografías reales etiquetadas.",
+  "synthetic": true,
+  "width": 96,
+  "height": 64,
+  "expectedMasks": [
+    "expected-wall-1.png"
+  ],
+  "recordedPredictions": [
+    "recorded-raw-wall-1.png"
+  ],
+  "exclusionMasks": {
+    "television": "exclude-television.png"
+  }
+}

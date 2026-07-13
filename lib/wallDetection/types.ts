@@ -29,6 +29,7 @@ export type WallRefinementSummary = {
 };
 
 export type WallDetectionMetrics = {
+  pipelineVersion: string;
   providerVersion: string;
   processingTimeMs: number;
   wallCount: number;
@@ -52,15 +53,25 @@ export type WallDetectionDebugRegion = {
   stageTimings: Partial<Record<string, number>>;
   appliedStages: string[];
   retryCount: number;
+  componentCount: number;
   stageMasksRle: {
     original: number[];
     cleaned: number[];
     corrected: number[];
     final: number[];
+    stages?: Partial<Record<import("@/lib/wallDetection/pipeline/types").RefinementStageName, number[]>>;
   };
 };
 
-export type WallDetectionDebug = { regions: WallDetectionDebugRegion[] };
+export type WallDetectionDebug = {
+  pipelineVersion: string;
+  parameters: {
+    maskSmoothness: number;
+    polygonTolerance: number;
+    binaryInput: true;
+  };
+  regions: WallDetectionDebugRegion[];
+};
 
 export type WallDetectionOptions = {
   signal?: AbortSignal;

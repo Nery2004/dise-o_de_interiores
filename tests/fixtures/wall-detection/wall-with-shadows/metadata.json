@@ -1,0 +1,22 @@
+{
+  "id": "wall-with-shadows",
+  "description": "Pared con sombras diagonales",
+  "difficulty": "hard",
+  "expectedWalls": 1,
+  "excludeRegions": [],
+  "tags": [
+    "shadow",
+    "uneven-light"
+  ],
+  "notes": "Fixture geométrico sintético; no sustituye fotografías reales etiquetadas.",
+  "synthetic": true,
+  "width": 96,
+  "height": 64,
+  "expectedMasks": [
+    "expected-wall-1.png"
+  ],
+  "recordedPredictions": [
+    "recorded-raw-wall-1.png"
+  ],
+  "exclusionMasks": {}
+}

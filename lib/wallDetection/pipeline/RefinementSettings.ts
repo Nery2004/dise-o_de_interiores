@@ -37,7 +37,7 @@ export const DEFAULT_REFINEMENT_SETTINGS: RefinementSettings = {
   stages: {
     edgeAlignment: true,
     perspectiveCorrection: true,
-    gapFilling: true,
+    gapFilling: false,
     holeRemoval: true,
     noiseRemoval: true,
     boundaryOptimization: true,

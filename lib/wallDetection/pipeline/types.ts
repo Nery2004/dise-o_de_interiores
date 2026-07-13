@@ -62,6 +62,7 @@ export type RefinementTrace = {
   cleaned: BinaryMask;
   corrected: BinaryMask;
   final: BinaryMask;
+  stageMasks: Partial<Record<RefinementStageName, BinaryMask>>;
 };
 
 export type SegmentationRegion = {

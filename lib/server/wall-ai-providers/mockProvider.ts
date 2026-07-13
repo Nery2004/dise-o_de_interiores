@@ -2,7 +2,7 @@ import type { ServerWallAIProvider } from "@/lib/server/wall-ai-providers/types"
 import type { BinaryMask } from "@/lib/wallDetection/pipeline/types";
 
 function createWallId(name: string) {
-  return `${name}-${globalThis.crypto?.randomUUID?.() ?? Date.now()}`;
+  return name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
 function rasterizePolygon(width: number, height: number, points: Array<{ x: number; y: number }>): BinaryMask {
@@ -30,7 +30,7 @@ export const mockServerWallAIProvider: ServerWallAIProvider = {
     return {
       modelVersion: this.version,
       regions: definitions.map(([name, confidence, points]) => ({
-        id: createWallId("wall"), name, confidence,
+        id: createWallId(name), name, confidence,
         mask: rasterizePolygon(width, height, points.map(([x, y]) => ({ x: x * width, y: y * height }))),
       })),
     };
