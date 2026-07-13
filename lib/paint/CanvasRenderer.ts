@@ -1,15 +1,9 @@
 import { maskHasExportableColor } from "@/lib/mask-geometry";
 import { applyMaskFeatherPass } from "@/lib/paint/MaskFeatherPass";
-import { processPaintPixel } from "@/lib/paint/PaintPipeline";
-import {
-  hexToRgbColor,
-  rgbToOklab,
-} from "@/lib/colors/colorSpace";
 import {
   PAINT_QUALITY_SCALE,
   resolvePaintSettings,
 } from "@/lib/paint/paintSettings";
-import { createLocalLuminanceField } from "@/lib/paint/TexturePass";
 import {
   createRenderCanvas,
   getRenderContext,
@@ -18,11 +12,12 @@ import {
 import {
   getSourceRaster,
   loadPaintImage,
-  readRasterRgb,
 } from "@/lib/paint/imageRaster";
 import { analyzeWallBase } from "@/lib/paint/wallBaseAnalysisService";
 import { resolveEffectiveWhiteBaseSettings } from "@/lib/paint/whiteBaseOptimizer";
-import type { BlendMode, LoadedImage, WallMask } from "@/types/editor";
+import type { BlendMode, LoadedImage, RenderQuality, WallMask } from "@/types/editor";
+import { PaintRenderPipeline } from "@/lib/paint/PaintRenderPipeline";
+import { PAINT_PIPELINE_VERSION } from "@/lib/paint/pipelineVersion";
 
 type RenderedMaskLayer = {
   canvas: RenderCanvas;
@@ -40,6 +35,7 @@ type RenderPaintSceneOptions = {
   includeOriginal: boolean;
   masks: WallMask[];
   whiteBasePreviewMaskId?: string | null;
+  qualityOverride?: RenderQuality;
 };
 
 const layerCache = new Map<string, Promise<RenderedMaskLayer | null>>();
@@ -57,8 +53,9 @@ function maskCacheKey(
   mask: WallMask,
   globalBlendMode: BlendMode,
   whiteBasePreviewOnly: boolean,
+  qualityOverride?: RenderQuality,
 ) {
-  return `${image.url}:${JSON.stringify({
+  return `${PAINT_PIPELINE_VERSION}:${image.url}:${JSON.stringify({
     blendMode: mask.blendMode ?? globalBlendMode,
     color: mask.color,
     edgeFeather: mask.edgeFeather,
@@ -69,6 +66,7 @@ function maskCacheKey(
     primerCoverage: mask.primerCoverage,
     refinement: mask.refinement,
     renderQuality: mask.renderQuality,
+    qualityOverride,
     whiteBasePreviewOnly,
     whiteBaseSettings: mask.whiteBaseSettings,
   })}`;
@@ -79,9 +77,13 @@ async function renderMaskLayer(
   mask: WallMask,
   globalBlendMode: BlendMode,
   whiteBasePreviewOnly: boolean,
+  qualityOverride?: RenderQuality,
 ): Promise<RenderedMaskLayer | null> {
   if (!mask.color && !whiteBasePreviewOnly) return null;
-  const settings = resolvePaintSettings(mask, globalBlendMode);
+  const resolvedSettings = resolvePaintSettings(mask, globalBlendMode);
+  const settings = qualityOverride
+    ? { ...resolvedSettings, renderQuality: qualityOverride }
+    : resolvedSettings;
   const scale = PAINT_QUALITY_SCALE[settings.renderQuality];
   const source = await getSourceRaster(image, scale);
   const featheredMask = applyMaskFeatherPass(
@@ -103,64 +105,40 @@ async function renderMaskLayer(
 
   const { bounds, alpha } = featheredMask;
   const pixelCount = bounds.width * bounds.height;
-  const luminance = new Float32Array(pixelCount);
-  let weightedLuminance = 0;
-  let totalWeight = 0;
-
+  const cropSource = new Uint8ClampedArray(pixelCount * 4);
+  const cropAlpha = new Uint8ClampedArray(pixelCount);
   for (let y = 0; y < bounds.height; y += 1) {
     for (let x = 0; x < bounds.width; x += 1) {
       const sourceX = bounds.x + x;
       const sourceY = bounds.y + y;
       const sourceIndex = (sourceY * source.width + sourceX) * 4;
       const cropIndex = y * bounds.width + x;
-      const value = rgbToOklab(readRasterRgb(source.data, sourceIndex)).l;
-      const weight = alpha[sourceY * source.width + sourceX] / 255;
-      luminance[cropIndex] = value;
-      weightedLuminance += value * weight;
-      totalWeight += weight;
+      cropSource.set(source.data.subarray(sourceIndex, sourceIndex + 4), cropIndex * 4);
+      cropAlpha[cropIndex] = alpha[sourceY * source.width + sourceX];
     }
   }
-
-  const sampledAverageLuminance =
-    totalWeight > 0 ? weightedLuminance / totalWeight : 0.7;
   const averageLuminance =
-    analysisResult?.analysis.averageLuminance ?? sampledAverageLuminance;
-  const blurRadius = settings.renderQuality === "draft" ? 1 : settings.renderQuality === "high" ? 2 : 3;
-  const localLuminance = createLocalLuminanceField(
-    luminance,
-    bounds.width,
-    bounds.height,
-    blurRadius,
-  );
-  const target = hexToRgbColor(mask.color ?? "#FFFFFF");
+    analysisResult?.analysis.averageLuminance;
   const layerCanvas = createRenderCanvas(bounds.width, bounds.height);
   const layerContext = getRenderContext(layerCanvas);
   const output = layerContext.createImageData(bounds.width, bounds.height);
-
-  for (let y = 0; y < bounds.height; y += 1) {
-    for (let x = 0; x < bounds.width; x += 1) {
-      const sourceX = bounds.x + x;
-      const sourceY = bounds.y + y;
-      const sourceIndex = (sourceY * source.width + sourceX) * 4;
-      const cropIndex = y * bounds.width + x;
-      const outputIndex = cropIndex * 4;
-      const maskAlpha = alpha[sourceY * source.width + sourceX];
-      if (maskAlpha === 0) continue;
-      const painted = processPaintPixel({
-        averageLuminance,
-        localLuminance: localLuminance[cropIndex],
-        settings,
-        source: readRasterRgb(source.data, sourceIndex),
-        target,
-        whiteBasePreviewOnly,
-        whiteBaseSettings,
-      });
-      output.data[outputIndex] = Math.round(painted.r * 255);
-      output.data[outputIndex + 1] = Math.round(painted.g * 255);
-      output.data[outputIndex + 2] = Math.round(painted.b * 255);
-      output.data[outputIndex + 3] = maskAlpha;
-    }
-  }
+  const rendered = new PaintRenderPipeline().render({
+    originalImage: { data: cropSource, width: bounds.width, height: bounds.height },
+    mask: { alpha: cropAlpha, width: bounds.width, height: bounds.height },
+    targetColor: mask.color ?? "#FFFFFF",
+    paintMode: settings.paintMode,
+    paintIntensity: settings.paintIntensity,
+    primerCoverage: settings.primerCoverage,
+    neutralizationSettings: whiteBaseSettings,
+    shadowPreservation: whiteBaseSettings.shadowPreservation,
+    texturePreservation: whiteBaseSettings.texturePreservation,
+    edgeFeather: settings.edgeFeather,
+    blendMode: settings.blendMode,
+    quality: settings.renderQuality,
+    averageLuminance,
+    whiteBasePreviewOnly,
+  });
+  output.data.set(rendered.imageData);
   layerContext.putImageData(output, 0, 0);
   return {
     canvas: layerCanvas,
@@ -177,12 +155,14 @@ function getRenderedMaskLayer(
   mask: WallMask,
   globalBlendMode: BlendMode,
   whiteBasePreviewOnly: boolean,
+  qualityOverride?: RenderQuality,
 ) {
   const key = maskCacheKey(
     image,
     mask,
     globalBlendMode,
     whiteBasePreviewOnly,
+    qualityOverride,
   );
   const cached = layerCache.get(key);
   if (cached) return cached;
@@ -191,6 +171,7 @@ function getRenderedMaskLayer(
     mask,
     globalBlendMode,
     whiteBasePreviewOnly,
+    qualityOverride,
   );
   return rememberLimited(layerCache, key, pending, 24);
 }
@@ -202,6 +183,7 @@ export async function renderPaintScene({
   includeOriginal,
   masks,
   whiteBasePreviewMaskId,
+  qualityOverride,
 }: RenderPaintSceneOptions) {
   canvas.width = image.dimensions.width;
   canvas.height = image.dimensions.height;
@@ -232,6 +214,7 @@ export async function renderPaintScene({
         mask,
         globalBlendMode,
         mask.id === whiteBasePreviewMaskId,
+        qualityOverride,
       ),
     ),
   );

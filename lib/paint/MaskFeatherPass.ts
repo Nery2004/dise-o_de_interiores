@@ -1,6 +1,7 @@
 import { createFinalMaskCanvas } from "@/lib/masks/maskCompositor";
 import { createRenderCanvas, getRenderContext } from "@/lib/paint/renderCanvas";
 import type { ImageDimensions, WallMask } from "@/types/editor";
+import { featherAlphaMask } from "@/lib/paint/featherAlpha";
 
 export type MaskBounds = {
   x: number;
@@ -57,14 +58,13 @@ export function applyMaskFeatherPass(
   const context = getRenderContext(target);
   context.clearRect(0, 0, width, height);
   context.imageSmoothingEnabled = true;
-  context.filter = feather > 0 ? `blur(${feather * scale}px)` : "none";
   context.drawImage(sourceMask, 0, 0, width, height);
-  context.filter = "none";
   const pixels = context.getImageData(0, 0, width, height).data;
-  const alpha = new Uint8ClampedArray(width * height);
-  for (let index = 0; index < alpha.length; index += 1) {
-    alpha[index] = pixels[index * 4 + 3];
+  const sourceAlpha = new Uint8ClampedArray(width * height);
+  for (let index = 0; index < sourceAlpha.length; index += 1) {
+    sourceAlpha[index] = pixels[index * 4 + 3];
   }
+  const alpha = featherAlphaMask(sourceAlpha, width, height, feather * scale);
   const bounds = findMaskBounds(alpha, width, height);
   return bounds ? { alpha, bounds, height, width } : null;
 }

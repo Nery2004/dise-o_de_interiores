@@ -1,0 +1,21 @@
+{
+  "id": "blue-wall",
+  "description": "Terracota sobre pared azul",
+  "targetColor": "#C98276",
+  "width": 96,
+  "height": 64,
+  "mask": "mask.png",
+  "image": "image.webp",
+  "synthetic": true,
+  "settings": {
+    "paintMode": "white-base",
+    "paintIntensity": 100,
+    "primerCoverage": 100,
+    "shadowPreservation": 90,
+    "texturePreservation": 90,
+    "edgeFeather": 0,
+    "blendMode": "paint-simulation",
+    "quality": "high"
+  },
+  "notes": "Neutralización de dominante fría"
+}

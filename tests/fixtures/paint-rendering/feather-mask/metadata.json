@@ -1,0 +1,21 @@
+{
+  "id": "feather-mask",
+  "description": "Máscara parcial con borde de alto contraste",
+  "targetColor": "#B33A3A",
+  "width": 96,
+  "height": 64,
+  "mask": "mask.png",
+  "image": "image.webp",
+  "synthetic": true,
+  "settings": {
+    "paintMode": "white-base",
+    "paintIntensity": 100,
+    "primerCoverage": 100,
+    "shadowPreservation": 90,
+    "texturePreservation": 90,
+    "edgeFeather": 10,
+    "blendMode": "paint-simulation",
+    "quality": "high"
+  },
+  "notes": "Medir transición, fuga y halo"
+}

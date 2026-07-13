@@ -7,10 +7,11 @@ import {
   clamp01,
   mixNumber,
   mixRgb,
-  oklabToRgb,
   rgbToOklab,
+  type OklabColor,
   type RgbColor,
 } from "@/lib/colors/colorSpace";
+import { mapOklabToSrgb } from "@/lib/colors/colorManagement";
 import type { ResolvedPaintSettings } from "@/lib/paint/paintSettings";
 import { extractIlluminationPass } from "@/lib/paint/ShadowPass";
 import {
@@ -26,6 +27,7 @@ export type PaintPixelInput = {
   settings: ResolvedPaintSettings;
   source: RgbColor;
   target: RgbColor;
+  targetLab?: OklabColor;
   whiteBaseSettings: EffectiveWhiteBaseSettings;
   whiteBasePreviewOnly?: boolean;
 };
@@ -36,11 +38,12 @@ export function processPaintPixel({
   settings,
   source,
   target,
+  targetLab: suppliedTargetLab,
   whiteBaseSettings,
   whiteBasePreviewOnly = false,
 }: PaintPixelInput): RgbColor {
   const sourceLab = rgbToOklab(source);
-  const targetLab = rgbToOklab(target);
+  const targetLab = suppliedTargetLab ?? rgbToOklab(target);
   const baseLab =
     settings.paintMode === "white-base"
       ? renderAdaptiveWhiteBase({
@@ -50,7 +53,7 @@ export function processPaintPixel({
           source: sourceLab,
         })
       : sourceLab;
-  const baseRgb = oklabToRgb(baseLab);
+  const baseRgb = mapOklabToSrgb(baseLab);
   if (whiteBasePreviewOnly) return baseRgb;
   const texture = extractTexturePass(sourceLab.l, localLuminance);
   const illumination = extractIlluminationPass(
@@ -59,12 +62,14 @@ export function processPaintPixel({
   );
 
   if (settings.blendMode === "paint-simulation") {
-    return oklabToRgb(
+    return mapOklabToSrgb(
       applyColorPass({
         averageLuminance,
         base: baseLab,
         illumination,
         intensity: settings.paintIntensity,
+        originalLuminance: sourceLab.l,
+        primerCoverage: whiteBaseSettings.primerCoverage,
         shadowPreservation: whiteBaseSettings.shadowPreservation,
         target: targetLab,
         texture,
@@ -84,7 +89,7 @@ export function processPaintPixel({
     (whiteBaseSettings.texturePreservation / 100) * 0.85,
   );
 
-  return oklabToRgb({
+  return mapOklabToSrgb({
     l: preservedLuminance,
     a: mixedLab.a * (1 + overdrive * 0.1),
     b: mixedLab.b * (1 + overdrive * 0.1),

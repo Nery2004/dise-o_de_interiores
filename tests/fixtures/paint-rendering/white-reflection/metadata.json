@@ -1,0 +1,21 @@
+{
+  "id": "white-reflection",
+  "description": "Pared con reflejo blanco",
+  "targetColor": "#7E9BAF",
+  "width": 96,
+  "height": 64,
+  "mask": "mask.png",
+  "image": "image.webp",
+  "synthetic": true,
+  "settings": {
+    "paintMode": "white-base",
+    "paintIntensity": 100,
+    "primerCoverage": 100,
+    "shadowPreservation": 90,
+    "texturePreservation": 90,
+    "edgeFeather": 0,
+    "blendMode": "paint-simulation",
+    "quality": "high"
+  },
+  "notes": "El reflejo no debe saturarse con el color"
+}

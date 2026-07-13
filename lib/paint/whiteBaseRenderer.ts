@@ -10,6 +10,11 @@ import {
 } from "@/lib/paint/TexturePass";
 import type { EffectiveWhiteBaseSettings } from "@/lib/paint/whiteBaseOptimizer";
 
+export function primerCoverageStrength(coverage: number) {
+  const normalized = clamp01(coverage / 100);
+  return normalized * normalized * (3 - 2 * normalized);
+}
+
 export function renderAdaptiveWhiteBase({
   averageLuminance,
   localLuminance,
@@ -21,7 +26,7 @@ export function renderAdaptiveWhiteBase({
   settings: EffectiveWhiteBaseSettings;
   source: OklabColor;
 }): OklabColor {
-  const primer = clamp01(settings.primerCoverage / 100);
+  const primer = primerCoverageStrength(settings.primerCoverage);
   const neutralization =
     clamp01(settings.neutralizationStrength / 100) * primer;
   const saturationReduction = clamp01(settings.saturationReduction / 100);

@@ -47,6 +47,7 @@ export async function exportEditedImage({
       image,
       includeOriginal,
       masks,
+      qualityOverride: "ultra",
     });
     const context = canvas.getContext("2d");
     if (!context) throw new EditorError("EXPORT_FAILED");

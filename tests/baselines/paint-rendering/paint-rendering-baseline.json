@@ -1,0 +1,599 @@
+{
+  "schemaVersion": 1,
+  "pipelineVersion": "1.0.0",
+  "dataset": {
+    "type": "synthetic",
+    "cases": 12
+  },
+  "global": {
+    "cases": 12,
+    "meanMidtoneDeltaE": 4.074926,
+    "meanHueError": 3.402918,
+    "meanLuminanceScore": 97.900225,
+    "meanTextureScore": 88.737866,
+    "meanShadowScore": 86.235001,
+    "meanPreviewExportDeltaE": 0.013158,
+    "meanTimeMs": 14.242652,
+    "maximumTimeMs": 34.13098,
+    "totalApproximateMemoryBytes": 1548288,
+    "clippedChannels": 64
+  },
+  "cases": [
+    {
+      "id": "beige-wall",
+      "description": "Verde salvia sobre pared beige",
+      "targetColor": "#A8B5A2",
+      "timeMs": 34.13098,
+      "approximateMemoryBytes": 129024,
+      "color": {
+        "midtoneColorError": 0.985007,
+        "hueErrorDegrees": 7.954536,
+        "saturationError": 0.496578,
+        "lightnessError": 0.758798,
+        "shadowColorDeviation": 0.985007,
+        "highlightColorDeviation": 0.985007,
+        "pixelsOutsideTolerance": 0,
+        "sampleCount": 4368
+      },
+      "luminance": {
+        "score": 100,
+        "structureCorrelation": 1,
+        "contrastRatio": 1
+      },
+      "texture": {
+        "score": 100,
+        "detailCorrelation": 1,
+        "energyRatio": 1
+      },
+      "shadows": {
+        "score": 80,
+        "originalDifference": 0,
+        "renderedDifference": 0
+      },
+      "previewExport": {
+        "meanDeltaE": 0,
+        "maximumDeltaE": 0,
+        "previewExportDifferenceScore": 0
+      },
+      "feather": {
+        "transitionPixelCount": 0,
+        "weightedLeakagePixels": 0,
+        "maximumTransitionWidth": 0,
+        "symmetryError": 0,
+        "discontinuityCount": 104
+      },
+      "clipping": {
+        "preview": 0,
+        "export": 0
+      }
+    },
+    {
+      "id": "blue-wall",
+      "description": "Terracota sobre pared azul",
+      "targetColor": "#C98276",
+      "timeMs": 20.039955,
+      "approximateMemoryBytes": 129024,
+      "color": {
+        "midtoneColorError": 2.332368,
+        "hueErrorDegrees": 5.225638,
+        "saturationError": 2.204166,
+        "lightnessError": 0.259383,
+        "shadowColorDeviation": 2.332368,
+        "highlightColorDeviation": 2.332368,
+        "pixelsOutsideTolerance": 0,
+        "sampleCount": 4368
+      },
+      "luminance": {
+        "score": 100,
+        "structureCorrelation": 1,
+        "contrastRatio": 1
+      },
+      "texture": {
+        "score": 100,
+        "detailCorrelation": 1,
+        "energyRatio": 1
+      },
+      "shadows": {
+        "score": 80,
+        "originalDifference": 0,
+        "renderedDifference": 0
+      },
+      "previewExport": {
+        "meanDeltaE": 0,
+        "maximumDeltaE": 0,
+        "previewExportDifferenceScore": 0
+      },
+      "feather": {
+        "transitionPixelCount": 0,
+        "weightedLeakagePixels": 0,
+        "maximumTransitionWidth": 0,
+        "symmetryError": 0,
+        "discontinuityCount": 104
+      },
+      "clipping": {
+        "preview": 0,
+        "export": 0
+      }
+    },
+    {
+      "id": "dark-gray-wall",
+      "description": "Blanco cálido sobre gris oscuro",
+      "targetColor": "#F5F1E8",
+      "timeMs": 19.273182,
+      "approximateMemoryBytes": 129024,
+      "color": {
+        "midtoneColorError": 13.781453,
+        "hueErrorDegrees": 2.253131,
+        "saturationError": 0.375252,
+        "lightnessError": 13.77628,
+        "shadowColorDeviation": 13.781453,
+        "highlightColorDeviation": 13.781453,
+        "pixelsOutsideTolerance": 1,
+        "sampleCount": 4368
+      },
+      "luminance": {
+        "score": 100,
+        "structureCorrelation": 1,
+        "contrastRatio": 1
+      },
+      "texture": {
+        "score": 100,
+        "detailCorrelation": 1,
+        "energyRatio": 1
+      },
+      "shadows": {
+        "score": 80,
+        "originalDifference": 0,
+        "renderedDifference": 0
+      },
+      "previewExport": {
+        "meanDeltaE": 0,
+        "maximumDeltaE": 0,
+        "previewExportDifferenceScore": 0
+      },
+      "feather": {
+        "transitionPixelCount": 0,
+        "weightedLeakagePixels": 0,
+        "maximumTransitionWidth": 0,
+        "symmetryError": 0,
+        "discontinuityCount": 104
+      },
+      "clipping": {
+        "preview": 0,
+        "export": 0
+      }
+    },
+    {
+      "id": "feather-mask",
+      "description": "Máscara parcial con borde de alto contraste",
+      "targetColor": "#B33A3A",
+      "timeMs": 19.190235,
+      "approximateMemoryBytes": 129024,
+      "color": {
+        "midtoneColorError": 13.889543,
+        "hueErrorDegrees": 3.177971,
+        "saturationError": 5.327203,
+        "lightnessError": 12.80776,
+        "shadowColorDeviation": 14.01824,
+        "highlightColorDeviation": 27.091855,
+        "pixelsOutsideTolerance": 1,
+        "sampleCount": 1920
+      },
+      "luminance": {
+        "score": 93.87579,
+        "structureCorrelation": 0.993372,
+        "contrastRatio": 0.811324
+      },
+      "texture": {
+        "score": 95.788682,
+        "detailCorrelation": 0.998655,
+        "energyRatio": 0.882175
+      },
+      "shadows": {
+        "score": 84.949211,
+        "originalDifference": 0.492997,
+        "renderedDifference": 0.400247
+      },
+      "previewExport": {
+        "meanDeltaE": 0.063334,
+        "maximumDeltaE": 1.041898,
+        "previewExportDifferenceScore": 0.316669
+      },
+      "feather": {
+        "transitionPixelCount": 4424,
+        "weightedLeakagePixels": 343.560784,
+        "maximumTransitionWidth": 38,
+        "symmetryError": 0,
+        "discontinuityCount": 0
+      },
+      "clipping": {
+        "preview": 64,
+        "export": 64
+      }
+    },
+    {
+      "id": "flat-white-wall",
+      "description": "Pared blanca plana",
+      "targetColor": "#A8B5A2",
+      "timeMs": 9.782314,
+      "approximateMemoryBytes": 129024,
+      "color": {
+        "midtoneColorError": 5.58672,
+        "hueErrorDegrees": 1.334043,
+        "saturationError": 0.397619,
+        "lightnessError": 5.572164,
+        "shadowColorDeviation": 5.58672,
+        "highlightColorDeviation": 5.58672,
+        "pixelsOutsideTolerance": 0,
+        "sampleCount": 4368
+      },
+      "luminance": {
+        "score": 100,
+        "structureCorrelation": 1,
+        "contrastRatio": 1
+      },
+      "texture": {
+        "score": 100,
+        "detailCorrelation": 1,
+        "energyRatio": 1
+      },
+      "shadows": {
+        "score": 80,
+        "originalDifference": 0,
+        "renderedDifference": 0
+      },
+      "previewExport": {
+        "meanDeltaE": 0,
+        "maximumDeltaE": 0,
+        "previewExportDifferenceScore": 0
+      },
+      "feather": {
+        "transitionPixelCount": 0,
+        "weightedLeakagePixels": 0,
+        "maximumTransitionWidth": 0,
+        "symmetryError": 0,
+        "discontinuityCount": 104
+      },
+      "clipping": {
+        "preview": 0,
+        "export": 0
+      }
+    },
+    {
+      "id": "lateral-shadow",
+      "description": "Sombra lateral fuerte",
+      "targetColor": "#A8B5A2",
+      "timeMs": 9.838816,
+      "approximateMemoryBytes": 129024,
+      "color": {
+        "midtoneColorError": 2.678003,
+        "hueErrorDegrees": 5.524918,
+        "saturationError": 0.421835,
+        "lightnessError": 2.630638,
+        "shadowColorDeviation": 15.235468,
+        "highlightColorDeviation": 9.981535,
+        "pixelsOutsideTolerance": 0.5,
+        "sampleCount": 4368
+      },
+      "luminance": {
+        "score": 99.705012,
+        "structureCorrelation": 0.999674,
+        "contrastRatio": 0.990927
+      },
+      "texture": {
+        "score": 90.928605,
+        "detailCorrelation": 0.863707,
+        "energyRatio": 0.993933
+      },
+      "shadows": {
+        "score": 100,
+        "originalDifference": 0.249784,
+        "renderedDifference": 0.251201
+      },
+      "previewExport": {
+        "meanDeltaE": 0.028664,
+        "maximumDeltaE": 0.618214,
+        "previewExportDifferenceScore": 0.14332
+      },
+      "feather": {
+        "transitionPixelCount": 0,
+        "weightedLeakagePixels": 0,
+        "maximumTransitionWidth": 0,
+        "symmetryError": 0,
+        "discontinuityCount": 104
+      },
+      "clipping": {
+        "preview": 0,
+        "export": 0
+      }
+    },
+    {
+      "id": "light-gradient",
+      "description": "Gradiente horizontal de iluminación",
+      "targetColor": "#A8B5A2",
+      "timeMs": 9.932052,
+      "approximateMemoryBytes": 129024,
+      "color": {
+        "midtoneColorError": 1.263608,
+        "hueErrorDegrees": 4.799968,
+        "saturationError": 0.435733,
+        "lightnessError": 1.162604,
+        "shadowColorDeviation": 11.805303,
+        "highlightColorDeviation": 8.973005,
+        "pixelsOutsideTolerance": 0.095238,
+        "sampleCount": 4368
+      },
+      "luminance": {
+        "score": 98.711281,
+        "structureCorrelation": 0.999968,
+        "contrastRatio": 0.957116
+      },
+      "texture": {
+        "score": 26.242608,
+        "detailCorrelation": 0.243425,
+        "energyRatio": 0.297713
+      },
+      "shadows": {
+        "score": 96.559089,
+        "originalDifference": 0.204053,
+        "renderedDifference": 0.195277
+      },
+      "previewExport": {
+        "meanDeltaE": 0.005925,
+        "maximumDeltaE": 0.276909,
+        "previewExportDifferenceScore": 0.029624
+      },
+      "feather": {
+        "transitionPixelCount": 0,
+        "weightedLeakagePixels": 0,
+        "maximumTransitionWidth": 0,
+        "symmetryError": 0,
+        "discontinuityCount": 104
+      },
+      "clipping": {
+        "preview": 0,
+        "export": 0
+      }
+    },
+    {
+      "id": "photo-noise",
+      "description": "Pared con ruido fotográfico determinista",
+      "targetColor": "#A8B5A2",
+      "timeMs": 10.17649,
+      "approximateMemoryBytes": 129024,
+      "color": {
+        "midtoneColorError": 0.696753,
+        "hueErrorDegrees": 3.534737,
+        "saturationError": 0.480771,
+        "lightnessError": 0.474241,
+        "shadowColorDeviation": 1.09692,
+        "highlightColorDeviation": 2.041318,
+        "pixelsOutsideTolerance": 0,
+        "sampleCount": 4368
+      },
+      "luminance": {
+        "score": 95.630701,
+        "structureCorrelation": 0.999409,
+        "contrastRatio": 0.855736
+      },
+      "texture": {
+        "score": 94.762013,
+        "detailCorrelation": 0.996439,
+        "energyRatio": 0.856956
+      },
+      "shadows": {
+        "score": 88.08564,
+        "originalDifference": 0.032569,
+        "renderedDifference": 0.027718
+      },
+      "previewExport": {
+        "meanDeltaE": 0.007849,
+        "maximumDeltaE": 0.277758,
+        "previewExportDifferenceScore": 0.039244
+      },
+      "feather": {
+        "transitionPixelCount": 0,
+        "weightedLeakagePixels": 0,
+        "maximumTransitionWidth": 0,
+        "symmetryError": 0,
+        "discontinuityCount": 104
+      },
+      "clipping": {
+        "preview": 0,
+        "export": 0
+      }
+    },
+    {
+      "id": "room-corner",
+      "description": "Esquina con dos planos de luz",
+      "targetColor": "#A8B5A2",
+      "timeMs": 9.045586,
+      "approximateMemoryBytes": 129024,
+      "color": {
+        "midtoneColorError": 0.64092,
+        "hueErrorDegrees": 3.308917,
+        "saturationError": 0.545384,
+        "lightnessError": 0.296995,
+        "shadowColorDeviation": 5.732413,
+        "highlightColorDeviation": 6.324923,
+        "pixelsOutsideTolerance": 0,
+        "sampleCount": 4368
+      },
+      "luminance": {
+        "score": 96.737209,
+        "structureCorrelation": 0.999976,
+        "contrastRatio": 0.891297
+      },
+      "texture": {
+        "score": 94.831962,
+        "detailCorrelation": 0.993913,
+        "energyRatio": 0.863647
+      },
+      "shadows": {
+        "score": 91.302048,
+        "originalDifference": 0.134674,
+        "renderedDifference": 0.120032
+      },
+      "previewExport": {
+        "meanDeltaE": 0.006664,
+        "maximumDeltaE": 0.283254,
+        "previewExportDifferenceScore": 0.033321
+      },
+      "feather": {
+        "transitionPixelCount": 0,
+        "weightedLeakagePixels": 0,
+        "maximumTransitionWidth": 0,
+        "symmetryError": 0,
+        "discontinuityCount": 104
+      },
+      "clipping": {
+        "preview": 0,
+        "export": 0
+      }
+    },
+    {
+      "id": "subtle-texture",
+      "description": "Textura sinusoidal leve",
+      "targetColor": "#B97A65",
+      "timeMs": 8.882775,
+      "approximateMemoryBytes": 129024,
+      "color": {
+        "midtoneColorError": 3.765186,
+        "hueErrorDegrees": 0.706424,
+        "saturationError": 1.394328,
+        "lightnessError": 3.496174,
+        "shadowColorDeviation": 2.157045,
+        "highlightColorDeviation": 5.465005,
+        "pixelsOutsideTolerance": 0,
+        "sampleCount": 4368
+      },
+      "luminance": {
+        "score": 95.220319,
+        "structureCorrelation": 0.998962,
+        "contrastRatio": 0.8431
+      },
+      "texture": {
+        "score": 69.530517,
+        "detailCorrelation": 0.66021,
+        "energyRatio": 0.760483
+      },
+      "shadows": {
+        "score": 87.531787,
+        "originalDifference": 0.04111,
+        "renderedDifference": 0.034703
+      },
+      "previewExport": {
+        "meanDeltaE": 0.032555,
+        "maximumDeltaE": 0.330207,
+        "previewExportDifferenceScore": 0.162776
+      },
+      "feather": {
+        "transitionPixelCount": 0,
+        "weightedLeakagePixels": 0,
+        "maximumTransitionWidth": 0,
+        "symmetryError": 0,
+        "discontinuityCount": 104
+      },
+      "clipping": {
+        "preview": 0,
+        "export": 0
+      }
+    },
+    {
+      "id": "white-reflection",
+      "description": "Pared con reflejo blanco",
+      "targetColor": "#7E9BAF",
+      "timeMs": 9.727795,
+      "approximateMemoryBytes": 129024,
+      "color": {
+        "midtoneColorError": 1.669778,
+        "hueErrorDegrees": 0.649964,
+        "saturationError": 1.071373,
+        "lightnessError": 1.280015,
+        "shadowColorDeviation": 1.659775,
+        "highlightColorDeviation": 3.156205,
+        "pixelsOutsideTolerance": 0.082647,
+        "sampleCount": 4368
+      },
+      "luminance": {
+        "score": 94.922393,
+        "structureCorrelation": 0.99987,
+        "contrastRatio": 0.831051
+      },
+      "texture": {
+        "score": 92.77001,
+        "detailCorrelation": 0.909778,
+        "energyRatio": 0.960985
+      },
+      "shadows": {
+        "score": 86.392239,
+        "originalDifference": 0.079729,
+        "renderedDifference": 0.066167
+      },
+      "previewExport": {
+        "meanDeltaE": 0.012903,
+        "maximumDeltaE": 0.32623,
+        "previewExportDifferenceScore": 0.064515
+      },
+      "feather": {
+        "transitionPixelCount": 0,
+        "weightedLeakagePixels": 0,
+        "maximumTransitionWidth": 0,
+        "symmetryError": 0,
+        "discontinuityCount": 104
+      },
+      "clipping": {
+        "preview": 0,
+        "export": 0
+      }
+    },
+    {
+      "id": "yellow-wall",
+      "description": "Azul sobre pared amarilla",
+      "targetColor": "#A7BED3",
+      "timeMs": 10.891646,
+      "approximateMemoryBytes": 129024,
+      "color": {
+        "midtoneColorError": 1.609777,
+        "hueErrorDegrees": 2.364769,
+        "saturationError": 0.833451,
+        "lightnessError": 1.369757,
+        "shadowColorDeviation": 1.609777,
+        "highlightColorDeviation": 1.609777,
+        "pixelsOutsideTolerance": 0,
+        "sampleCount": 4368
+      },
+      "luminance": {
+        "score": 100,
+        "structureCorrelation": 1,
+        "contrastRatio": 1
+      },
+      "texture": {
+        "score": 100,
+        "detailCorrelation": 1,
+        "energyRatio": 1
+      },
+      "shadows": {
+        "score": 80,
+        "originalDifference": 0,
+        "renderedDifference": 0
+      },
+      "previewExport": {
+        "meanDeltaE": 0,
+        "maximumDeltaE": 0,
+        "previewExportDifferenceScore": 0
+      },
+      "feather": {
+        "transitionPixelCount": 0,
+        "weightedLeakagePixels": 0,
+        "maximumTransitionWidth": 0,
+        "symmetryError": 0,
+        "discontinuityCount": 104
+      },
+      "clipping": {
+        "preview": 0,
+        "export": 0
+      }
+    }
+  ]
+}
