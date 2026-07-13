@@ -14,11 +14,11 @@
     "meanShadowScore": 90.537558,
     "meanPreviewExportDeltaE": 0.026056,
     "meanDraftExportDeltaE": 0.051387,
-    "meanDraftMs": 8.890985,
-    "meanHighMs": 6.508946,
-    "meanUltraMs": 5.849624,
-    "meanTimeMs": 12.35857,
-    "maximumTimeMs": 26.175234,
+    "meanDraftMs": 9.521749,
+    "meanHighMs": 7.25563,
+    "meanUltraMs": 6.521027,
+    "meanTimeMs": 13.776657,
+    "maximumTimeMs": 28.066745,
     "totalApproximateMemoryBytes": 2138112,
     "clippedChannels": 0
   },
@@ -167,21 +167,21 @@
       "quality": "draft",
       "width": 768,
       "height": 432,
-      "timeMs": 290.950674,
+      "timeMs": 329.127744,
       "approximateMemoryBytes": 7299072
     },
     {
       "quality": "high",
       "width": 1344,
       "height": 756,
-      "timeMs": 834.761299,
+      "timeMs": 889.366817,
       "approximateMemoryBytes": 22353408
     },
     {
       "quality": "ultra",
       "width": 1920,
       "height": 1080,
-      "timeMs": 1616.485927,
+      "timeMs": 1838.459169,
       "approximateMemoryBytes": 45619200
     }
   ],
@@ -190,7 +190,7 @@
       "id": "beige-wall",
       "description": "Verde salvia sobre pared beige",
       "targetColor": "#A8B5A2",
-      "timeMs": 26.175234,
+      "timeMs": 28.066745,
       "approximateMemoryBytes": 178176,
       "color": {
         "midtoneColorError": 0.319876,
@@ -234,9 +234,9 @@
         "export": 0
       },
       "qualityModes": {
-        "draftMs": 24.334063,
-        "highMs": 14.486027,
-        "ultraMs": 11.689207,
+        "draftMs": 29.608499,
+        "highMs": 15.934462,
+        "ultraMs": 12.132283,
         "draftUltraDeltaE": 0,
         "highUltraDeltaE": 0
       }
@@ -245,7 +245,7 @@
       "id": "blue-wall",
       "description": "Terracota sobre pared azul",
       "targetColor": "#C98276",
-      "timeMs": 11.145334,
+      "timeMs": 11.492691,
       "approximateMemoryBytes": 178176,
       "color": {
         "midtoneColorError": 1.130161,
@@ -289,9 +289,9 @@
         "export": 0
       },
       "qualityModes": {
-        "draftMs": 11.506723,
-        "highMs": 5.608687,
-        "ultraMs": 5.536647,
+        "draftMs": 12.131761,
+        "highMs": 5.364883,
+        "ultraMs": 6.127808,
         "draftUltraDeltaE": 0,
         "highUltraDeltaE": 0
       }
@@ -300,7 +300,7 @@
       "id": "dark-gray-wall",
       "description": "Blanco cálido sobre gris oscuro",
       "targetColor": "#F5F1E8",
-      "timeMs": 13.336235,
+      "timeMs": 13.328486,
       "approximateMemoryBytes": 178176,
       "color": {
         "midtoneColorError": 6.417752,
@@ -344,9 +344,9 @@
         "export": 0
       },
       "qualityModes": {
-        "draftMs": 10.32061,
-        "highMs": 6.585794,
-        "ultraMs": 6.750441,
+        "draftMs": 7.939052,
+        "highMs": 6.726092,
+        "ultraMs": 6.602394,
         "draftUltraDeltaE": 0,
         "highUltraDeltaE": 0
       }
@@ -355,7 +355,7 @@
       "id": "feather-mask",
       "description": "Máscara parcial con borde de alto contraste",
       "targetColor": "#B33A3A",
-      "timeMs": 22.146313,
+      "timeMs": 24.470804,
       "approximateMemoryBytes": 178176,
       "color": {
         "midtoneColorError": 15.166113,
@@ -399,9 +399,9 @@
         "export": 0
       },
       "qualityModes": {
-        "draftMs": 18.382353,
-        "highMs": 11.494405,
-        "ultraMs": 10.651908,
+        "draftMs": 18.594858,
+        "highMs": 12.040372,
+        "ultraMs": 12.430432,
         "draftUltraDeltaE": 0.256766,
         "highUltraDeltaE": 0.129516
       }
@@ -410,7 +410,7 @@
       "id": "flat-white-wall",
       "description": "Pared blanca plana",
       "targetColor": "#A8B5A2",
-      "timeMs": 9.871698,
+      "timeMs": 10.142965,
       "approximateMemoryBytes": 178176,
       "color": {
         "midtoneColorError": 2.456642,
@@ -454,9 +454,9 @@
         "export": 0
       },
       "qualityModes": {
-        "draftMs": 8.207484,
-        "highMs": 4.950232,
-        "ultraMs": 4.921466,
+        "draftMs": 9.171972,
+        "highMs": 5.092619,
+        "ultraMs": 5.050346,
         "draftUltraDeltaE": 0,
         "highUltraDeltaE": 0
       }
@@ -465,7 +465,7 @@
       "id": "lateral-shadow",
       "description": "Sombra lateral fuerte",
       "targetColor": "#A8B5A2",
-      "timeMs": 10.070459,
+      "timeMs": 10.130247,
       "approximateMemoryBytes": 178176,
       "color": {
         "midtoneColorError": 1.271145,
@@ -509,9 +509,9 @@
         "export": 0
       },
       "qualityModes": {
-        "draftMs": 5.048311,
-        "highMs": 5.122729,
-        "ultraMs": 4.94773,
+        "draftMs": 5.090918,
+        "highMs": 5.104135,
+        "ultraMs": 5.026112,
         "draftUltraDeltaE": 0.014223,
         "highUltraDeltaE": 0.011371
       }
@@ -520,7 +520,7 @@
       "id": "light-gradient",
       "description": "Gradiente horizontal de iluminación",
       "targetColor": "#A8B5A2",
-      "timeMs": 7.601233,
+      "timeMs": 9.177516,
       "approximateMemoryBytes": 178176,
       "color": {
         "midtoneColorError": 0.535616,
@@ -564,9 +564,9 @@
         "export": 0
       },
       "qualityModes": {
-        "draftMs": 3.693699,
-        "highMs": 3.667759,
-        "ultraMs": 3.933474,
+        "draftMs": 4.480156,
+        "highMs": 4.523619,
+        "ultraMs": 4.653897,
         "draftUltraDeltaE": 0.003513,
         "highUltraDeltaE": 0.004267
       }
@@ -575,7 +575,7 @@
       "id": "photo-noise",
       "description": "Pared con ruido fotográfico determinista",
       "targetColor": "#A8B5A2",
-      "timeMs": 7.043941,
+      "timeMs": 12.137624,
       "approximateMemoryBytes": 178176,
       "color": {
         "midtoneColorError": 0.312104,
@@ -619,9 +619,9 @@
         "export": 0
       },
       "qualityModes": {
-        "draftMs": 3.624027,
-        "highMs": 3.527462,
-        "ultraMs": 3.516479,
+        "draftMs": 4.502206,
+        "highMs": 4.545517,
+        "ultraMs": 7.592107,
         "draftUltraDeltaE": 0.04869,
         "highUltraDeltaE": 0.014969
       }
@@ -630,7 +630,7 @@
       "id": "room-corner",
       "description": "Esquina con dos planos de luz",
       "targetColor": "#A8B5A2",
-      "timeMs": 13.289141,
+      "timeMs": 18.39443,
       "approximateMemoryBytes": 178176,
       "color": {
         "midtoneColorError": 0.284232,
@@ -674,9 +674,9 @@
         "export": 0
       },
       "qualityModes": {
-        "draftMs": 7.686893,
-        "highMs": 8.803193,
-        "ultraMs": 4.485948,
+        "draftMs": 8.89574,
+        "highMs": 13.908084,
+        "ultraMs": 4.486346,
         "draftUltraDeltaE": 0.02031,
         "highUltraDeltaE": 0.010877
       }
@@ -685,7 +685,7 @@
       "id": "subtle-texture",
       "description": "Textura sinusoidal leve",
       "targetColor": "#B97A65",
-      "timeMs": 9.054882,
+      "timeMs": 9.241703,
       "approximateMemoryBytes": 178176,
       "color": {
         "midtoneColorError": 1.68716,
@@ -729,9 +729,9 @@
         "export": 0
       },
       "qualityModes": {
-        "draftMs": 4.436053,
-        "highMs": 4.52745,
-        "ultraMs": 4.527432,
+        "draftMs": 4.578001,
+        "highMs": 4.545533,
+        "ultraMs": 4.69617,
         "draftUltraDeltaE": 0.190302,
         "highUltraDeltaE": 0.098271
       }
@@ -740,7 +740,7 @@
       "id": "white-reflection",
       "description": "Pared con reflejo blanco",
       "targetColor": "#7E9BAF",
-      "timeMs": 9.695087,
+      "timeMs": 9.799139,
       "approximateMemoryBytes": 178176,
       "color": {
         "midtoneColorError": 0.812038,
@@ -784,9 +784,9 @@
         "export": 0
       },
       "qualityModes": {
-        "draftMs": 5.02282,
-        "highMs": 4.861734,
-        "ultraMs": 4.833353,
+        "draftMs": 4.954422,
+        "highMs": 4.911163,
+        "ultraMs": 4.887976,
         "draftUltraDeltaE": 0.08284,
         "highUltraDeltaE": 0.043407
       }
@@ -795,7 +795,7 @@
       "id": "yellow-wall",
       "description": "Azul sobre pared amarilla",
       "targetColor": "#A7BED3",
-      "timeMs": 8.873283,
+      "timeMs": 8.937537,
       "approximateMemoryBytes": 178176,
       "color": {
         "midtoneColorError": 0.689709,
@@ -839,9 +839,9 @@
         "export": 0
       },
       "qualityModes": {
-        "draftMs": 4.428782,
-        "highMs": 4.47188,
-        "ultraMs": 4.401403,
+        "draftMs": 4.313398,
+        "highMs": 4.371079,
+        "ultraMs": 4.566458,
         "draftUltraDeltaE": 0,
         "highUltraDeltaE": 0
       }

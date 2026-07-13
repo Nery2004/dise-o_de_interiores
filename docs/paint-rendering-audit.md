@@ -195,11 +195,11 @@ Baseline `1.0.0`: pipeline consolidado con la matemática previa (intensidad 100
 | Estructura de sombras | 86.24 | 90.54 | +4.30 |
 | ΔE Alta/Ultra | 0.0132 | 0.0261 | +0.0129; todavía imperceptible |
 | Canales recortados | 64 | 0 | −64 |
-| Tiempo medio Alta+Ultra, fixture | 14.24 ms | 12.36 ms | −1.88 ms; ruido de ejecución posible |
+| Tiempo medio Alta+Ultra, fixture | 14.24 ms | 13.78 ms | −0.46 ms; ruido de ejecución posible |
 
 La mejora cromática se obtuvo haciendo que intensidad 100 represente 0.96 de reemplazo y reservando 100–200 para cobertura/croma limitado. La imprimación 0/50/100 produce una progresión separada; en la pared beige de control, ΔE fue 1.08/0.68/0.32. Paint Simulation logró ΔE 0.32 frente a 1.59 en normal y valores mayores en los modos artísticos del mismo caso.
 
-El costo medido en un gradiente sintético equivalente a 1080p fue: Draft 768×432 ≈291 ms/7.0 MiB, High 1344×756 ≈835 ms/21.3 MiB y Ultra 1920×1080 ≈1.62 s/43.5 MiB. Son tiempos síncronos de Node en esta máquina, no presupuesto de frame de navegador. Draft/High reducen previamente la resolución; Ultra se reserva para exportación.
+El costo medido en un gradiente sintético equivalente a 1080p fue: Draft 768×432 ≈329 ms/7.0 MiB, High 1344×756 ≈889 ms/21.3 MiB y Ultra 1920×1080 ≈1.84 s/43.5 MiB. Son tiempos síncronos de Node en esta máquina, no presupuesto de frame de navegador. Draft/High reducen previamente la resolución; Ultra se reserva para exportación.
 
 ## Regresiones y limitaciones finales
 
