@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { SectionHeading } from "@/components/section-heading";
+import { getLandingRoomImage } from "@/data/landingRoomImages";
 
 const proposals = [
   {
@@ -38,20 +39,13 @@ export function ProposalShowcase() {
               key={proposal.name}
               className="landing-reveal overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-sm"
             >
-              <div className="relative aspect-[3/2] overflow-hidden">
+              <div className="relative aspect-video overflow-hidden">
                 <Image
-                  src="/interior-studio-room.png"
+                  src={getLandingRoomImage(proposal.color)}
                   alt={`Vista de ${proposal.name}`}
                   fill
                   sizes="(max-width: 768px) 100vw, 420px"
                   className="object-cover"
-                />
-                <div
-                  className="absolute inset-0 opacity-65 mix-blend-multiply"
-                  style={{
-                    backgroundColor: proposal.color,
-                    clipPath: "polygon(0 4%, 72% 0, 69% 61%, 0 72%)",
-                  }}
                 />
               </div>
               <div className="p-5">

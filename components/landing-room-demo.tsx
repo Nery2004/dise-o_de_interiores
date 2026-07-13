@@ -5,6 +5,10 @@ import { useRef, useState } from "react";
 import { BeforeAfterClip } from "@/components/before-after-clip";
 import { ComparisonHandle } from "@/components/comparison-handle";
 import { interiorColors } from "@/data/interiorColors";
+import {
+  getLandingRoomImage,
+  LANDING_ROOM_BASE_IMAGE,
+} from "@/data/landingRoomImages";
 
 const demoColors = [
   "Verde salvia",
@@ -37,11 +41,11 @@ export function LandingRoomDemo({
       </div>
       <div
         ref={comparisonRef}
-        className="relative aspect-[3/2] overflow-hidden bg-[#e8e4dc] select-none"
+        className="relative aspect-video overflow-hidden bg-[#e8e4dc] select-none"
       >
         <Image
-          src="/interior-studio-room.png"
-          alt="Sala de ejemplo para comparar colores de pared"
+          src={LANDING_ROOM_BASE_IMAGE}
+          alt="Sala de ejemplo antes de pintar la pared"
           fill
           priority={priority}
           sizes="(max-width: 768px) 100vw, 720px"
@@ -49,12 +53,14 @@ export function LandingRoomDemo({
           draggable={false}
         />
         <BeforeAfterClip direction="vertical" position={position}>
-          <div
-            className="absolute inset-0 opacity-75 mix-blend-multiply"
-            style={{
-              backgroundColor: color.hex,
-              clipPath: "polygon(0 4%, 72% 0, 69% 61%, 0 72%)",
-            }}
+          <Image
+            src={getLandingRoomImage(color.hex)}
+            alt={`Misma sala con la pared pintada en ${color.name}`}
+            fill
+            priority={priority}
+            sizes="(max-width: 768px) 100vw, 720px"
+            className="canvas-fixed-image pointer-events-none object-cover"
+            draggable={false}
           />
         </BeforeAfterClip>
         <ComparisonHandle
