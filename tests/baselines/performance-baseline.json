@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-13T01:36:40.727Z",
+  "pipeline": {
+    "paint1080": {
+      "calls": 3,
+      "averageMs": 1811.797,
+      "maximumMs": 1900.122,
+      "p50Ms": 1774.114,
+      "p95Ms": 1900.122
+    },
+    "export1080": {
+      "calls": 3,
+      "averageMs": 1827.899,
+      "maximumMs": 1918.127,
+      "p50Ms": 1789.504,
+      "p95Ms": 1918.127
+    }
+  },
+  "interactions": {
+    "objectDrag": {
+      "calls": 600,
+      "averageMs": 0.007,
+      "maximumMs": 0.446,
+      "p50Ms": 0.004,
+      "p95Ms": 0.015
+    },
+    "maskEditing": {
+      "calls": 600,
+      "averageMs": 0.043,
+      "maximumMs": 0.28,
+      "p50Ms": 0.041,
+      "p95Ms": 0.051
+    },
+    "zoomPan": {
+      "calls": 600,
+      "averageMs": 0.001,
+      "maximumMs": 0.117,
+      "p50Ms": 0.001,
+      "p95Ms": 0.002
+    },
+    "comparator": {
+      "calls": 600,
+      "averageMs": 0.001,
+      "maximumMs": 0.053,
+      "p50Ms": 0,
+      "p95Ms": 0.001
+    },
+    "brush": {
+      "calls": 600,
+      "averageMs": 0.001,
+      "maximumMs": 0.069,
+      "p50Ms": 0.001,
+      "p95Ms": 0.001
+    }
+  },
+  "memory": {
+    "previewLargeImageBytes": 354720000,
+    "historyBytes": 921591,
+    "stressSceneBytes": 703056
+  },
+  "bundle": {
+    "landing": {
+      "chunks": 7,
+      "bytes": 69415
+    },
+    "editor": {
+      "chunks": 13,
+      "bytes": 744158
+    },
+    "staticJs": {
+      "files": 40,
+      "bytes": 1721333
+    }
+  },
+  "inventory": {
+    "canvasCreationSites": 24,
+    "workerTypes": 2,
+    "clientComponents": 91,
+    "layerCacheEntries": 24,
+    "sourceRasterEntries": 4,
+    "analysisEntries": 32,
+    "decorRenderBytes": 100663296
+  }
+}

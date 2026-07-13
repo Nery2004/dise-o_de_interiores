@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-13T02:39:28.991Z",
+  "pipeline": {
+    "paint1080": {
+      "calls": 3,
+      "averageMs": 1713.95,
+      "maximumMs": 1728.192,
+      "p50Ms": 1713.613,
+      "p95Ms": 1728.192
+    },
+    "export1080": {
+      "calls": 3,
+      "averageMs": 1730.889,
+      "maximumMs": 1743.295,
+      "p50Ms": 1732.931,
+      "p95Ms": 1743.295
+    }
+  },
+  "interactions": {
+    "objectDrag": {
+      "calls": 600,
+      "averageMs": 0.008,
+      "maximumMs": 0.454,
+      "p50Ms": 0.004,
+      "p95Ms": 0.016
+    },
+    "maskEditing": {
+      "calls": 600,
+      "averageMs": 0.042,
+      "maximumMs": 0.207,
+      "p50Ms": 0.04,
+      "p95Ms": 0.046
+    },
+    "zoomPan": {
+      "calls": 600,
+      "averageMs": 0.001,
+      "maximumMs": 0.117,
+      "p50Ms": 0.001,
+      "p95Ms": 0.002
+    },
+    "slider": {
+      "calls": 600,
+      "averageMs": 0,
+      "maximumMs": 0.026,
+      "p50Ms": 0,
+      "p95Ms": 0
+    },
+    "comparator": {
+      "calls": 600,
+      "averageMs": 0.001,
+      "maximumMs": 0.054,
+      "p50Ms": 0.001,
+      "p95Ms": 0.001
+    },
+    "brush": {
+      "calls": 600,
+      "averageMs": 0.001,
+      "maximumMs": 0.078,
+      "p50Ms": 0.001,
+      "p95Ms": 0.001
+    },
+    "colorChange": {
+      "calls": 600,
+      "averageMs": 0.001,
+      "maximumMs": 0.064,
+      "p50Ms": 0.001,
+      "p95Ms": 0.002
+    }
+  },
+  "memory": {
+    "previewLargeImageBytes": 45756750,
+    "previewResolution": {
+      "width": 1625,
+      "height": 1083,
+      "scale": 0.27080128015453203,
+      "dpr": 2,
+      "estimatedRgbaBytes": 7040000,
+      "pixelBudget": 1760000
+    },
+    "historyBytes": 921591,
+    "stressSceneBytes": 703056
+  },
+  "bundle": {
+    "landing": {
+      "chunks": 6,
+      "bytes": 46077
+    },
+    "editor": {
+      "chunks": 13,
+      "bytes": 743101
+    },
+    "staticJs": {
+      "files": 41,
+      "bytes": 1727151
+    }
+  },
+  "inventory": {
+    "canvasCreationSites": 24,
+    "workerTypes": 3,
+    "clientComponents": 91,
+    "layerCacheEntries": 24,
+    "sourceRasterEntries": 4,
+    "analysisEntries": 32,
+    "decorRenderBytes": 100663296
+  }
+}

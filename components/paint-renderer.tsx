@@ -4,8 +4,10 @@ import { useEffect, useRef } from "react";
 import { useEditor } from "@/components/editor-context";
 import { renderPaintScene } from "@/lib/paint/CanvasRenderer";
 import { beginPerformanceMeasure } from "@/lib/performance/performanceMonitor";
+import { renderProfiler } from "@/lib/performance/RenderProfiler";
 
 export function PaintRenderer() {
+  renderProfiler.mark("PaintRenderer");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const editor = useEditor();
 
@@ -21,10 +23,12 @@ export function PaintRenderer() {
       return;
     }
     let cancelled = false;
+    const controller = new AbortController();
     const frame = requestAnimationFrame(() => {
       if (cancelled) return;
       const finishMeasure = beginPerformanceMeasure("render");
       const rendered = document.createElement("canvas");
+      const bounds = canvas.getBoundingClientRect();
       void renderPaintScene({
         canvas: rendered,
         globalBlendMode: editor.globalBlendMode,
@@ -32,6 +36,11 @@ export function PaintRenderer() {
         includeOriginal: false,
         masks: editor.masks,
         whiteBasePreviewMaskId: editor.whiteBasePreviewMaskId,
+        previewViewport: {
+          width: Math.max(1, bounds.width),
+          height: Math.max(1, bounds.height),
+        },
+        signal: controller.signal,
       }).then(() => {
         if (cancelled) return;
         canvas.width = rendered.width;
@@ -41,6 +50,7 @@ export function PaintRenderer() {
     });
     return () => {
       cancelled = true;
+      controller.abort();
       cancelAnimationFrame(frame);
     };
   }, [

@@ -6,6 +6,7 @@ import { useEditor } from "@/components/editor-context";
 import { clientPointToImage, shouldAddBrushPoint } from "@/lib/geometry/brushGeometry";
 import { createCanvas, paintAlphaCanvas, renderMaskAlpha, renderStrokeSegment } from "@/lib/masks/maskCompositor";
 import type { BlendMode, BrushStroke, ImageDimensions, ImagePoint } from "@/types/editor";
+import { useRafCallback } from "@/components/use-raf-callback";
 
 function getBrushGuideBlendMode(
   blendMode: BlendMode,
@@ -21,6 +22,7 @@ export function BrushRefinementOverlay({ dimensions }: { dimensions: ImageDimens
   const pointerIdRef = useRef<number | null>(null);
   const frameRef = useRef<number | null>(null);
   const [cursorPoint, setCursorPoint] = useState<ImagePoint | null>(null);
+  const cursorFrame = useRafCallback((point: ImagePoint | null) => setCursorPoint(point));
   const selectedMask = editor.masks.find((mask) => mask.id === editor.selectedMaskId);
   const mode: BrushStroke["mode"] = editor.activeTool === "add-to-mask" ? "add" : "remove";
   const isActive = editor.activeTool === "add-to-mask" || editor.activeTool === "remove-from-mask";
@@ -76,6 +78,16 @@ export function BrushRefinementOverlay({ dimensions }: { dimensions: ImageDimens
     return clientPointToImage({ x: event.clientX, y: event.clientY }, event.currentTarget.getBoundingClientRect(), dimensions);
   }
 
+  function coalescedPoints(event: PointerEvent<HTMLCanvasElement>) {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const nativeEvents = event.nativeEvent.getCoalescedEvents?.() ?? [event.nativeEvent];
+    return nativeEvents.map((item) => clientPointToImage(
+      { x: item.clientX, y: item.clientY },
+      bounds,
+      dimensions,
+    ));
+  }
+
   const strokeSettings = { mode, size: editor.brushSize, hardness: editor.brushHardness, opacity: editor.brushOpacity };
 
   function handlePointerDown(event: PointerEvent<HTMLCanvasElement>) {
@@ -97,19 +109,21 @@ export function BrushRefinementOverlay({ dimensions }: { dimensions: ImageDimens
   }
 
   function handlePointerMove(event: PointerEvent<HTMLCanvasElement>) {
-    const point = pointFromEvent(event);
-    setCursorPoint(point);
+    const eventPoints = coalescedPoints(event);
+    const point = eventPoints.at(-1);
+    if (!point) return;
+    cursorFrame.schedule(point);
     if (pointerIdRef.current !== event.pointerId) return;
     event.preventDefault();
     event.stopPropagation();
-    const previous = pointsRef.current.at(-1);
-    if (!shouldAddBrushPoint(previous, point, editor.brushSize) || !previous) return;
-    pointsRef.current.push(point);
     const context = alphaCanvasRef.current?.getContext("2d");
-    if (context) {
-      renderStrokeSegment(context, strokeSettings, previous, point);
-      scheduleDisplay();
+    for (const coalescedPoint of eventPoints) {
+      const previous = pointsRef.current.at(-1);
+      if (!previous || !shouldAddBrushPoint(previous, coalescedPoint, editor.brushSize)) continue;
+      pointsRef.current.push(coalescedPoint);
+      if (context) renderStrokeSegment(context, strokeSettings, previous, coalescedPoint);
     }
+    if (context) scheduleDisplay();
   }
 
   function finishStroke(event: PointerEvent<HTMLCanvasElement>) {
@@ -142,7 +156,7 @@ export function BrushRefinementOverlay({ dimensions }: { dimensions: ImageDimens
         onPointerMove={handlePointerMove}
         onPointerUp={finishStroke}
         onPointerCancel={finishStroke}
-        onPointerLeave={() => { if (pointerIdRef.current === null) setCursorPoint(null); }}
+        onPointerLeave={() => { if (pointerIdRef.current === null) cursorFrame.schedule(null); }}
       />
       {cursorPoint ? <span className="pointer-events-none absolute rounded-full" style={{ left: cursorPoint.x - editor.brushSize / 2, top: cursorPoint.y - editor.brushSize / 2, width: editor.brushSize, height: editor.brushSize, border: `${1.5 / editor.zoom}px solid ${mode === "add" ? "#22c55e" : "#ef4444"}`, boxShadow: `inset 0 0 0 ${(1 - editor.brushHardness) * editor.brushSize * 0.18}px ${mode === "add" ? "rgb(34 197 94 / 0.18)" : "rgb(239 68 68 / 0.18)"}` }} /> : null}
     </>

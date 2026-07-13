@@ -17,9 +17,9 @@ const qualityOptions: Array<{
   description: string;
   value: RenderQuality;
 }> = [
-  { label: "Borrador", description: "Prioriza FPS", value: "draft" },
-  { label: "Alta", description: "Balance recomendado", value: "high" },
-  { label: "Ultra", description: "Máxima calidad", value: "ultra" },
+  { label: "Rendimiento", description: "Preview ligero", value: "draft" },
+  { label: "Automático", description: "Balance recomendado", value: "high" },
+  { label: "Calidad", description: "Preview de mayor detalle", value: "ultra" },
 ];
 
 function RangeControl({
@@ -166,7 +166,7 @@ export function PaintSimulationControls() {
         />
 
         <label className="block">
-          <span className="text-xs font-semibold text-[#5f6875]">Calidad</span>
+          <span className="text-xs font-semibold text-[#5f6875]">Modo de rendimiento</span>
           <select
             value={settings.renderQuality}
             onChange={(event) =>

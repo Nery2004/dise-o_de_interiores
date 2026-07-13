@@ -12,7 +12,11 @@
     "benchmark:walls": "tsx scripts/benchmark-wall-detection.ts",
     "benchmark:walls:check": "tsx scripts/benchmark-wall-detection.ts --check",
     "benchmark:paint": "tsx scripts/benchmark-paint-rendering.ts",
-    "benchmark:paint:check": "tsx scripts/benchmark-paint-rendering.ts --check"
+    "benchmark:paint:check": "tsx scripts/benchmark-paint-rendering.ts --check",
+    "benchmark:performance": "tsx scripts/benchmark-performance.ts",
+    "benchmark:stress": "node --expose-gc --import tsx scripts/stress-performance.ts",
+    "performance:check": "tsx scripts/benchmark-performance.ts --check",
+    "analyze": "next build --webpack && tsx scripts/analyze-bundle.ts"
   },
   "engines": {
     "node": ">=22 <23"

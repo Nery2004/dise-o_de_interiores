@@ -16,8 +16,11 @@ import {
 import { analyzeWallBase } from "@/lib/paint/wallBaseAnalysisService";
 import { resolveEffectiveWhiteBaseSettings } from "@/lib/paint/whiteBaseOptimizer";
 import type { BlendMode, LoadedImage, RenderQuality, WallMask } from "@/types/editor";
-import { PaintRenderPipeline } from "@/lib/paint/PaintRenderPipeline";
+import { renderPaint } from "@/lib/paint/paintWorkerClient";
 import { PAINT_PIPELINE_VERSION } from "@/lib/paint/pipelineVersion";
+import { getOptimalPreviewResolution } from "@/lib/performance/previewResolution";
+import type { ImageDimensions } from "@/types/editor";
+import { LruCache } from "@/lib/cache/LruCache";
 
 type RenderedMaskLayer = {
   canvas: RenderCanvas;
@@ -36,17 +39,19 @@ type RenderPaintSceneOptions = {
   masks: WallMask[];
   whiteBasePreviewMaskId?: string | null;
   qualityOverride?: RenderQuality;
+  previewViewport?: ImageDimensions;
+  signal?: AbortSignal;
 };
 
-const layerCache = new Map<string, Promise<RenderedMaskLayer | null>>();
+type CachedMaskLayer = {
+  promise: Promise<RenderedMaskLayer | null>;
+  signal?: AbortSignal;
+};
 
-function rememberLimited<K, V>(cache: Map<K, V>, key: K, value: V, limit: number) {
-  cache.set(key, value);
-  if (cache.size <= limit) return value;
-  const oldestKey = cache.keys().next().value;
-  if (oldestKey !== undefined) cache.delete(oldestKey);
-  return value;
-}
+const layerCache = new LruCache<string, CachedMaskLayer>({
+  maxEntries: 24,
+  maxEstimatedBytes: 128 * 1024 * 1024,
+});
 
 function maskCacheKey(
   image: LoadedImage,
@@ -54,6 +59,7 @@ function maskCacheKey(
   globalBlendMode: BlendMode,
   whiteBasePreviewOnly: boolean,
   qualityOverride?: RenderQuality,
+  scaleOverride?: number,
 ) {
   return `${PAINT_PIPELINE_VERSION}:${image.url}:${JSON.stringify({
     blendMode: mask.blendMode ?? globalBlendMode,
@@ -67,6 +73,7 @@ function maskCacheKey(
     refinement: mask.refinement,
     renderQuality: mask.renderQuality,
     qualityOverride,
+    scaleOverride,
     whiteBasePreviewOnly,
     whiteBaseSettings: mask.whiteBaseSettings,
   })}`;
@@ -78,14 +85,21 @@ async function renderMaskLayer(
   globalBlendMode: BlendMode,
   whiteBasePreviewOnly: boolean,
   qualityOverride?: RenderQuality,
+  scaleOverride?: number,
+  signal?: AbortSignal,
 ): Promise<RenderedMaskLayer | null> {
+  if (signal?.aborted) throw new DOMException("Render cancelado", "AbortError");
   if (!mask.color && !whiteBasePreviewOnly) return null;
   const resolvedSettings = resolvePaintSettings(mask, globalBlendMode);
   const settings = qualityOverride
     ? { ...resolvedSettings, renderQuality: qualityOverride }
     : resolvedSettings;
-  const scale = PAINT_QUALITY_SCALE[settings.renderQuality];
+  const scale = Math.min(
+    PAINT_QUALITY_SCALE[settings.renderQuality],
+    scaleOverride ?? 1,
+  );
   const source = await getSourceRaster(image, scale);
+  if (signal?.aborted) throw new DOMException("Render cancelado", "AbortError");
   const featheredMask = applyMaskFeatherPass(
     mask,
     image.dimensions,
@@ -95,7 +109,7 @@ async function renderMaskLayer(
   if (!featheredMask) return null;
   const analysisResult =
     settings.paintMode === "white-base"
-      ? await analyzeWallBase(image, mask)
+      ? await analyzeWallBase(image, mask, { scaleOverride: scale, signal })
       : null;
   const whiteBaseSettings = resolveEffectiveWhiteBaseSettings(
     mask.whiteBaseSettings,
@@ -122,7 +136,7 @@ async function renderMaskLayer(
   const layerCanvas = createRenderCanvas(bounds.width, bounds.height);
   const layerContext = getRenderContext(layerCanvas);
   const output = layerContext.createImageData(bounds.width, bounds.height);
-  const rendered = new PaintRenderPipeline().render({
+  const rendered = await renderPaint({
     originalImage: { data: cropSource, width: bounds.width, height: bounds.height },
     mask: { alpha: cropAlpha, width: bounds.width, height: bounds.height },
     targetColor: mask.color ?? "#FFFFFF",
@@ -137,6 +151,7 @@ async function renderMaskLayer(
     quality: settings.renderQuality,
     averageLuminance,
     whiteBasePreviewOnly,
+    signal,
   });
   output.data.set(rendered.imageData);
   layerContext.putImageData(output, 0, 0);
@@ -156,6 +171,8 @@ function getRenderedMaskLayer(
   globalBlendMode: BlendMode,
   whiteBasePreviewOnly: boolean,
   qualityOverride?: RenderQuality,
+  scaleOverride?: number,
+  signal?: AbortSignal,
 ) {
   const key = maskCacheKey(
     image,
@@ -163,17 +180,42 @@ function getRenderedMaskLayer(
     globalBlendMode,
     whiteBasePreviewOnly,
     qualityOverride,
+    scaleOverride,
   );
   const cached = layerCache.get(key);
-  if (cached) return cached;
+  if (cached && !cached.signal?.aborted) return cached.promise;
+  if (cached) layerCache.delete(key);
   const pending = renderMaskLayer(
     image,
     mask,
     globalBlendMode,
     whiteBasePreviewOnly,
     qualityOverride,
+    scaleOverride,
+    signal,
   );
-  return rememberLimited(layerCache, key, pending, 24);
+  const estimatedScale = Math.min(
+    PAINT_QUALITY_SCALE[qualityOverride ?? resolvePaintSettings(mask, globalBlendMode).renderQuality],
+    scaleOverride ?? 1,
+  );
+  layerCache.set(
+    key,
+    { promise: pending, signal },
+    Math.round(image.dimensions.width * image.dimensions.height * estimatedScale * estimatedScale * 4),
+  );
+  pending.catch(() => {
+    const current = layerCache.get(key);
+    if (current?.promise === pending) layerCache.delete(key);
+  });
+  return pending;
+}
+
+export function getPaintLayerCacheStats() {
+  return layerCache.stats();
+}
+
+export function clearPaintLayerCache() {
+  layerCache.clear();
 }
 
 export async function renderPaintScene({
@@ -184,9 +226,31 @@ export async function renderPaintScene({
   masks,
   whiteBasePreviewMaskId,
   qualityOverride,
+  previewViewport,
+  signal,
 }: RenderPaintSceneOptions) {
-  canvas.width = image.dimensions.width;
-  canvas.height = image.dimensions.height;
+  if (signal?.aborted) throw new DOMException("Render cancelado", "AbortError");
+  const requestedQualities = masks.filter((mask) => mask.visible).map((mask) => qualityOverride ?? mask.renderQuality ?? "high");
+  const previewMode = requestedQualities.includes("ultra")
+    ? "quality"
+    : requestedQualities.length > 0 && requestedQualities.every((quality) => quality === "draft")
+      ? "performance"
+      : "automatic";
+  const canScalePreview = Boolean(previewViewport);
+  const preview = canScalePreview
+    ? getOptimalPreviewResolution({
+        image: image.dimensions,
+        viewport: previewViewport!,
+        devicePixelRatio: typeof window === "undefined" ? 1 : window.devicePixelRatio,
+        deviceMemoryGb: typeof navigator === "undefined" ? 4 : (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 4,
+        mobile: typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches,
+        quality: previewMode === "performance" ? "draft" : "high",
+        mode: previewMode,
+      })
+    : { scale: 1, width: image.dimensions.width, height: image.dimensions.height };
+  const outputScale = preview.scale;
+  canvas.width = preview.width;
+  canvas.height = preview.height;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Canvas context unavailable.");
   context.clearRect(0, 0, canvas.width, canvas.height);
@@ -199,6 +263,10 @@ export async function renderPaintScene({
       0,
       image.dimensions.width,
       image.dimensions.height,
+      0,
+      0,
+      canvas.width,
+      canvas.height,
     );
   }
 
@@ -215,21 +283,25 @@ export async function renderPaintScene({
         globalBlendMode,
         mask.id === whiteBasePreviewMaskId,
         qualityOverride,
+        outputScale,
+        signal,
       ),
     ),
   );
+  if (signal?.aborted) throw new DOMException("Render cancelado", "AbortError");
   layers.forEach((layer) => {
     if (!layer) return;
+    const layerToOutput = outputScale / layer.scale;
     context.drawImage(
       layer.canvas,
       0,
       0,
       layer.width,
       layer.height,
-      layer.x / layer.scale,
-      layer.y / layer.scale,
-      layer.width / layer.scale,
-      layer.height / layer.scale,
+      layer.x * layerToOutput,
+      layer.y * layerToOutput,
+      layer.width * layerToOutput,
+      layer.height * layerToOutput,
     );
   });
 }

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { getSiteUrl } from "@/lib/site-url";
-import { DecorObjectsProvider } from "@/components/decor-objects-context";
 
 export const metadata: Metadata = {
   metadataBase: getSiteUrl(),
@@ -34,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body><DecorObjectsProvider>{children}</DecorObjectsProvider></body>
+      <body>{children}</body>
     </html>
   );
 }

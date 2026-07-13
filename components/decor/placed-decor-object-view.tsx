@@ -36,15 +36,17 @@ export const PlacedDecorObjectView = memo(function PlacedDecorObjectView({
   canvasScale: number;
   interactive: boolean;
   draft?: boolean;
-  onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
+  onPointerDown: (object: PlacedDecorObject, event: ReactPointerEvent<HTMLElement>) => void;
   onResizeStart: (
+    object: PlacedDecorObject,
     handle: ObjectResizeHandle,
-    event: ReactPointerEvent<HTMLButtonElement>,
+    event: ReactPointerEvent<HTMLElement>,
   ) => void;
-  onRotateStart: (event: ReactPointerEvent<HTMLButtonElement>) => void;
+  onRotateStart: (object: PlacedDecorObject, event: ReactPointerEvent<HTMLElement>) => void;
   onPerspectiveStart: (
+    object: PlacedDecorObject,
     index: number,
-    event: ReactPointerEvent<HTMLButtonElement>,
+    event: ReactPointerEvent<HTMLElement>,
   ) => void;
 }) {
   const lighting = useRoomLighting();
@@ -66,7 +68,7 @@ export const PlacedDecorObjectView = memo(function PlacedDecorObjectView({
       <div
         data-placed-decor-object={object.id}
         className="absolute touch-none select-none"
-        onPointerDown={onPointerDown}
+        onPointerDown={(event) => onPointerDown(object, event)}
         style={{
           left: bounds.left,
           top: bounds.top,
@@ -87,7 +89,7 @@ export const PlacedDecorObjectView = memo(function PlacedDecorObjectView({
           <PerspectiveSelectionBox
             object={object}
             canvasScale={canvasScale}
-            onPerspectiveStart={onPerspectiveStart}
+            onPerspectiveStart={(index, event) => onPerspectiveStart(object, index, event)}
           />
         ) : null}
       </div>
@@ -97,7 +99,7 @@ export const PlacedDecorObjectView = memo(function PlacedDecorObjectView({
     <div
       data-placed-decor-object={object.id}
       className="absolute touch-none select-none"
-      onPointerDown={onPointerDown}
+      onPointerDown={(event) => onPointerDown(object, event)}
       style={{
         left: object.x,
         top: object.y,
@@ -173,8 +175,8 @@ export const PlacedDecorObjectView = memo(function PlacedDecorObjectView({
         <ObjectSelectionBox
           object={object}
           canvasScale={canvasScale}
-          onResizeStart={onResizeStart}
-          onRotateStart={onRotateStart}
+          onResizeStart={(handle, event) => onResizeStart(object, handle, event)}
+          onRotateStart={(event) => onRotateStart(object, event)}
         />
       ) : null}
     </div>

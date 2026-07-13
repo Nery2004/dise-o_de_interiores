@@ -4,6 +4,7 @@ import {
   getRenderContext,
 } from "@/lib/paint/renderCanvas";
 import type { LoadedImage } from "@/types/editor";
+import { LruCache } from "@/lib/cache/LruCache";
 
 export type SourceRaster = {
   data: Uint8ClampedArray;
@@ -12,16 +13,8 @@ export type SourceRaster = {
   width: number;
 };
 
-const imageCache = new Map<string, Promise<HTMLImageElement>>();
-const sourceRasterCache = new Map<string, Promise<SourceRaster>>();
-
-function rememberLimited<K, V>(cache: Map<K, V>, key: K, value: V, limit: number) {
-  cache.set(key, value);
-  if (cache.size <= limit) return value;
-  const oldestKey = cache.keys().next().value;
-  if (oldestKey !== undefined) cache.delete(oldestKey);
-  return value;
-}
+const imageCache = new LruCache<string, Promise<HTMLImageElement>>({ maxEntries: 4, maxEstimatedBytes: 1 });
+const sourceRasterCache = new LruCache<string, Promise<SourceRaster>>({ maxEntries: 4, maxEstimatedBytes: 128 * 1024 * 1024 });
 
 export function loadPaintImage(image: LoadedImage) {
   const cached = imageCache.get(image.url);
@@ -32,7 +25,9 @@ export function loadPaintImage(image: LoadedImage) {
     element.onerror = () => reject(new Error("Image load failed."));
     element.src = image.url;
   });
-  return rememberLimited(imageCache, image.url, pending, 4);
+  imageCache.set(image.url, pending);
+  pending.catch(() => imageCache.delete(image.url));
+  return pending;
 }
 
 export function getSourceRaster(image: LoadedImage, scale: number) {
@@ -53,7 +48,22 @@ export function getSourceRaster(image: LoadedImage, scale: number) {
       width,
     };
   });
-  return rememberLimited(sourceRasterCache, key, pending, 4);
+  sourceRasterCache.set(
+    key,
+    pending,
+    Math.max(1, Math.round(image.dimensions.width * scale)) * Math.max(1, Math.round(image.dimensions.height * scale)) * 4,
+  );
+  pending.catch(() => sourceRasterCache.delete(key));
+  return pending;
+}
+
+export function getPaintRasterCacheStats() {
+  return { images: imageCache.stats(), rasters: sourceRasterCache.stats() };
+}
+
+export function clearPaintRasterCache() {
+  imageCache.clear();
+  sourceRasterCache.clear();
 }
 
 export function readRasterRgb(data: Uint8ClampedArray, index: number): RgbColor {

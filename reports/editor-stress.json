@@ -1,0 +1,52 @@
+{
+  "generatedAt": "2026-07-13T02:33:41.918Z",
+  "scenarios": {
+    "masks": 20,
+    "objects": 50,
+    "proposals": 10,
+    "rapidColorChangesAndExports": 5,
+    "requestedHistoryRevisions": 1000
+  },
+  "repeatedPaintAndPngMs": [
+    877.384765,
+    804.2847630000001,
+    809.172384,
+    938.6455080000001,
+    916.1534699999997
+  ],
+  "retainedHistoryRevisions": 100,
+  "stressSceneBytes": 189579,
+  "boundedCache": {
+    "entries": 24,
+    "estimatedBytes": 6291456,
+    "maxEntries": 24,
+    "maxEstimatedBytes": 16777216
+  },
+  "preview4k": {
+    "width": 1769,
+    "height": 995,
+    "scale": 0.46064233199380555,
+    "dpr": 2,
+    "estimatedRgbaBytes": 7040000,
+    "pixelBudget": 1760000
+  },
+  "processMemoryBefore": {
+    "heapUsed": 8956728,
+    "external": 3517965,
+    "arrayBuffers": 1090899,
+    "rss": 93270016
+  },
+  "processMemoryPeak": {
+    "heapUsed": 29301328,
+    "external": 72803024,
+    "arrayBuffers": 70296083,
+    "rss": 262242304
+  },
+  "processMemoryAfterCleanup": {
+    "heapUsed": 8685168,
+    "external": 7529168,
+    "arrayBuffers": 5022227,
+    "rss": 262389760
+  },
+  "note": "process.memoryUsage incluye Node y buffers internos de Sharp; el criterio estable adicional es que historial y LRU permanezcan dentro de sus presupuestos."
+}

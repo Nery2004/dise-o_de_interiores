@@ -52,6 +52,10 @@ import { lightingDefaults } from "@/lib/lighting/lightProfile";
 import type { ObjectAlignment, ObjectDistribution, ObjectGroup } from "@/types/object-group";
 import { alignObjects, distributeObjects } from "@/lib/decor/alignmentSystem";
 import { replacePlacedObjectAsset } from "@/lib/decor/objectReplacement";
+import { trimHistoryByEstimatedBytes } from "@/lib/history/historyBudget";
+
+const MAX_PLACEMENT_HISTORY = 50;
+const MAX_PLACEMENT_HISTORY_BYTES = 12 * 1024 * 1024;
 
 type PlacementScene = {
   objects: PlacedDecorObject[];
@@ -249,7 +253,11 @@ export function DecorPlacementProvider({ children }: { children: ReactNode }) {
       const current = sceneRef.current;
       const next = operation(cloneScene(current));
       if (JSON.stringify(current) === JSON.stringify(next)) return;
-      setPast((history) => [...history.slice(-49), cloneScene(current)]);
+      setPast((history) => trimHistoryByEstimatedBytes(
+        [...history, cloneScene(current)],
+        MAX_PLACEMENT_HISTORY,
+        MAX_PLACEMENT_HISTORY_BYTES,
+      ));
       setFuture([]);
       setScene(next);
     },
@@ -1127,10 +1135,11 @@ export function DecorPlacementProvider({ children }: { children: ReactNode }) {
       redo: () => {
         const next = future[0];
         if (!next) return;
-        setPast((history) => [
-          ...history.slice(-49),
-          cloneScene(sceneRef.current),
-        ]);
+        setPast((history) => trimHistoryByEstimatedBytes(
+          [...history, cloneScene(sceneRef.current)],
+          MAX_PLACEMENT_HISTORY,
+          MAX_PLACEMENT_HISTORY_BYTES,
+        ));
         setFuture((history) => history.slice(1));
         setScene(cloneScene(next));
       },
@@ -1145,7 +1154,11 @@ export function DecorPlacementProvider({ children }: { children: ReactNode }) {
           JSON.stringify(snapshot) === JSON.stringify(sceneRef.current)
         )
           return;
-        setPast((history) => [...history.slice(-49), snapshot]);
+        setPast((history) => trimHistoryByEstimatedBytes(
+          [...history, snapshot],
+          MAX_PLACEMENT_HISTORY,
+          MAX_PLACEMENT_HISTORY_BYTES,
+        ));
         setFuture([]);
       },
     }),

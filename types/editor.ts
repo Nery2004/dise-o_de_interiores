@@ -169,7 +169,6 @@ export type EditorState = {
   globalBlendMode: BlendMode;
   isDrawingMask: boolean;
   manualPoints: ImagePoint[];
-  cursorPreviewPoint: ImagePoint | null;
   selectedPointIndexes: number[];
   editingMaskId: string | null;
   editingStartPoints: ImagePoint[] | null;

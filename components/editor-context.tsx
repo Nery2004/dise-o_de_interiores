@@ -33,6 +33,8 @@ import {
   getHistoryShortcut,
   isTypingTarget,
 } from "@/lib/editor/keyboardShortcuts";
+import { ObjectUrlManager } from "@/lib/images/ObjectUrlManager";
+import { trimHistoryByEstimatedBytes } from "@/lib/history/historyBudget";
 
 type EditorContextValue = EditorState & {
   canUndo: boolean;
@@ -73,7 +75,6 @@ type EditorContextValue = EditorState & {
   removeColorFromMask: (id: string) => void;
   startManualMask: () => void;
   addManualPoint: (point: ImagePoint) => void;
-  setCursorPreviewPoint: (point: ImagePoint | null) => void;
   finishManualMask: () => void;
   cancelManualMask: () => void;
   toggleBeforeAfter: () => void;
@@ -100,7 +101,6 @@ const initialState: EditorState = {
   globalBlendMode: "paint-simulation",
   isDrawingMask: false,
   manualPoints: [],
-  cursorPreviewPoint: null,
   selectedPointIndexes: [],
   editingMaskId: null,
   editingStartPoints: null,
@@ -118,6 +118,7 @@ const initialState: EditorState = {
 
 export const EditorContext = createContext<EditorContextValue | null>(null);
 const MAX_EDITOR_HISTORY = 100;
+const MAX_EDITOR_HISTORY_BYTES = 12 * 1024 * 1024;
 
 function cloneMasks(masks: WallMask[]) {
   return masks.map((mask) => ({
@@ -157,10 +158,10 @@ function withMaskHistory(
     ...current,
     ...additions,
     masks,
-    undoStack: [
+    undoStack: trimHistoryByEstimatedBytes([
       ...current.undoStack.slice(-(MAX_EDITOR_HISTORY - 1)),
       cloneMasks(current.masks),
-    ],
+    ], MAX_EDITOR_HISTORY, MAX_EDITOR_HISTORY_BYTES),
     redoStack: [],
   };
 }
@@ -192,7 +193,7 @@ function getValidToolForImageWithoutMasks(tool: EditorTool): EditorTool {
 export function EditorProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<EditorState>(initialState);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const temporaryUrlRef = useRef<string | null>(null);
+  const objectUrlsRef = useRef(new ObjectUrlManager());
 
   const uploadImage = useCallback(async (file: File) => {
     const validation = validateImageUploadMetadata(file);
@@ -206,8 +207,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
     try {
       const dimensions = await getImageDimensions(objectUrl);
-      if (temporaryUrlRef.current) URL.revokeObjectURL(temporaryUrlRef.current);
-      temporaryUrlRef.current = objectUrl;
+      objectUrlsRef.current.adopt("image", objectUrl);
       const image: LoadedImage = {
         name: file.name,
         size: file.size,
@@ -240,10 +240,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
 
   const openImageDialog = useCallback(() => fileInputRef.current?.click(), []);
   const resetImage = useCallback(() => {
-    if (temporaryUrlRef.current) {
-      URL.revokeObjectURL(temporaryUrlRef.current);
-      temporaryUrlRef.current = null;
-    }
+    objectUrlsRef.current.revoke("image");
     if (fileInputRef.current) fileInputRef.current.value = "";
     setState(initialState);
     toast.message("Lienzo listo para una nueva imagen.");
@@ -260,8 +257,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       URL.revokeObjectURL(objectUrl);
       throw new Error("No se pudo cargar la imagen del proyecto.");
     }
-    if (temporaryUrlRef.current) URL.revokeObjectURL(temporaryUrlRef.current);
-    temporaryUrlRef.current = objectUrl;
+    objectUrlsRef.current.adopt("image", objectUrl);
     const file = new File([blob], project.originalImage.name, { type: project.originalImage.type });
     const selectedMaskId = project.masks.some((mask) => mask.id === project.selectedMaskId) ? project.selectedMaskId : null;
     setState({
@@ -285,7 +281,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => () => {
-    if (temporaryUrlRef.current) URL.revokeObjectURL(temporaryUrlRef.current);
+    objectUrlsRef.current.clear();
   }, []);
 
   const value = useMemo<EditorContextValue>(() => ({
@@ -316,7 +312,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         activeTool: tool,
         isDrawingMask: tool === "manual-select" && Boolean(current.image),
         manualPoints: tool === "manual-select" ? current.manualPoints : [],
-        cursorPreviewPoint: tool === "manual-select" ? current.cursorPreviewPoint : null,
         selectedPointIndexes: [],
         editingMaskId: startsEditing ? selected.id : null,
         editingStartPoints: startsEditing ? clonePoints(selected.points) ?? null : null,
@@ -533,10 +528,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         masks: cloneMasks(previous),
         selectedMaskId,
         undoStack: current.undoStack.slice(0, -1),
-        redoStack: [
+        redoStack: trimHistoryByEstimatedBytes([
           ...current.redoStack.slice(-(MAX_EDITOR_HISTORY - 1)),
           cloneMasks(current.masks),
-        ],
+        ], MAX_EDITOR_HISTORY, MAX_EDITOR_HISTORY_BYTES),
         selectedPointIndexes: [],
       };
     }),
@@ -549,10 +544,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         ...current,
         masks: cloneMasks(next),
         selectedMaskId,
-        undoStack: [
+        undoStack: trimHistoryByEstimatedBytes([
           ...current.undoStack.slice(-(MAX_EDITOR_HISTORY - 1)),
           cloneMasks(current.masks),
-        ],
+        ], MAX_EDITOR_HISTORY, MAX_EDITOR_HISTORY_BYTES),
         redoStack: current.redoStack.slice(0, -1),
         selectedPointIndexes: [],
       };
@@ -585,9 +580,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       delete next.color;
       return next;
     }))),
-    startManualMask: () => setState((current) => ({ ...current, isDrawingMask: Boolean(current.image), manualPoints: [], cursorPreviewPoint: null })),
+    startManualMask: () => setState((current) => ({ ...current, isDrawingMask: Boolean(current.image), manualPoints: [] })),
     addManualPoint: (point) => setState((current) => ({ ...current, isDrawingMask: true, manualPoints: [...current.manualPoints, point] })),
-    setCursorPreviewPoint: (cursorPreviewPoint) => setState((current) => ({ ...current, cursorPreviewPoint })),
     finishManualMask: () => setState((current) => {
       if (current.manualPoints.length < 3) {
         toast.error("Selecciona al menos 3 puntos para crear una pared.");
@@ -607,9 +601,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       return withMaskHistory(current, [
         ...current.masks.map((item) => ({ ...item, selected: false })),
         mask,
-      ], { selectedMaskId: mask.id, isDrawingMask: false, manualPoints: [], cursorPreviewPoint: null });
+      ], { selectedMaskId: mask.id, isDrawingMask: false, manualPoints: [] });
     }),
-    cancelManualMask: () => setState((current) => ({ ...current, isDrawingMask: false, manualPoints: [], cursorPreviewPoint: null })),
+    cancelManualMask: () => setState((current) => ({ ...current, isDrawingMask: false, manualPoints: [] })),
     toggleBeforeAfter: () => setState((current) => ({ ...current, beforeAfterEnabled: !current.beforeAfterEnabled })),
     toggleMaskPreview: () => setState((current) => ({ ...current, maskPreviewEnabled: !current.maskPreviewEnabled })),
     uploadImage,

@@ -13,8 +13,10 @@ import { useComparison } from "@/components/comparison-context";
 import { PresentationMode } from "@/components/presentation-mode";
 import { ObjectKeyboardShortcuts } from "@/components/decor/object-keyboard-shortcuts";
 import { DevEditorDiagnostics } from "@/components/dev-editor-diagnostics";
+import { renderProfiler } from "@/lib/performance/RenderProfiler";
 
 export function EditorLayout({ loadPendingColor = false }: { loadPendingColor?: boolean }) {
+  renderProfiler.mark("EditorLayout");
   const comparison = useComparison();
   if (comparison.presentationMode) return <><PresentationMode /><Toaster richColors position="top-right" /></>;
   return (

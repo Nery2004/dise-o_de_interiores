@@ -15,7 +15,20 @@ type ExportImageOptions = {
   roomLightProfiles?: RoomLightProfile[];
   placementSurfaces?: PlacementSurface[];
   includeOriginal?: boolean;
+  signal?: AbortSignal;
+  onProgress?: (stage: "preparing" | "paint" | "objects" | "encoding", progress: number) => void;
 };
+
+export function estimateExportMemory(width: number, height: number) {
+  return width * height * 20;
+}
+
+export function validateExportDimensions(width: number, height: number) {
+  const maximumDimension = 16_384;
+  const maximumEstimatedBytes = 1024 * 1024 * 1024;
+  if (width <= 0 || height <= 0 || width > maximumDimension || height > maximumDimension || estimateExportMemory(width, height) > maximumEstimatedBytes)
+    throw new EditorError("EXPORT_TOO_LARGE");
+}
 
 function canvasToPngBlob(canvas: HTMLCanvasElement) {
   return new Promise<Blob>((resolve, reject) => {
@@ -37,10 +50,17 @@ export async function exportEditedImage({
   roomLightProfiles = [],
   placementSurfaces = [],
   includeOriginal = true,
+  signal,
+  onProgress,
 }: ExportImageOptions) {
   const finishMeasure = beginPerformanceMeasure("export");
+  let canvas: HTMLCanvasElement | null = null;
   try {
-    const canvas = document.createElement("canvas");
+    validateExportDimensions(image.dimensions.width, image.dimensions.height);
+    if (signal?.aborted) throw new DOMException("Exportación cancelada", "AbortError");
+    onProgress?.("preparing", 0.05);
+    canvas = document.createElement("canvas");
+    onProgress?.("paint", 0.15);
     await renderPaintScene({
       canvas,
       globalBlendMode,
@@ -48,7 +68,10 @@ export async function exportEditedImage({
       includeOriginal,
       masks,
       qualityOverride: "ultra",
+      signal,
     });
+    if (signal?.aborted) throw new DOMException("Exportación cancelada", "AbortError");
+    onProgress?.("objects", 0.7);
     const context = canvas.getContext("2d");
     if (!context) throw new EditorError("EXPORT_FAILED");
     const failures = await renderPlacedDecorObjects(context, placedObjects, {
@@ -57,8 +80,17 @@ export async function exportEditedImage({
       quality: "ultra",
     });
     if (failures.length) throw new EditorError("ASSET_LOAD_FAILED");
-    return await canvasToPngBlob(canvas);
+    if (signal?.aborted) throw new DOMException("Exportación cancelada", "AbortError");
+    onProgress?.("encoding", 0.9);
+    const blob = await canvasToPngBlob(canvas);
+    if (signal?.aborted) throw new DOMException("Exportación cancelada", "AbortError");
+    onProgress?.("encoding", 1);
+    return blob;
   } finally {
+    if (canvas) {
+      canvas.width = 1;
+      canvas.height = 1;
+    }
     finishMeasure();
   }
 }

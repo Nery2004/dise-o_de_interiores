@@ -1,8 +1,5 @@
 import type { ReactNode } from "react";
-import {
-  getComparisonClipPath,
-  type ComparisonDirection,
-} from "@/lib/canvas/canvasTransformUtils";
+import type { ComparisonDirection } from "@/lib/canvas/canvasTransformUtils";
 
 export function BeforeAfterClip({
   children,
@@ -16,7 +13,12 @@ export function BeforeAfterClip({
   return (
     <div
       className="absolute inset-0"
-      style={{ clipPath: getComparisonClipPath(direction, position) }}
+      style={{
+        clipPath:
+          direction === "vertical"
+            ? `inset(0 calc(100% - var(--comparison-position, ${position}%)) 0 0)`
+            : `inset(0 0 calc(100% - var(--comparison-position, ${position}%)) 0)`,
+      }}
     >
       {children}
     </div>

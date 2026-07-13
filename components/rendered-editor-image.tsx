@@ -32,19 +32,38 @@ export function RenderedEditorImage({
     const canvas = canvasRef.current;
     if (!canvas) return;
     let cancelled = false;
+    const controller = new AbortController();
     const frame = requestAnimationFrame(() => {
       const finishMeasure = beginPerformanceMeasure("render");
       const rendered = document.createElement("canvas");
+      const bounds = canvas.getBoundingClientRect();
       void renderPaintScene({
         canvas: rendered,
         globalBlendMode: editor.globalBlendMode,
         image: editor.image!,
         includeOriginal: true,
         masks: masks ?? editor.masks,
+        previewViewport: {
+          width: Math.max(1, bounds.width),
+          height: Math.max(1, bounds.height),
+        },
+        signal: controller.signal,
       }).then(async () => {
         if (cancelled) return;
         const renderedContext = rendered.getContext("2d");
-        const failures = renderedContext ? await renderPlacedDecorObjects(renderedContext, placedObjects ?? placement.placedObjects, { profiles: lighting.profiles, surfaces: placement.placementSurfaces, quality: "high" }) : [];
+        let failures: string[] = [];
+        if (renderedContext) {
+          renderedContext.save();
+          renderedContext.scale(
+            rendered.width / editor.image!.dimensions.width,
+            rendered.height / editor.image!.dimensions.height,
+          );
+          try {
+            failures = await renderPlacedDecorObjects(renderedContext, placedObjects ?? placement.placedObjects, { profiles: lighting.profiles, surfaces: placement.placementSurfaces, quality: "high" });
+          } finally {
+            renderedContext.restore();
+          }
+        }
         if (failures.length && !reportedDecorRenderFailure) { reportedDecorRenderFailure = true; toast.error("No se pudo cargar este objeto."); }
         if (cancelled) return;
         canvas.width = rendered.width;
@@ -54,6 +73,7 @@ export function RenderedEditorImage({
     });
     return () => {
       cancelled = true;
+      controller.abort();
       cancelAnimationFrame(frame);
     };
   }, [editor.globalBlendMode, editor.image, editor.masks, lighting.profiles, masks, placedObjects, placement.placedObjects, placement.placementSurfaces]);

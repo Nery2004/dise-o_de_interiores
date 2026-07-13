@@ -7,8 +7,13 @@ import {
   type WallColorAnalysis,
 } from "@/lib/paint/wallColorAnalyzer";
 import type { LoadedImage, WallMask, WhiteBaseSettings } from "@/types/editor";
+import { LruCache } from "@/lib/cache/LruCache";
 
-const analysisCache = new Map<string, WallColorAnalysis>();
+const analysisCache = new LruCache<string, WallColorAnalysis>({
+  maxEntries: 32,
+  maxEstimatedBytes: 2 * 1024 * 1024,
+  estimateBytes: (analysis) => 512 + (analysis.luminanceHistogram.length + analysis.saturationHistogram.length + analysis.hueHistogram.length) * 8,
+});
 
 function stableHash(value: string) {
   let hash = 0x811c9dc5;
@@ -115,7 +120,7 @@ export function whiteBaseSummaryToAnalysis(
 export async function analyzeWallBase(
   image: LoadedImage,
   mask: WallMask,
-  options: { force?: boolean; signal?: AbortSignal } = {},
+  options: { force?: boolean; signal?: AbortSignal; scaleOverride?: number } = {},
 ) {
   const analysisKey = createWallAnalysisKey(image, mask);
   if (!options.force) {
@@ -128,7 +133,7 @@ export async function analyzeWallBase(
     if (cached) return { analysis: cached, analysisKey };
   }
   const quality = mask.renderQuality ?? "high";
-  const scale = PAINT_QUALITY_SCALE[quality];
+  const scale = Math.min(PAINT_QUALITY_SCALE[quality], options.scaleOverride ?? 1);
   const source = await getSourceRaster(image, scale);
   if (options.signal?.aborted) {
     throw new DOMException("Analysis cancelled", "AbortError");
@@ -142,13 +147,13 @@ export async function analyzeWallBase(
     source,
   });
   analysisCache.set(analysisKey, analysis);
-  if (analysisCache.size > 32) {
-    const oldestKey = analysisCache.keys().next().value;
-    if (oldestKey !== undefined) analysisCache.delete(oldestKey);
-  }
   return { analysis, analysisKey };
 }
 
 export function clearWallAnalysisCache() {
   analysisCache.clear();
+}
+
+export function getWallAnalysisCacheStats() {
+  return analysisCache.stats();
 }

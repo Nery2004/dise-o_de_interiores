@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useCallback,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
@@ -29,6 +30,8 @@ import { validatePerspectivePoints } from "@/lib/perspective/perspectiveValidati
 import { toast } from "sonner";
 import { useRoomLighting } from "@/components/room-lighting-context";
 import { getSmartGuides } from "@/lib/decor/alignmentSystem";
+import { useRafCallback } from "@/components/use-raf-callback";
+import { renderProfiler } from "@/lib/performance/RenderProfiler";
 
 type ActiveInteraction = {
   kind: "moving" | "resizing" | "rotating" | "perspective";
@@ -47,12 +50,14 @@ export function DecorObjectsLayer({
   dimensions: ImageDimensions;
   canvasScale: number;
 }) {
+  renderProfiler.mark("DecorObjectsLayer");
   const editor = useEditor();
   const placement = useDecorPlacement();
   const lighting = useRoomLighting();
   const setObjectInteractionMode = placement.setObjectInteractionMode;
   const layerRef = useRef<HTMLDivElement>(null);
   const interactionRef = useRef<ActiveInteraction | null>(null);
+  const previewObjectRef = useRef<PlacedDecorObject | null>(null);
   const lightingTimerRef = useRef<number | null>(null);
   const [previewObject, setPreviewObject] = useState<PlacedDecorObject | null>(
     null,
@@ -61,10 +66,16 @@ export function DecorObjectsLayer({
   const [marquee, setMarquee] = useState<MarqueeSelection | null>(null);
   const interactive =
     editor.activeTool === "objects" || editor.activeTool === "select";
+  const previewFrame = useRafCallback((object: PlacedDecorObject | null) => {
+    previewObjectRef.current = object;
+    setPreviewObject(object);
+  });
+  const cursorFrame = useRafCallback((point: ImagePoint | null) => setCursorPoint(point));
 
   useEffect(
     () => () => {
       interactionRef.current = null;
+      previewObjectRef.current = null;
       setObjectInteractionMode("idle");
     },
     [setObjectInteractionMode],
@@ -79,13 +90,13 @@ export function DecorObjectsLayer({
     [],
   );
 
-  function beginInteraction(
+  const beginInteraction = useCallback((
     kind: ActiveInteraction["kind"],
     object: PlacedDecorObject,
     event: ReactPointerEvent<HTMLElement>,
     handle?: ObjectResizeHandle,
     perspectiveIndex?: number,
-  ) {
+  ) => {
     if (
       !interactive ||
       object.locked ||
@@ -111,8 +122,36 @@ export function DecorObjectsLayer({
     };
     placement.selectPlacedObject(object.id, { additive: event.shiftKey || event.metaKey || event.ctrlKey, toggle: event.metaKey || event.ctrlKey });
     placement.setObjectInteractionMode(kind);
+    previewObjectRef.current = object;
     setPreviewObject(object);
-  }
+  }, [dimensions, interactive, placement]);
+
+  const handleMoveStart = useCallback(
+    (object: PlacedDecorObject, event: ReactPointerEvent<HTMLElement>) => {
+      if (!object.locked) beginInteraction("moving", object, event);
+      else {
+        placement.selectPlacedObject(object.id, { additive: event.shiftKey || event.metaKey || event.ctrlKey, toggle: event.metaKey || event.ctrlKey });
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    },
+    [beginInteraction, placement],
+  );
+  const handleResizeStart = useCallback(
+    (object: PlacedDecorObject, handle: ObjectResizeHandle, event: ReactPointerEvent<HTMLElement>) =>
+      beginInteraction("resizing", object, event, handle),
+    [beginInteraction],
+  );
+  const handleRotateStart = useCallback(
+    (object: PlacedDecorObject, event: ReactPointerEvent<HTMLElement>) =>
+      beginInteraction("rotating", object, event),
+    [beginInteraction],
+  );
+  const handlePerspectiveStart = useCallback(
+    (object: PlacedDecorObject, index: number, event: ReactPointerEvent<HTMLElement>) =>
+      beginInteraction("perspective", object, event, undefined, index),
+    [beginInteraction],
+  );
 
   function finishInteraction(
     event: ReactPointerEvent<HTMLDivElement>,
@@ -120,27 +159,30 @@ export function DecorObjectsLayer({
   ) {
     const active = interactionRef.current;
     if (!active || active.pointerId !== event.pointerId) return;
-    if (commit && previewObject) {
+    previewFrame.flush();
+    const finalPreview = previewObjectRef.current;
+    if (commit && finalPreview) {
       if (
         active.kind === "perspective" &&
-        previewObject.perspectivePoints &&
-        !validatePerspectivePoints(previewObject.perspectivePoints)
+        finalPreview.perspectivePoints &&
+        !validatePerspectivePoints(finalPreview.perspectivePoints)
       )
         toast.error("La transformación debe conservar un cuadrilátero válido.");
       else if (active.kind === "moving") {
-        placement.finalizeObjectPlacement(active.object.id, previewObject);
-        if (previewObject.lightingMode === "auto" && !previewObject.lightingLocked) {
+        placement.finalizeObjectPlacement(active.object.id, finalPreview);
+        if (finalPreview.lightingMode === "auto" && !finalPreview.lightingLocked) {
           if (lightingTimerRef.current !== null) {
             window.clearTimeout(lightingTimerRef.current);
           }
           lightingTimerRef.current = window.setTimeout(() => {
             lightingTimerRef.current = null;
-            void lighting.adaptObject(previewObject);
+            void lighting.adaptObject(finalPreview);
           }, 180);
         }
-      } else placement.updatePlacedObject(active.object.id, previewObject);
+      } else placement.updatePlacedObject(active.object.id, finalPreview);
     }
     interactionRef.current = null;
+    previewObjectRef.current = null;
     setPreviewObject(null);
     placement.setObjectInteractionMode("idle");
   }
@@ -179,7 +221,7 @@ export function DecorObjectsLayer({
           event.preventDefault();
           event.stopPropagation();
           placement.addPlacedObject(placement.pendingDecorObject, point);
-          setCursorPoint(null);
+          cursorFrame.schedule(null);
           return;
         }
         if (interactive) {
@@ -196,7 +238,7 @@ export function DecorObjectsLayer({
           dimensions,
         );
         if (placement.pendingDecorObject && editor.activeTool === "objects")
-          setCursorPoint(pointer);
+          cursorFrame.schedule(pointer);
         if (marquee) {
           setMarquee((current) => current ? { ...current, current: pointer } : null);
           return;
@@ -228,7 +270,7 @@ export function DecorObjectsLayer({
                 },
               }
             : undefined;
-          setPreviewObject(
+          previewFrame.schedule(
             clampObjectToImage(
               {
                 ...active.object,
@@ -240,7 +282,7 @@ export function DecorObjectsLayer({
             ),
           );
         } else if (active.kind === "resizing" && active.handle) {
-          setPreviewObject(
+          previewFrame.schedule(
             resizeObjectFromHandle(
               active.object,
               active.handle,
@@ -252,7 +294,7 @@ export function DecorObjectsLayer({
             ),
           );
         } else if (active.kind === "rotating") {
-          setPreviewObject(
+          previewFrame.schedule(
             clampObjectToImage(
               {
                 ...active.object,
@@ -275,7 +317,7 @@ export function DecorObjectsLayer({
             active.object.perspectivePoints,
           );
           points[active.perspectiveIndex] = pointer;
-          setPreviewObject({
+          previewFrame.schedule({
             ...active.object,
             perspectivePoints: perspectivePointsFromArray(points),
           });
@@ -309,7 +351,7 @@ export function DecorObjectsLayer({
         finishInteraction(event);
       }}
       onPointerLeave={() => {
-        if (!interactionRef.current) setCursorPoint(null);
+        if (!interactionRef.current) cursorFrame.schedule(null);
       }}
     >
       {displayed.map((object) => (
@@ -319,21 +361,10 @@ export function DecorObjectsLayer({
           canvasScale={canvasScale}
           draft={previewObject?.id === object.id}
           interactive={interactive && !placement.isPlacingObject}
-          onPointerDown={(event) => {
-            if (!object.locked) beginInteraction("moving", object, event);
-            else {
-              placement.selectPlacedObject(object.id, { additive: event.shiftKey || event.metaKey || event.ctrlKey, toggle: event.metaKey || event.ctrlKey });
-              event.preventDefault();
-              event.stopPropagation();
-            }
-          }}
-          onResizeStart={(handle, event) =>
-            beginInteraction("resizing", object, event, handle)
-          }
-          onRotateStart={(event) => beginInteraction("rotating", object, event)}
-          onPerspectiveStart={(index, event) =>
-            beginInteraction("perspective", object, event, undefined, index)
-          }
+          onPointerDown={handleMoveStart}
+          onResizeStart={handleResizeStart}
+          onRotateStart={handleRotateStart}
+          onPerspectiveStart={handlePerspectiveStart}
         />
       ))}
       {placement.pendingDecorObject &&

@@ -18,6 +18,7 @@ import {
   type ViewportSize,
 } from "@/lib/canvas/canvasTransformUtils";
 import type { EditorTool, ImageDimensions } from "@/types/editor";
+import { useRafCallback } from "@/components/use-raf-callback";
 
 export type InteractionMode =
   | "idle"
@@ -78,6 +79,9 @@ export function useCanvasTransform({
   const previousResetKeyRef = useRef<string | null>(null);
   const panRef = useRef<PanState | null>(null);
   const onScaleChangeRef = useRef(onScaleChange);
+  const { schedule: scheduleTransform, flush: flushTransform } = useRafCallback(
+    (next: CanvasTransform) => setTransform(next),
+  );
 
   const fitScale = calculateFitScale(viewportSize, imageDimensions);
 
@@ -224,13 +228,14 @@ export function useCanvasTransform({
     (event: ReactPointerEvent<HTMLDivElement>) => {
       const pan = panRef.current;
       if (!pan || pan.pointerId !== event.pointerId) return;
+      flushTransform();
       panRef.current = null;
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
       setInteractionMode("idle");
     },
-    [],
+    [flushTransform],
   );
 
   const viewportPointerHandlers = {
@@ -263,7 +268,7 @@ export function useCanvasTransform({
       }
       event.preventDefault();
       manualPanRef.current = true;
-      setTransform(
+      scheduleTransform(
         clampTranslation(
           {
             ...pan.transform,

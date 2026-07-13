@@ -44,12 +44,20 @@ export function ComparisonHandle({
     [],
   );
 
+  useEffect(() => {
+    pendingPositionRef.current = position;
+    containerRef.current?.style.setProperty("--comparison-position", `${position}%`);
+  }, [containerRef, position]);
+
   function schedulePosition(nextPosition: number) {
     pendingPositionRef.current = nextPosition;
     if (frameRef.current !== null) return;
     frameRef.current = requestAnimationFrame(() => {
       frameRef.current = null;
-      onPositionChange(pendingPositionRef.current);
+      containerRef.current?.style.setProperty(
+        "--comparison-position",
+        `${pendingPositionRef.current}%`,
+      );
     });
   }
 
@@ -71,6 +79,15 @@ export function ComparisonHandle({
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    if (frameRef.current !== null) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+      containerRef.current?.style.setProperty(
+        "--comparison-position",
+        `${pendingPositionRef.current}%`,
+      );
+    }
+    onPositionChange(pendingPositionRef.current);
     setIsDragging(false);
   }
 
@@ -101,7 +118,7 @@ export function ComparisonHandle({
     direction === "vertical"
       ? {
           bottom: 0,
-          left: `${position}%`,
+          left: `var(--comparison-position, ${position}%)`,
           top: 0,
           width: hitSize,
           transform: "translateX(-50%)",
@@ -110,7 +127,7 @@ export function ComparisonHandle({
           height: hitSize,
           left: 0,
           right: 0,
-          top: `${position}%`,
+          top: `var(--comparison-position, ${position}%)`,
           transform: "translateY(-50%)",
         };
 

@@ -1,0 +1,361 @@
+{
+  "generatedAt": "2026-07-13T02:37:36.704Z",
+  "note": "Los bytes por ruta incluyen chunks compartidos y por eso no deben sumarse.",
+  "uniqueClientJavaScriptBytes": 843813,
+  "routes": [
+    {
+      "route": "/editor",
+      "bytes": 743101,
+      "chunks": [
+        {
+          "file": "static/chunks/app/editor/page-78ced300ee6ca53c.js",
+          "bytes": 265267
+        },
+        {
+          "file": "static/chunks/995-1fe5803336ba2625.js",
+          "bytes": 172577
+        },
+        {
+          "file": "static/chunks/398-01823bbb1e80da81.js",
+          "bytes": 78753
+        },
+        {
+          "file": "static/chunks/799-f82c128c92d4d132.js",
+          "bytes": 67448
+        },
+        {
+          "file": "static/chunks/44530001-40bf369248b5e89e.js",
+          "bytes": 62472
+        },
+        {
+          "file": "static/chunks/347-0c79088ff3659c08.js",
+          "bytes": 38611
+        },
+        {
+          "file": "static/chunks/app/page-664358de68d89635.js",
+          "bytes": 19982
+        },
+        {
+          "file": "static/chunks/391-277d795b33e92441.js",
+          "bytes": 14690
+        },
+        {
+          "file": "static/chunks/930-467398976547b228.js",
+          "bytes": 11896
+        },
+        {
+          "file": "static/chunks/500-c99b8dfd3de17c86.js",
+          "bytes": 8697
+        },
+        {
+          "file": "static/chunks/app/global-error-76b2ad802e5554c9.js",
+          "bytes": 1314
+        },
+        {
+          "file": "static/chunks/app/error-034cc0f73974d3df.js",
+          "bytes": 1199
+        },
+        {
+          "file": "static/chunks/app/layout-53800804fd97581d.js",
+          "bytes": 195
+        }
+      ]
+    },
+    {
+      "route": "/colors",
+      "bytes": 354254,
+      "chunks": [
+        {
+          "file": "static/chunks/995-1fe5803336ba2625.js",
+          "bytes": 172577
+        },
+        {
+          "file": "static/chunks/44530001-40bf369248b5e89e.js",
+          "bytes": 62472
+        },
+        {
+          "file": "static/chunks/347-0c79088ff3659c08.js",
+          "bytes": 38611
+        },
+        {
+          "file": "static/chunks/app/colors/page-e3b175077080570c.js",
+          "bytes": 34517
+        },
+        {
+          "file": "static/chunks/app/page-664358de68d89635.js",
+          "bytes": 19982
+        },
+        {
+          "file": "static/chunks/391-277d795b33e92441.js",
+          "bytes": 14690
+        },
+        {
+          "file": "static/chunks/500-c99b8dfd3de17c86.js",
+          "bytes": 8697
+        },
+        {
+          "file": "static/chunks/app/global-error-76b2ad802e5554c9.js",
+          "bytes": 1314
+        },
+        {
+          "file": "static/chunks/app/error-034cc0f73974d3df.js",
+          "bytes": 1199
+        },
+        {
+          "file": "static/chunks/app/layout-53800804fd97581d.js",
+          "bytes": 195
+        }
+      ]
+    },
+    {
+      "route": "/projects",
+      "bytes": 177879,
+      "chunks": [
+        {
+          "file": "static/chunks/799-f82c128c92d4d132.js",
+          "bytes": 67448
+        },
+        {
+          "file": "static/chunks/347-0c79088ff3659c08.js",
+          "bytes": 38611
+        },
+        {
+          "file": "static/chunks/app/page-664358de68d89635.js",
+          "bytes": 19982
+        },
+        {
+          "file": "static/chunks/391-277d795b33e92441.js",
+          "bytes": 14690
+        },
+        {
+          "file": "static/chunks/app/projects/page-5646b72894cc3db5.js",
+          "bytes": 13847
+        },
+        {
+          "file": "static/chunks/930-467398976547b228.js",
+          "bytes": 11896
+        },
+        {
+          "file": "static/chunks/500-c99b8dfd3de17c86.js",
+          "bytes": 8697
+        },
+        {
+          "file": "static/chunks/app/global-error-76b2ad802e5554c9.js",
+          "bytes": 1314
+        },
+        {
+          "file": "static/chunks/app/error-034cc0f73974d3df.js",
+          "bytes": 1199
+        },
+        {
+          "file": "static/chunks/app/layout-53800804fd97581d.js",
+          "bytes": 195
+        }
+      ]
+    },
+    {
+      "route": "/objects",
+      "bytes": 140874,
+      "chunks": [
+        {
+          "file": "static/chunks/347-0c79088ff3659c08.js",
+          "bytes": 38611
+        },
+        {
+          "file": "static/chunks/app/objects/page-7ca5869461ed76a0.js",
+          "bytes": 35871
+        },
+        {
+          "file": "static/chunks/app/page-664358de68d89635.js",
+          "bytes": 19982
+        },
+        {
+          "file": "static/chunks/391-277d795b33e92441.js",
+          "bytes": 14690
+        },
+        {
+          "file": "static/chunks/930-467398976547b228.js",
+          "bytes": 11896
+        },
+        {
+          "file": "static/chunks/500-c99b8dfd3de17c86.js",
+          "bytes": 8697
+        },
+        {
+          "file": "static/chunks/772-8b3b917e42fba02a.js",
+          "bytes": 8419
+        },
+        {
+          "file": "static/chunks/app/global-error-76b2ad802e5554c9.js",
+          "bytes": 1314
+        },
+        {
+          "file": "static/chunks/app/error-034cc0f73974d3df.js",
+          "bytes": 1199
+        },
+        {
+          "file": "static/chunks/app/layout-53800804fd97581d.js",
+          "bytes": 195
+        }
+      ]
+    },
+    {
+      "route": "/privacy",
+      "bytes": 51869,
+      "chunks": [
+        {
+          "file": "static/chunks/app/page-664358de68d89635.js",
+          "bytes": 19982
+        },
+        {
+          "file": "static/chunks/391-277d795b33e92441.js",
+          "bytes": 14690
+        },
+        {
+          "file": "static/chunks/500-c99b8dfd3de17c86.js",
+          "bytes": 8697
+        },
+        {
+          "file": "static/chunks/app/privacy/page-6de39b0c742fa634.js",
+          "bytes": 5792
+        },
+        {
+          "file": "static/chunks/app/global-error-76b2ad802e5554c9.js",
+          "bytes": 1314
+        },
+        {
+          "file": "static/chunks/app/error-034cc0f73974d3df.js",
+          "bytes": 1199
+        },
+        {
+          "file": "static/chunks/app/layout-53800804fd97581d.js",
+          "bytes": 195
+        }
+      ]
+    },
+    {
+      "route": "/dev/status",
+      "bytes": 48343,
+      "chunks": [
+        {
+          "file": "static/chunks/app/page-664358de68d89635.js",
+          "bytes": 19982
+        },
+        {
+          "file": "static/chunks/391-277d795b33e92441.js",
+          "bytes": 14690
+        },
+        {
+          "file": "static/chunks/500-c99b8dfd3de17c86.js",
+          "bytes": 8697
+        },
+        {
+          "file": "static/chunks/app/dev/status/page-d01e459fe7b96e9a.js",
+          "bytes": 2266
+        },
+        {
+          "file": "static/chunks/app/global-error-76b2ad802e5554c9.js",
+          "bytes": 1314
+        },
+        {
+          "file": "static/chunks/app/error-034cc0f73974d3df.js",
+          "bytes": 1199
+        },
+        {
+          "file": "static/chunks/app/layout-53800804fd97581d.js",
+          "bytes": 195
+        }
+      ]
+    },
+    {
+      "route": "/_global-error",
+      "bytes": 46077,
+      "chunks": [
+        {
+          "file": "static/chunks/app/page-664358de68d89635.js",
+          "bytes": 19982
+        },
+        {
+          "file": "static/chunks/391-277d795b33e92441.js",
+          "bytes": 14690
+        },
+        {
+          "file": "static/chunks/500-c99b8dfd3de17c86.js",
+          "bytes": 8697
+        },
+        {
+          "file": "static/chunks/app/global-error-76b2ad802e5554c9.js",
+          "bytes": 1314
+        },
+        {
+          "file": "static/chunks/app/error-034cc0f73974d3df.js",
+          "bytes": 1199
+        },
+        {
+          "file": "static/chunks/app/layout-53800804fd97581d.js",
+          "bytes": 195
+        }
+      ]
+    },
+    {
+      "route": "/_not-found",
+      "bytes": 46077,
+      "chunks": [
+        {
+          "file": "static/chunks/app/page-664358de68d89635.js",
+          "bytes": 19982
+        },
+        {
+          "file": "static/chunks/391-277d795b33e92441.js",
+          "bytes": 14690
+        },
+        {
+          "file": "static/chunks/500-c99b8dfd3de17c86.js",
+          "bytes": 8697
+        },
+        {
+          "file": "static/chunks/app/global-error-76b2ad802e5554c9.js",
+          "bytes": 1314
+        },
+        {
+          "file": "static/chunks/app/error-034cc0f73974d3df.js",
+          "bytes": 1199
+        },
+        {
+          "file": "static/chunks/app/layout-53800804fd97581d.js",
+          "bytes": 195
+        }
+      ]
+    },
+    {
+      "route": "/",
+      "bytes": 46077,
+      "chunks": [
+        {
+          "file": "static/chunks/app/page-664358de68d89635.js",
+          "bytes": 19982
+        },
+        {
+          "file": "static/chunks/391-277d795b33e92441.js",
+          "bytes": 14690
+        },
+        {
+          "file": "static/chunks/500-c99b8dfd3de17c86.js",
+          "bytes": 8697
+        },
+        {
+          "file": "static/chunks/app/global-error-76b2ad802e5554c9.js",
+          "bytes": 1314
+        },
+        {
+          "file": "static/chunks/app/error-034cc0f73974d3df.js",
+          "bytes": 1199
+        },
+        {
+          "file": "static/chunks/app/layout-53800804fd97581d.js",
+          "bytes": 195
+        }
+      ]
+    }
+  ]
+}

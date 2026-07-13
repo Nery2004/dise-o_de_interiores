@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { useProject } from "@/components/project-context";
 import { useDecorPlacement } from "@/components/decor-placement-context";
 import { useRoomLighting } from "@/components/room-lighting-context";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getEditorErrorMessage } from "@/lib/errors/editorError";
 
 function HeaderButton({
@@ -42,6 +42,8 @@ export function EditorHeader() {
   const placement = useDecorPlacement();
   const lighting = useRoomLighting();
   const [exportMode, setExportMode] = useState<"all" | "objects" | "paint">("all");
+  const [exportProgress, setExportProgress] = useState<{ stage: string; progress: number } | null>(null);
+  const exportControllerRef = useRef<AbortController | null>(null);
   const {
     globalBlendMode,
     canRedo,
@@ -55,7 +57,13 @@ export function EditorHeader() {
   } = useEditor();
   const isExporting = status === "exporting";
 
+  useEffect(() => () => exportControllerRef.current?.abort(), []);
+
   async function handleDownload() {
+    if (isExporting) {
+      exportControllerRef.current?.abort();
+      return;
+    }
     if (!image) {
       toast.error("Primero sube una imagen.");
       return;
@@ -67,6 +75,8 @@ export function EditorHeader() {
     }
 
     try {
+      const controller = new AbortController();
+      exportControllerRef.current = controller;
       setStatus("exporting");
       const blob = await exportEditedImage({
         globalBlendMode,
@@ -76,13 +86,18 @@ export function EditorHeader() {
         placementSurfaces: placement.placementSurfaces,
         roomLightProfiles: lighting.profiles,
         includeOriginal: exportMode !== "objects",
+        signal: controller.signal,
+        onProgress: (stage, progress) => setExportProgress({ stage, progress }),
       });
 
       downloadBlob(blob, "interior-color-studio-export.png");
       toast.success("Imagen descargada correctamente.");
     } catch (error) {
-      toast.error(getEditorErrorMessage(error, "No se pudo exportar la imagen."));
+      if (error instanceof DOMException && error.name === "AbortError") toast.message("Exportación cancelada.");
+      else toast.error(getEditorErrorMessage(error, "No se pudo exportar la imagen."));
     } finally {
+      exportControllerRef.current = null;
+      setExportProgress(null);
       setStatus("ready");
     }
   }
@@ -136,9 +151,11 @@ export function EditorHeader() {
           Rehacer
         </HeaderButton>
         <select aria-label="Contenido de exportación" value={exportMode} onChange={(event) => setExportMode(event.target.value as typeof exportMode)} className="h-10 rounded-md border bg-white px-2 text-xs font-semibold"><option value="all">Exportar todo</option><option value="objects">Solo objetos</option><option value="paint">Solo pintura</option></select>
-        <HeaderButton disabled={isExporting} onClick={() => void handleDownload()}>
+        <HeaderButton onClick={() => void handleDownload()}>
           <Download size={16} />
-          {isExporting ? "Exportando..." : "Descargar"}
+          {isExporting
+            ? `Cancelar ${Math.round((exportProgress?.progress ?? 0) * 100)}%`
+            : "Descargar"}
         </HeaderButton>
       </div>
     </header>

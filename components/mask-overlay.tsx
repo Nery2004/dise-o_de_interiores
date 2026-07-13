@@ -1,7 +1,7 @@
 "use client";
 
 import type { MouseEvent } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ManualMaskDrawer } from "@/components/manual-mask-drawer";
 import { EditableMaskOverlay } from "@/components/editable-mask-overlay";
@@ -10,6 +10,8 @@ import { pointsToSvgString } from "@/lib/mask-geometry";
 import { getStoredPaintPreferences } from "@/lib/paint/paintPreferences";
 import { isTypingTarget } from "@/lib/editor/keyboardShortcuts";
 import type { ImageDimensions, ImagePoint } from "@/types/editor";
+import { useRafCallback } from "@/components/use-raf-callback";
+import { renderProfiler } from "@/lib/performance/RenderProfiler";
 
 type MaskOverlayProps = {
   dimensions: ImageDimensions;
@@ -42,13 +44,13 @@ function distanceBetween(first: ImagePoint, second: ImagePoint) {
 }
 
 export function MaskOverlay({ dimensions }: MaskOverlayProps) {
+  renderProfiler.mark("MaskOverlay");
   const {
     activeColor,
     activeTool,
     addManualPoint,
     beforeAfterEnabled,
     cancelManualMask,
-    cursorPreviewPoint,
     finishManualMask,
     isDrawingMask,
     maskPreviewEnabled,
@@ -56,14 +58,21 @@ export function MaskOverlay({ dimensions }: MaskOverlayProps) {
     masks,
     selectMask,
     selectedMaskId,
-    setCursorPreviewPoint,
     updateMask,
     zoom,
     clearSelectedPoints,
     maskOnlyPreview,
   } = useEditor();
+  const [cursorPreviewPoint, setCursorPreviewPoint] = useState<ImagePoint | null>(null);
+  const { schedule: scheduleCursor } = useRafCallback(
+    (point: ImagePoint | null) => setCursorPreviewPoint(point),
+  );
   const isManualSelection = activeTool === "manual-select";
   const closeThreshold = Math.max(8, 16 / zoom);
+
+  useEffect(() => {
+    if (!isManualSelection) scheduleCursor(null);
+  }, [isManualSelection, scheduleCursor]);
 
   useEffect(() => {
     if (!isManualSelection) {
@@ -131,11 +140,11 @@ export function MaskOverlay({ dimensions }: MaskOverlayProps) {
           return;
         }
 
-        setCursorPreviewPoint(getSvgPoint(event, dimensions));
+        scheduleCursor(getSvgPoint(event, dimensions));
       }}
       onMouseLeave={() => {
         if (isManualSelection) {
-          setCursorPreviewPoint(null);
+          scheduleCursor(null);
         }
       }}
     >
